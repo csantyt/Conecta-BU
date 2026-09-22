@@ -17,6 +17,7 @@ export class Evento extends Model<
   declare descripcion: CreationOptional<string | null>;
   declare fecha_inicio: Date;
   declare fecha_fin: CreationOptional<Date | null>;
+  declare fecha_limite_inscripcion: CreationOptional<Date | null>;
   declare cupo_total: number;
   declare activo: CreationOptional<boolean>;
   declare fecha_creacion: CreationOptional<Date>;
@@ -42,6 +43,10 @@ Evento.init(
       allowNull: false,
     },
     fecha_fin: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+    fecha_limite_inscripcion: {
       type: DataTypes.DATE,
       allowNull: true,
     },

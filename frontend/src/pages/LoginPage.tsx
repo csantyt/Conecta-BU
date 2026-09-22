@@ -8,6 +8,7 @@ import {
   limpiarHashDeLaUrl,
 } from "../auth/googleRedirect";
 import { guardarSesion, limpiarSesion } from "../auth/session";
+import LogoInstitucional from "../components/LogoInstitucional";
 import type { Usuario } from "../types/auth";
 
 type LoginPageProps = {
@@ -82,13 +83,17 @@ export default function LoginPage({ onAutenticado }: LoginPageProps) {
 
       <section className="relative w-full max-w-md rounded-3xl border border-white/10 bg-white/95 p-8 shadow-2xl backdrop-blur">
         <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-900 text-lg font-semibold tracking-wide text-white">
-            BU
-          </div>
+          <LogoInstitucional
+            variante="claro"
+            className="mx-auto mb-4 h-28 w-auto"
+          />
           <h1 className="text-2xl font-semibold text-slate-900">Conecta BU</h1>
+          <p className="mt-1 text-xs font-medium uppercase tracking-[0.2em] text-slate-500">
+            Uniautónoma del Cauca
+          </p>
           <p className="mt-2 text-sm leading-6 text-slate-600">
-            Accede con tu correo institucional de la Universidad Autónoma del
-            Cauca.
+            Accede con tu correo institucional de la Corporación Universitaria
+            Autónoma del Cauca.
           </p>
         </div>
 

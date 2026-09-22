@@ -19,6 +19,7 @@ export class Inscripcion extends Model<
   declare evento_id: ForeignKey<string>;
   declare usuario_id: string;
   declare estado: CreationOptional<EstadoInscripcion>;
+  declare asistencia: CreationOptional<"ASISTIO" | "NO_ASISTIO" | null>;
   declare fecha_inscripcion: CreationOptional<Date>;
 }
 
@@ -41,6 +42,10 @@ Inscripcion.init(
       type: DataTypes.ENUM("INSCRITO", "CANCELADO"),
       allowNull: false,
       defaultValue: "INSCRITO",
+    },
+    asistencia: {
+      type: DataTypes.STRING(32),
+      allowNull: true,
     },
     fecha_inscripcion: {
       type: DataTypes.DATE,

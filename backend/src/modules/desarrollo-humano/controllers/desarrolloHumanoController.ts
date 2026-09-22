@@ -1,9 +1,7 @@
 import type { Request, Response } from "express";
 import type { AuthUser } from "../../../middlewares/authMiddleware.js";
 import { Cita } from "../models/Cita.js";
-import { Evento } from "../models/Evento.js";
 import { Horario } from "../models/Horario.js";
-import { Inscripcion } from "../models/Inscripcion.js";
 import { Servicio } from "../models/Servicio.js";
 import {
   actualizarHorarioConValidacion,
@@ -22,6 +20,8 @@ import {
 } from "../services/citasHorariosService.js";
 import {
   actualizarHorarioSchema,
+  actualizarEventoSchema,
+  asistenciaEventoSchema,
   asistenciaSchema,
   cancelarCitaSchema,
   consultarHorariosSchema,
@@ -31,6 +31,20 @@ import {
   horariosDisponiblesSchema,
   uuidSchema,
 } from "../validators.js";
+import {
+  actualizarEventoSql,
+  cancelarInscripcionSql,
+  crearEventoSql,
+  CupoEventoAgotadoError,
+  eliminarEventoSql,
+  InscripcionCerradaError,
+  InscripcionDuplicadaError,
+  inscribirseEventoSql,
+  listarEventosSql,
+  listarInscripcionesSql,
+  NoInscritoError,
+  registrarAsistenciaEventoSql,
+} from "../services/eventosService.js";
 
 function responderErrorNegocio(res: Response, error: unknown): boolean {
   if (error instanceof RecursoNoEncontradoError) {
@@ -53,6 +67,18 @@ function responderErrorNegocio(res: Response, error: unknown): boolean {
   }
   if (error instanceof HorarioNoDisponibleError) {
     res.status(400).json({ message: error.message });
+    return true;
+  }
+  if (error instanceof InscripcionCerradaError) {
+    res.status(400).json({ message: error.message });
+    return true;
+  }
+  if (
+    error instanceof CupoEventoAgotadoError ||
+    error instanceof InscripcionDuplicadaError ||
+    error instanceof NoInscritoError
+  ) {
+    res.status(409).json({ message: error.message });
     return true;
   }
   return false;
@@ -308,28 +334,11 @@ export async function listarEventos(req: Request, res: Response): Promise<void> 
     return;
   }
 
-  const eventos = await Evento.findAll({
-    where: { activo: true },
-    include: [{ model: Inscripcion, as: "inscripciones" }],
-    order: [["fecha_inicio", "ASC"]],
+  const eventos = await listarEventosSql({
+    usuarioId: usuario.id,
+    esAdministrador: usuario.rol === "ADMINISTRADOR",
   });
-
-  const respuesta = (eventos as Evento[]).map((evento: Evento) => {
-    const inscripciones = evento.get("inscripciones") as Inscripcion[] | undefined;
-    const activas = (inscripciones ?? []).filter((item) => item.estado === "INSCRITO");
-    return {
-      id: evento.id,
-      titulo: evento.titulo,
-      descripcion: evento.descripcion,
-      fecha_inicio: evento.fecha_inicio,
-      fecha_fin: evento.fecha_fin,
-      cupo_total: evento.cupo_total,
-      cupo_disponible: Math.max(evento.cupo_total - activas.length, 0),
-      inscrito: activas.some((item) => item.usuario_id === usuario.id),
-    };
-  });
-
-  res.status(200).json({ eventos: respuesta });
+  res.status(200).json({ eventos });
 }
 
 export async function crearEvento(req: Request, res: Response): Promise<void> {
@@ -339,15 +348,83 @@ export async function crearEvento(req: Request, res: Response): Promise<void> {
     return;
   }
 
-  const evento = await Evento.create({
-    titulo: parsed.data.titulo,
-    descripcion: parsed.data.descripcion ?? null,
-    fecha_inicio: new Date(parsed.data.fecha_inicio),
-    fecha_fin: parsed.data.fecha_fin ? new Date(parsed.data.fecha_fin) : null,
-    cupo_total: parsed.data.cupo_total,
-  });
+  try {
+    const evento = await crearEventoSql({
+      titulo: parsed.data.titulo,
+      descripcion: parsed.data.descripcion ?? null,
+      fecha_inicio: new Date(parsed.data.fecha_inicio),
+      fecha_fin: parsed.data.fecha_fin ? new Date(parsed.data.fecha_fin) : null,
+      fecha_limite_inscripcion: parsed.data.fecha_limite_inscripcion
+        ? new Date(parsed.data.fecha_limite_inscripcion)
+        : null,
+      cupo_total: parsed.data.cupo_total,
+    });
+    res.status(201).json({ evento });
+  } catch (error) {
+    if (!responderErrorNegocio(res, error)) {
+      throw error;
+    }
+  }
+}
 
-  res.status(201).json({ evento });
+export async function actualizarEvento(req: Request, res: Response): Promise<void> {
+  const id = uuidSchema.safeParse(req.params["id"]);
+  if (!id.success) {
+    res.status(400).json({ message: "Identificador de evento inválido." });
+    return;
+  }
+
+  const parsed = actualizarEventoSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ message: "Datos inválidos.", errors: parsed.error.flatten() });
+    return;
+  }
+
+  try {
+    const evento = await actualizarEventoSql(id.data, {
+      ...(parsed.data.titulo ? { titulo: parsed.data.titulo } : {}),
+      ...(parsed.data.descripcion !== undefined
+        ? { descripcion: parsed.data.descripcion }
+        : {}),
+      ...(parsed.data.fecha_inicio
+        ? { fecha_inicio: new Date(parsed.data.fecha_inicio) }
+        : {}),
+      ...(parsed.data.fecha_fin !== undefined
+        ? { fecha_fin: parsed.data.fecha_fin ? new Date(parsed.data.fecha_fin) : null }
+        : {}),
+      ...(parsed.data.fecha_limite_inscripcion !== undefined
+        ? {
+            fecha_limite_inscripcion: parsed.data.fecha_limite_inscripcion
+              ? new Date(parsed.data.fecha_limite_inscripcion)
+              : null,
+          }
+        : {}),
+      ...(parsed.data.cupo_total !== undefined ? { cupo_total: parsed.data.cupo_total } : {}),
+      ...(parsed.data.activo !== undefined ? { activo: parsed.data.activo } : {}),
+    });
+    res.status(200).json({ evento });
+  } catch (error) {
+    if (!responderErrorNegocio(res, error)) {
+      throw error;
+    }
+  }
+}
+
+export async function eliminarEvento(req: Request, res: Response): Promise<void> {
+  const id = uuidSchema.safeParse(req.params["id"]);
+  if (!id.success) {
+    res.status(400).json({ message: "Identificador de evento inválido." });
+    return;
+  }
+
+  try {
+    await eliminarEventoSql(id.data);
+    res.status(204).send();
+  } catch (error) {
+    if (!responderErrorNegocio(res, error)) {
+      throw error;
+    }
+  }
 }
 
 export async function inscribirseEvento(req: Request, res: Response): Promise<void> {
@@ -362,42 +439,17 @@ export async function inscribirseEvento(req: Request, res: Response): Promise<vo
     return;
   }
 
-  const evento = await Evento.findByPk(id.data, {
-    include: [{ model: Inscripcion, as: "inscripciones" }],
-  });
-  if (!evento || !evento.activo) {
-    res.status(404).json({ message: "El evento no existe." });
-    return;
+  try {
+    const inscripcion = await inscribirseEventoSql({
+      eventoId: id.data,
+      usuarioId: usuario.id,
+    });
+    res.status(201).json({ inscripcion });
+  } catch (error) {
+    if (!responderErrorNegocio(res, error)) {
+      throw error;
+    }
   }
-
-  const inscripciones = (evento.get("inscripciones") as Inscripcion[] | undefined) ?? [];
-  const activas = inscripciones.filter((item) => item.estado === "INSCRITO");
-
-  if (activas.some((item) => item.usuario_id === usuario.id)) {
-    res.status(409).json({ message: "Ya estás inscrito en este evento." });
-    return;
-  }
-
-  if (activas.length >= evento.cupo_total) {
-    res.status(409).json({ message: "No hay cupos disponibles." });
-    return;
-  }
-
-  const previa = inscripciones.find((item) => item.usuario_id === usuario.id);
-  if (previa) {
-    previa.estado = "INSCRITO";
-    await previa.save();
-    res.status(200).json({ inscripcion: previa });
-    return;
-  }
-
-  const inscripcion = await Inscripcion.create({
-    evento_id: evento.id,
-    usuario_id: usuario.id,
-    estado: "INSCRITO",
-  });
-
-  res.status(201).json({ inscripcion });
 }
 
 export async function cancelarInscripcion(req: Request, res: Response): Promise<void> {
@@ -412,16 +464,65 @@ export async function cancelarInscripcion(req: Request, res: Response): Promise<
     return;
   }
 
-  const inscripcion = await Inscripcion.findOne({
-    where: { evento_id: id.data, usuario_id: usuario.id, estado: "INSCRITO" },
-  });
+  try {
+    const inscripcion = await cancelarInscripcionSql({
+      eventoId: id.data,
+      usuarioId: usuario.id,
+    });
+    res.status(200).json({ inscripcion });
+  } catch (error) {
+    if (!responderErrorNegocio(res, error)) {
+      throw error;
+    }
+  }
+}
 
-  if (!inscripcion) {
-    res.status(404).json({ message: "No tienes una inscripción activa." });
+export async function listarInscripcionesEvento(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const id = uuidSchema.safeParse(req.params["id"]);
+  if (!id.success) {
+    res.status(400).json({ message: "Identificador de evento inválido." });
     return;
   }
 
-  inscripcion.estado = "CANCELADO";
-  await inscripcion.save();
-  res.status(200).json({ inscripcion });
+  try {
+    const inscripciones = await listarInscripcionesSql(id.data);
+    res.status(200).json({ inscripciones });
+  } catch (error) {
+    if (!responderErrorNegocio(res, error)) {
+      throw error;
+    }
+  }
+}
+
+export async function registrarAsistenciaEvento(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const id = uuidSchema.safeParse(req.params["id"]);
+  if (!id.success) {
+    res.status(400).json({ message: "Identificador de evento inválido." });
+    return;
+  }
+
+  const parsed = asistenciaEventoSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ message: "Datos inválidos.", errors: parsed.error.flatten() });
+    return;
+  }
+
+  try {
+    const inscripcion = await registrarAsistenciaEventoSql({
+      eventoId: id.data,
+      usuarioId: parsed.data.usuario_id,
+      asistencia: parsed.data.asistencia,
+    });
+    res.status(200).json({ inscripcion });
+  } catch (error) {
+    if (!responderErrorNegocio(res, error)) {
+      throw error;
+    }
+  }
 }

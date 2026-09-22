@@ -1,5 +1,5 @@
 import { api } from "./http";
-import type { Cita, EventoDH, Horario, Servicio } from "../types/desarrolloHumano";
+import type { Cita, EventoDH, Horario, InscripcionEvento, Servicio } from "../types/desarrolloHumano";
 
 const base = "/desarrollo-humano";
 
@@ -87,9 +87,29 @@ export async function crearEvento(payload: {
   descripcion?: string;
   fecha_inicio: string;
   fecha_fin?: string;
+  fecha_limite_inscripcion?: string;
   cupo_total: number;
 }): Promise<void> {
   await api.post(`${base}/eventos`, payload);
+}
+
+export async function actualizarEvento(
+  id: string,
+  payload: Partial<{
+    titulo: string;
+    descripcion: string;
+    fecha_inicio: string;
+    fecha_fin: string;
+    fecha_limite_inscripcion: string;
+    cupo_total: number;
+    activo: boolean;
+  }>,
+): Promise<void> {
+  await api.patch(`${base}/eventos/${id}`, payload);
+}
+
+export async function eliminarEvento(id: string): Promise<void> {
+  await api.delete(`${base}/eventos/${id}`);
 }
 
 export async function inscribirseEvento(id: string): Promise<void> {
@@ -98,4 +118,24 @@ export async function inscribirseEvento(id: string): Promise<void> {
 
 export async function cancelarInscripcion(id: string): Promise<void> {
   await api.delete(`${base}/eventos/${id}/inscripciones`);
+}
+
+export async function obtenerInscripcionesEvento(
+  id: string,
+): Promise<InscripcionEvento[]> {
+  const { data } = await api.get<{ inscripciones: InscripcionEvento[] }>(
+    `${base}/eventos/${id}/inscripciones`,
+  );
+  return data.inscripciones;
+}
+
+export async function registrarAsistenciaEvento(
+  eventoId: string,
+  usuarioId: string,
+  asistencia: "ASISTIO" | "NO_ASISTIO",
+): Promise<void> {
+  await api.patch(`${base}/eventos/${eventoId}/asistencia`, {
+    usuario_id: usuarioId,
+    asistencia,
+  });
 }

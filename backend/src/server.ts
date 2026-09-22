@@ -1,6 +1,7 @@
 import "dotenv/config";
 import app from "./app.js";
 import {
+  alinearEsquemaEventos,
   alinearRolesUsuarios,
   asegurarEsquemasIndependientes,
   probarConexion,
@@ -21,6 +22,7 @@ async function iniciarServidor(): Promise<void> {
 
     await asegurarEsquemasIndependientes();
     await sequelize.sync();
+    await alinearEsquemaEventos();
     await alinearRolesUsuarios();
     await sembrarRoles();
     await sembrarServiciosDesarrolloHumano();

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { leerToken, leerUsuario, limpiarSesion } from "./auth/session";
+import LogoInstitucional from "./components/LogoInstitucional";
 import type { ModuloId } from "./config/modulos";
 import DesarrolloHumanoPage from "./pages/DesarrolloHumanoPage";
 import HomePage from "./pages/HomePage";
@@ -31,14 +32,10 @@ function App() {
             onClick={() => setModuloActivo(null)}
             className="flex items-center gap-3 text-left"
           >
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-sm font-semibold text-slate-900">
-              BU
-            </div>
+            <LogoInstitucional variante="oscuro" className="h-14 w-auto" />
             <div>
               <p className="text-sm font-semibold tracking-wide">Conecta BU</p>
-              <p className="text-xs text-slate-400">
-                Universidad Autónoma del Cauca
-              </p>
+              <p className="text-xs text-slate-400">Bienestar Universitario</p>
             </div>
           </button>
 

@@ -84,10 +84,14 @@ CREATE TABLE IF NOT EXISTS desarrollo_humano.eventos (
   descripcion TEXT,
   fecha_inicio TIMESTAMPTZ NOT NULL,
   fecha_fin TIMESTAMPTZ,
-  cupo_total INTEGER NOT NULL CHECK (cupo_total >= 0),
+  fecha_limite_inscripcion TIMESTAMPTZ,
+  cupo_total INTEGER NOT NULL CHECK (cupo_total >= 1),
   activo BOOLEAN NOT NULL DEFAULT TRUE,
   fecha_creacion TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  CONSTRAINT eventos_rango_chk CHECK (fecha_fin IS NULL OR fecha_fin >= fecha_inicio)
+  CONSTRAINT eventos_rango_chk CHECK (fecha_fin IS NULL OR fecha_fin >= fecha_inicio),
+  CONSTRAINT eventos_limite_chk CHECK (
+    fecha_limite_inscripcion IS NULL OR fecha_limite_inscripcion <= fecha_inicio
+  )
 );
 
 CREATE TABLE IF NOT EXISTS desarrollo_humano.inscripciones (
@@ -96,6 +100,8 @@ CREATE TABLE IF NOT EXISTS desarrollo_humano.inscripciones (
   usuario_id UUID NOT NULL,
   estado VARCHAR(32) NOT NULL DEFAULT 'INSCRITO'
     CHECK (estado IN ('INSCRITO', 'CANCELADO')),
+  asistencia VARCHAR(32)
+    CHECK (asistencia IS NULL OR asistencia IN ('ASISTIO', 'NO_ASISTIO')),
   fecha_inscripcion TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   UNIQUE (evento_id, usuario_id)
 );
