@@ -4,7 +4,7 @@ import type { ModuloId } from "./config/modulos";
 import DesarrolloHumanoPage from "./pages/DesarrolloHumanoPage";
 import HomePage from "./pages/HomePage";
 import LoginPage from "./pages/LoginPage";
-import type { Usuario } from "./types/auth";
+import { etiquetaRol, type Usuario } from "./types/auth";
 
 function App() {
   const [usuario, setUsuario] = useState<Usuario | null>(leerUsuario);
@@ -47,8 +47,8 @@ function App() {
               <p className="text-sm font-medium">
                 {usuario.nombre_completo || usuario.email}
               </p>
-              <p className="text-xs uppercase tracking-wide text-slate-400">
-                {usuario.rol}
+              <p className="text-xs tracking-wide text-slate-400">
+                {etiquetaRol(usuario.rol)}
               </p>
             </div>
             <button
@@ -63,7 +63,10 @@ function App() {
       </header>
 
       {moduloActivo === "desarrollo-humano" ? (
-        <DesarrolloHumanoPage onVolver={() => setModuloActivo(null)} />
+        <DesarrolloHumanoPage
+          usuario={usuario}
+          onVolver={() => setModuloActivo(null)}
+        />
       ) : (
         <HomePage usuario={usuario} onAbrirModulo={setModuloActivo} />
       )}

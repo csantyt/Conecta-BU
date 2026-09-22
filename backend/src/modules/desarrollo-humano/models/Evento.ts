@@ -8,42 +8,48 @@ import {
 import { sequelize } from "../../../config/database.js";
 import { SCHEMAS } from "../../../config/schemas.js";
 
-export type RolUsuario = "USUARIO" | "ADMINISTRADOR";
-
-export class Usuario extends Model<
-  InferAttributes<Usuario>,
-  InferCreationAttributes<Usuario>
+export class Evento extends Model<
+  InferAttributes<Evento>,
+  InferCreationAttributes<Evento>
 > {
   declare id: CreationOptional<string>;
-  declare email: string;
-  declare nombre_completo: CreationOptional<string | null>;
-  declare rol: CreationOptional<RolUsuario>;
-  declare estado: CreationOptional<boolean>;
+  declare titulo: string;
+  declare descripcion: CreationOptional<string | null>;
+  declare fecha_inicio: Date;
+  declare fecha_fin: CreationOptional<Date | null>;
+  declare cupo_total: number;
+  declare activo: CreationOptional<boolean>;
   declare fecha_creacion: CreationOptional<Date>;
 }
 
-Usuario.init(
+Evento.init(
   {
     id: {
       type: DataTypes.UUID,
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
     },
-    email: {
-      type: DataTypes.STRING,
+    titulo: {
+      type: DataTypes.STRING(180),
       allowNull: false,
-      unique: true,
     },
-    nombre_completo: {
-      type: DataTypes.STRING,
+    descripcion: {
+      type: DataTypes.TEXT,
       allowNull: true,
     },
-    rol: {
-      type: DataTypes.STRING(32),
+    fecha_inicio: {
+      type: DataTypes.DATE,
       allowNull: false,
-      defaultValue: "USUARIO",
     },
-    estado: {
+    fecha_fin: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+    cupo_total: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+    },
+    activo: {
       type: DataTypes.BOOLEAN,
       allowNull: false,
       defaultValue: true,
@@ -56,8 +62,8 @@ Usuario.init(
   },
   {
     sequelize,
-    schema: SCHEMAS.auth,
-    tableName: "usuarios",
+    schema: SCHEMAS.desarrolloHumano,
+    tableName: "eventos",
     timestamps: false,
   },
 );

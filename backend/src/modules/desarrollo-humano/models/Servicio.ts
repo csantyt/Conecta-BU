@@ -8,42 +8,33 @@ import {
 import { sequelize } from "../../../config/database.js";
 import { SCHEMAS } from "../../../config/schemas.js";
 
-export type RolUsuario = "USUARIO" | "ADMINISTRADOR";
-
-export class Usuario extends Model<
-  InferAttributes<Usuario>,
-  InferCreationAttributes<Usuario>
+export class Servicio extends Model<
+  InferAttributes<Servicio>,
+  InferCreationAttributes<Servicio>
 > {
   declare id: CreationOptional<string>;
-  declare email: string;
-  declare nombre_completo: CreationOptional<string | null>;
-  declare rol: CreationOptional<RolUsuario>;
-  declare estado: CreationOptional<boolean>;
+  declare nombre: string;
+  declare descripcion: CreationOptional<string | null>;
+  declare activo: CreationOptional<boolean>;
   declare fecha_creacion: CreationOptional<Date>;
 }
 
-Usuario.init(
+Servicio.init(
   {
     id: {
       type: DataTypes.UUID,
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
     },
-    email: {
-      type: DataTypes.STRING,
+    nombre: {
+      type: DataTypes.STRING(150),
       allowNull: false,
-      unique: true,
     },
-    nombre_completo: {
-      type: DataTypes.STRING,
+    descripcion: {
+      type: DataTypes.TEXT,
       allowNull: true,
     },
-    rol: {
-      type: DataTypes.STRING(32),
-      allowNull: false,
-      defaultValue: "USUARIO",
-    },
-    estado: {
+    activo: {
       type: DataTypes.BOOLEAN,
       allowNull: false,
       defaultValue: true,
@@ -56,8 +47,8 @@ Usuario.init(
   },
   {
     sequelize,
-    schema: SCHEMAS.auth,
-    tableName: "usuarios",
+    schema: SCHEMAS.desarrolloHumano,
+    tableName: "servicios",
     timestamps: false,
   },
 );
