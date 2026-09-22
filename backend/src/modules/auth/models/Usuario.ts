@@ -7,8 +7,9 @@ import {
 } from "sequelize";
 import { sequelize } from "../../../config/database.js";
 import { SCHEMAS } from "../../../config/schemas.js";
+import type { RolUsuario } from "../roles.js";
 
-export type RolUsuario = "USUARIO" | "ADMINISTRADOR";
+export type { RolUsuario } from "../roles.js";
 
 export class Usuario extends Model<
   InferAttributes<Usuario>,

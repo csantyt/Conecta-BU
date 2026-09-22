@@ -1,6 +1,7 @@
 import type { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
-import type { RolUsuario } from "../modules/auth/models/Usuario.js";
+import { esCorreoInstitucional } from "../modules/auth/roles.js";
+import type { RolUsuario } from "../modules/auth/roles.js";
 
 export interface AuthUser {
   id: string;
@@ -50,14 +51,28 @@ export function authMiddleware(
   try {
     const payload = jwt.verify(token, obtenerJwtSecret());
 
-    if (typeof payload === "string" || !payload["id"] || !payload["email"] || !payload["rol"]) {
+    if (
+      typeof payload === "string" ||
+      !payload["id"] ||
+      !payload["email"] ||
+      !payload["rol"]
+    ) {
       res.status(401).json({ message: "Token inválido o expirado." });
+      return;
+    }
+
+    const email = String(payload["email"]).toLowerCase();
+
+    if (!esCorreoInstitucional(email)) {
+      res.status(403).json({
+        message: "El token no corresponde a un correo institucional.",
+      });
       return;
     }
 
     req.user = {
       id: String(payload["id"]),
-      email: String(payload["email"]),
+      email,
       rol: payload["rol"] as RolUsuario,
     };
 

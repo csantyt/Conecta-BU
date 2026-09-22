@@ -7,6 +7,7 @@ export type Horario = {
   hora_fin: string;
   cupo: number;
   activo: boolean;
+  cupo_disponible?: number;
 };
 
 export type Servicio = {

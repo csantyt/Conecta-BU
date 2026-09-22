@@ -11,6 +11,23 @@ export const crearHorarioSchema = z.object({
   cupo: z.number().int().min(1).default(1),
 });
 
+export const actualizarHorarioSchema = crearHorarioSchema.partial().extend({
+  activo: z.boolean().optional(),
+});
+
+export const consultarHorariosSchema = z.object({
+  servicio_id: uuidSchema.optional(),
+  activo: z
+    .enum(["true", "false"])
+    .optional()
+    .transform((valor) => (valor === undefined ? undefined : valor === "true")),
+});
+
+export const horariosDisponiblesSchema = z.object({
+  fecha: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  servicio_id: uuidSchema.optional(),
+});
+
 export const crearCitaSchema = z.object({
   servicio_id: uuidSchema,
   horario_id: uuidSchema,

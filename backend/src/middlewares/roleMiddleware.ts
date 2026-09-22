@@ -1,5 +1,5 @@
 import type { NextFunction, Request, Response } from "express";
-import type { RolUsuario } from "../modules/auth/models/Usuario.js";
+import { ROLES, type RolUsuario } from "../modules/auth/roles.js";
 
 export function roleMiddleware(rolesPermitidos: RolUsuario[]) {
   return (req: Request, res: Response, next: NextFunction): void => {
@@ -20,3 +20,6 @@ export function roleMiddleware(rolesPermitidos: RolUsuario[]) {
     next();
   };
 }
+
+export const soloUsuario = roleMiddleware([ROLES.USUARIO, ROLES.ADMINISTRADOR]);
+export const soloAdministrador = roleMiddleware([ROLES.ADMINISTRADOR]);

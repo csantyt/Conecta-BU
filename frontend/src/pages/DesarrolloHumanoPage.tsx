@@ -6,9 +6,12 @@ import {
   cancelarInscripcion,
   crearEvento,
   crearHorario,
+  deshabilitarHorario,
   inscribirseEvento,
   obtenerCitas,
   obtenerEventos,
+  obtenerHorarios,
+  obtenerHorariosDisponibles,
   obtenerServicios,
   registrarAsistencia,
 } from "../api/desarrolloHumano";
@@ -69,6 +72,7 @@ export default function DesarrolloHumanoPage({
   const [servicioId, setServicioId] = useState("");
   const [horarioId, setHorarioId] = useState("");
   const [fecha, setFecha] = useState("");
+  const [horariosDisponibles, setHorariosDisponibles] = useState<Horario[]>([]);
 
   async function recargar() {
     setCargando(true);
@@ -96,10 +100,28 @@ export default function DesarrolloHumanoPage({
     void recargar();
   }, []);
 
+  useEffect(() => {
+    if (!fecha || !servicioId) {
+      setHorariosDisponibles([]);
+      return;
+    }
+    void obtenerHorariosDisponibles({ fecha, servicio_id: servicioId })
+      .then((lista) => {
+        setHorariosDisponibles(lista);
+        setHorarioId((actual) =>
+          lista.some((item) => item.id === actual) ? actual : "",
+        );
+      })
+      .catch((err) => setError(mensajeError(err)));
+  }, [fecha, servicioId]);
+
   const horariosDelServicio = useMemo(() => {
+    if (fecha) {
+      return horariosDisponibles;
+    }
     const servicio = servicios.find((item) => item.id === servicioId);
     return servicio?.horarios ?? [];
-  }, [servicios, servicioId]);
+  }, [fecha, horariosDisponibles, servicios, servicioId]);
 
   async function onAgendar(event: FormEvent) {
     event.preventDefault();
@@ -209,6 +231,15 @@ export default function DesarrolloHumanoPage({
               ))}
             </select>
 
+            <label className="mt-4 block text-sm font-medium">Fecha</label>
+            <input
+              type="date"
+              className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+              value={fecha}
+              onChange={(event) => setFecha(event.target.value)}
+              required
+            />
+
             <label className="mt-4 block text-sm font-medium">Horario</label>
             <select
               className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
@@ -225,18 +256,11 @@ export default function DesarrolloHumanoPage({
             </select>
             {horariosDelServicio.length === 0 ? (
               <p className="mt-2 text-xs text-slate-500">
-                Aún no hay horarios. Un administrador debe crearlos.
+                {fecha
+                  ? "No hay cupos libres en esa fecha."
+                  : "Aún no hay horarios. Un administrador debe crearlos."}
               </p>
             ) : null}
-
-            <label className="mt-4 block text-sm font-medium">Fecha</label>
-            <input
-              type="date"
-              className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
-              value={fecha}
-              onChange={(event) => setFecha(event.target.value)}
-              required
-            />
 
             <button
               type="submit"
@@ -335,7 +359,11 @@ export default function DesarrolloHumanoPage({
 
 function etiquetaHorario(horario: Horario): string {
   const profesional = horario.profesional ? ` · ${horario.profesional}` : "";
-  return `${DIAS[horario.dia_semana]} ${horaCorta(horario.hora_inicio)}-${horaCorta(horario.hora_fin)}${profesional}`;
+  const cupo =
+    horario.cupo_disponible !== undefined
+      ? ` · ${horario.cupo_disponible} cupo(s)`
+      : "";
+  return `${DIAS[horario.dia_semana]} ${horaCorta(horario.hora_inicio)}-${horaCorta(horario.hora_fin)}${profesional}${cupo}`;
 }
 
 function TabButton({
@@ -513,6 +541,13 @@ function AdminVista({
   const [horaInicio, setHoraInicio] = useState("08:00");
   const [horaFin, setHoraFin] = useState("09:00");
   const [cupo, setCupo] = useState(1);
+  const [horarios, setHorarios] = useState<Horario[]>([]);
+
+  useEffect(() => {
+    void obtenerHorarios()
+      .then(setHorarios)
+      .catch((err) => onError(mensajeError(err)));
+  }, [onError, servicios]);
 
   async function onCrearHorario(event: FormEvent) {
     event.preventDefault();
@@ -526,6 +561,19 @@ function AdminVista({
         cupo,
       });
       onAviso("Horario creado.");
+      const lista = await obtenerHorarios();
+      setHorarios(lista);
+      onRecargar();
+    } catch (err) {
+      onError(mensajeError(err));
+    }
+  }
+
+  async function onDeshabilitar(id: string) {
+    try {
+      await deshabilitarHorario(id);
+      onAviso("Horario deshabilitado.");
+      setHorarios(await obtenerHorarios());
       onRecargar();
     } catch (err) {
       onError(mensajeError(err));
@@ -533,9 +581,10 @@ function AdminVista({
   }
 
   return (
+    <div className="grid gap-6 lg:grid-cols-2">
     <form
       onSubmit={(event) => void onCrearHorario(event)}
-      className="max-w-xl rounded-2xl border border-white/10 bg-white p-6 text-slate-900"
+      className="rounded-2xl border border-white/10 bg-white p-6 text-slate-900"
     >
       <h2 className="text-lg font-semibold">Crear horario de atención</h2>
       <select
@@ -594,5 +643,39 @@ function AdminVista({
         Guardar horario
       </button>
     </form>
+      <div className="space-y-3">
+        <h2 className="text-lg font-semibold">Horarios registrados</h2>
+        {horarios.length === 0 ? (
+          <p className="text-sm text-slate-400">No hay horarios creados.</p>
+        ) : (
+          horarios.map((horario) => {
+            const servicio = servicios.find((item) => item.id === horario.servicio_id);
+            return (
+              <article
+                key={horario.id}
+                className="rounded-2xl border border-white/10 bg-white p-5 text-slate-900"
+              >
+                <p className="font-semibold">{servicio?.nombre ?? "Servicio"}</p>
+                <p className="mt-1 text-sm text-slate-600">
+                  {etiquetaHorario(horario)}
+                </p>
+                <p className="mt-1 text-xs uppercase tracking-wide text-slate-500">
+                  {horario.activo ? "Activo" : "Deshabilitado"}
+                </p>
+                {horario.activo ? (
+                  <button
+                    type="button"
+                    className="mt-3 rounded-lg border px-3 py-1.5 text-xs"
+                    onClick={() => void onDeshabilitar(horario.id)}
+                  >
+                    Deshabilitar
+                  </button>
+                ) : null}
+              </article>
+            );
+          })
+        )}
+      </div>
+    </div>
   );
 }
