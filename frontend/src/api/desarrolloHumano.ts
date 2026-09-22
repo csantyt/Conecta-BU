@@ -1,0 +1,67 @@
+import { api } from "./http";
+import type { Cita, EventoDH, Servicio } from "../types/desarrolloHumano";
+
+const base = "/desarrollo-humano";
+
+export async function obtenerServicios(): Promise<Servicio[]> {
+  const { data } = await api.get<{ servicios: Servicio[] }>(`${base}/servicios`);
+  return data.servicios;
+}
+
+export async function crearHorario(payload: {
+  servicio_id: string;
+  profesional?: string;
+  dia_semana: number;
+  hora_inicio: string;
+  hora_fin: string;
+  cupo: number;
+}): Promise<void> {
+  await api.post(`${base}/horarios`, payload);
+}
+
+export async function obtenerCitas(): Promise<Cita[]> {
+  const { data } = await api.get<{ citas: Cita[] }>(`${base}/citas`);
+  return data.citas;
+}
+
+export async function agendarCita(payload: {
+  servicio_id: string;
+  horario_id: string;
+  fecha: string;
+}): Promise<void> {
+  await api.post(`${base}/citas`, payload);
+}
+
+export async function cancelarCita(id: string, motivo?: string): Promise<void> {
+  await api.patch(`${base}/citas/${id}/cancelar`, { motivo });
+}
+
+export async function registrarAsistencia(
+  id: string,
+  estado: "ASISTIO" | "NO_ASISTIO",
+): Promise<void> {
+  await api.patch(`${base}/citas/${id}/asistencia`, { estado });
+}
+
+export async function obtenerEventos(): Promise<EventoDH[]> {
+  const { data } = await api.get<{ eventos: EventoDH[] }>(`${base}/eventos`);
+  return data.eventos;
+}
+
+export async function crearEvento(payload: {
+  titulo: string;
+  descripcion?: string;
+  fecha_inicio: string;
+  fecha_fin?: string;
+  cupo_total: number;
+}): Promise<void> {
+  await api.post(`${base}/eventos`, payload);
+}
+
+export async function inscribirseEvento(id: string): Promise<void> {
+  await api.post(`${base}/eventos/${id}/inscripciones`);
+}
+
+export async function cancelarInscripcion(id: string): Promise<void> {
+  await api.delete(`${base}/eventos/${id}/inscripciones`);
+}

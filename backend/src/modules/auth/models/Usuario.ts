@@ -6,8 +6,9 @@ import {
   type InferCreationAttributes,
 } from "sequelize";
 import { sequelize } from "../../../config/database.js";
+import { SCHEMAS } from "../../../config/schemas.js";
 
-export type RolUsuario = "ESTUDIANTE" | "ADMINISTRADOR";
+export type RolUsuario = "USUARIO" | "ADMINISTRADOR";
 
 export class Usuario extends Model<
   InferAttributes<Usuario>,
@@ -38,9 +39,9 @@ Usuario.init(
       allowNull: true,
     },
     rol: {
-      type: DataTypes.ENUM("ESTUDIANTE", "ADMINISTRADOR"),
+      type: DataTypes.STRING(32),
       allowNull: false,
-      defaultValue: "ESTUDIANTE",
+      defaultValue: "USUARIO",
     },
     estado: {
       type: DataTypes.BOOLEAN,
@@ -55,6 +56,7 @@ Usuario.init(
   },
   {
     sequelize,
+    schema: SCHEMAS.auth,
     tableName: "usuarios",
     timestamps: false,
   },
