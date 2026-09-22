@@ -16,7 +16,9 @@ export default function HomePage({ usuario, onAbrirModulo }: HomePageProps) {
   return (
     <main className="mx-auto max-w-6xl px-4 py-10">
       <section className="mb-10 rounded-3xl border border-white/10 bg-white/5 p-8">
-        <p className="text-sm font-medium text-emerald-300">Bienestar Universitario</p>
+        <p className="text-sm font-medium text-emerald-300">
+          Bienestar Universitario · Corporación Universitaria Autónoma del Cauca
+        </p>
         <h1 className="mt-2 text-3xl font-semibold tracking-tight">
           Módulos de Conecta BU
         </h1>

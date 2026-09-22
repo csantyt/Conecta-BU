@@ -28,6 +28,17 @@ export async function asegurarEsquemasIndependientes(): Promise<void> {
   }
 }
 
+export async function alinearEsquemaEventos(): Promise<void> {
+  await sequelize.query(`
+    ALTER TABLE IF EXISTS desarrollo_humano.eventos
+      ADD COLUMN IF NOT EXISTS fecha_limite_inscripcion TIMESTAMPTZ;
+  `);
+  await sequelize.query(`
+    ALTER TABLE IF EXISTS desarrollo_humano.inscripciones
+      ADD COLUMN IF NOT EXISTS asistencia VARCHAR(32);
+  `);
+}
+
 export async function alinearRolesUsuarios(): Promise<void> {
   await sequelize.query(`
     DO $$

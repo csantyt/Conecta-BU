@@ -1,22 +1,32 @@
 import axios from "axios";
 import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
 import {
+  actualizarEvento,
   agendarCita,
   cancelarCita,
   cancelarInscripcion,
   crearEvento,
   crearHorario,
   deshabilitarHorario,
+  eliminarEvento,
   inscribirseEvento,
   obtenerCitas,
   obtenerEventos,
   obtenerHorarios,
   obtenerHorariosDisponibles,
+  obtenerInscripcionesEvento,
   obtenerServicios,
   registrarAsistencia,
+  registrarAsistenciaEvento,
 } from "../api/desarrolloHumano";
 import type { Usuario } from "../types/auth";
-import type { Cita, EventoDH, Horario, Servicio } from "../types/desarrolloHumano";
+import type {
+  Cita,
+  EventoDH,
+  Horario,
+  InscripcionEvento,
+  Servicio,
+} from "../types/desarrolloHumano";
 
 type DesarrolloHumanoPageProps = {
   usuario: Usuario;
@@ -406,25 +416,55 @@ function EventosVista({
   const [titulo, setTitulo] = useState("");
   const [descripcion, setDescripcion] = useState("");
   const [fechaInicio, setFechaInicio] = useState("");
+  const [fechaLimite, setFechaLimite] = useState("");
   const [cupo, setCupo] = useState(20);
+  const [editandoId, setEditandoId] = useState<string | null>(null);
+  const [inscritos, setInscritos] = useState<Record<string, InscripcionEvento[]>>(
+    {},
+  );
 
-  async function onCrear(event: FormEvent) {
+  async function cargarInscritos(eventoId: string) {
+    try {
+      const lista = await obtenerInscripcionesEvento(eventoId);
+      setInscritos((actual) => ({ ...actual, [eventoId]: lista }));
+    } catch (err) {
+      onError(mensajeError(err));
+    }
+  }
+
+  async function onGuardar(event: FormEvent) {
     event.preventDefault();
     try {
-      await crearEvento({
+      const payload = {
         titulo,
         descripcion,
         fecha_inicio: new Date(fechaInicio).toISOString(),
+        fecha_limite_inscripcion: fechaLimite
+          ? new Date(fechaLimite).toISOString()
+          : undefined,
         cupo_total: cupo,
-      });
-      onAviso("Evento creado.");
+      };
+      if (editandoId) {
+        await actualizarEvento(editandoId, payload);
+        onAviso("Evento actualizado.");
+        setEditandoId(null);
+      } else {
+        await crearEvento(payload);
+        onAviso("Evento creado.");
+      }
       setTitulo("");
       setDescripcion("");
+      setFechaLimite("");
       onRecargar();
     } catch (err) {
       onError(mensajeError(err));
     }
   }
+
+  const inscripcionVencida = (evento: EventoDH) => {
+    const limite = evento.fecha_limite_inscripcion ?? evento.fecha_inicio;
+    return new Date(limite).getTime() < Date.now();
+  };
 
   return (
     <section className="grid gap-6 lg:grid-cols-2">
@@ -440,6 +480,11 @@ function EventosVista({
               {formatearFecha(evento.fecha_inicio)} · Cupos {evento.cupo_disponible}/
               {evento.cupo_total}
             </p>
+            {evento.fecha_limite_inscripcion ? (
+              <p className="mt-1 text-xs text-slate-500">
+                Inscripción hasta {formatearFecha(evento.fecha_limite_inscripcion)}
+              </p>
+            ) : null}
             {evento.inscrito ? (
               <button
                 type="button"
@@ -458,7 +503,8 @@ function EventosVista({
             ) : (
               <button
                 type="button"
-                className="mt-3 rounded-lg bg-slate-900 px-3 py-1.5 text-xs text-white"
+                className="mt-3 rounded-lg bg-slate-900 px-3 py-1.5 text-xs text-white disabled:opacity-50"
+                disabled={evento.cupo_disponible <= 0 || inscripcionVencida(evento)}
                 onClick={() =>
                   void inscribirseEvento(evento.id)
                     .then(() => {
@@ -471,6 +517,93 @@ function EventosVista({
                 Inscribirme
               </button>
             )}
+            {esAdmin ? (
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  className="rounded-lg border px-3 py-1.5 text-xs"
+                  onClick={() => {
+                    setEditandoId(evento.id);
+                    setTitulo(evento.titulo);
+                    setDescripcion(evento.descripcion ?? "");
+                    setCupo(evento.cupo_total);
+                  }}
+                >
+                  Editar
+                </button>
+                <button
+                  type="button"
+                  className="rounded-lg border px-3 py-1.5 text-xs"
+                  onClick={() => void cargarInscritos(evento.id)}
+                >
+                  Ver inscritos
+                </button>
+                <button
+                  type="button"
+                  className="rounded-lg border border-red-200 px-3 py-1.5 text-xs text-red-700"
+                  onClick={() =>
+                    void eliminarEvento(evento.id)
+                      .then(() => {
+                        onAviso("Evento eliminado.");
+                        onRecargar();
+                      })
+                      .catch((err) => onError(mensajeError(err)))
+                  }
+                >
+                  Eliminar
+                </button>
+              </div>
+            ) : null}
+            {esAdmin && inscritos[evento.id] ? (
+              <ul className="mt-3 space-y-2 text-xs">
+                {inscritos[evento.id]?.length === 0 ? (
+                  <li className="text-slate-500">Nadie inscrito aún.</li>
+                ) : (
+                  inscritos[evento.id]?.map((item) => (
+                    <li
+                      key={item.id}
+                      className="flex flex-wrap items-center justify-between gap-2 rounded-lg border px-2 py-2"
+                    >
+                      <span>
+                        {item.usuario_id.slice(0, 8)} · {item.asistencia ?? "Sin marcar"}
+                      </span>
+                      <span className="flex gap-1">
+                        <button
+                          type="button"
+                          className="rounded bg-emerald-700 px-2 py-1 text-white"
+                          onClick={() =>
+                            void registrarAsistenciaEvento(
+                              evento.id,
+                              item.usuario_id,
+                              "ASISTIO",
+                            )
+                              .then(() => cargarInscritos(evento.id))
+                              .catch((err) => onError(mensajeError(err)))
+                          }
+                        >
+                          Asistió
+                        </button>
+                        <button
+                          type="button"
+                          className="rounded bg-slate-700 px-2 py-1 text-white"
+                          onClick={() =>
+                            void registrarAsistenciaEvento(
+                              evento.id,
+                              item.usuario_id,
+                              "NO_ASISTIO",
+                            )
+                              .then(() => cargarInscritos(evento.id))
+                              .catch((err) => onError(mensajeError(err)))
+                          }
+                        >
+                          No asistió
+                        </button>
+                      </span>
+                    </li>
+                  ))
+                )}
+              </ul>
+            ) : null}
           </article>
         ))}
         {eventos.length === 0 ? (
@@ -480,10 +613,12 @@ function EventosVista({
 
       {esAdmin ? (
         <form
-          onSubmit={(event) => void onCrear(event)}
+          onSubmit={(event) => void onGuardar(event)}
           className="rounded-2xl border border-white/10 bg-white p-6 text-slate-900"
         >
-          <h2 className="text-lg font-semibold">Publicar evento</h2>
+          <h2 className="text-lg font-semibold">
+            {editandoId ? "Editar evento" : "Publicar evento"}
+          </h2>
           <input
             className="mt-4 w-full rounded-xl border px-3 py-2 text-sm"
             placeholder="Título"
@@ -497,12 +632,22 @@ function EventosVista({
             value={descripcion}
             onChange={(event) => setDescripcion(event.target.value)}
           />
+          <label className="mt-3 block text-xs text-slate-500">Inicio</label>
           <input
             type="datetime-local"
-            className="mt-3 w-full rounded-xl border px-3 py-2 text-sm"
+            className="mt-1 w-full rounded-xl border px-3 py-2 text-sm"
             value={fechaInicio}
             onChange={(event) => setFechaInicio(event.target.value)}
             required
+          />
+          <label className="mt-3 block text-xs text-slate-500">
+            Fecha límite de inscripción
+          </label>
+          <input
+            type="datetime-local"
+            className="mt-1 w-full rounded-xl border px-3 py-2 text-sm"
+            value={fechaLimite}
+            onChange={(event) => setFechaLimite(event.target.value)}
           />
           <input
             type="number"
@@ -516,7 +661,7 @@ function EventosVista({
             type="submit"
             className="mt-4 w-full rounded-xl bg-slate-900 py-2.5 text-sm text-white"
           >
-            Crear evento
+            {editandoId ? "Guardar cambios" : "Crear evento"}
           </button>
         </form>
       ) : null}

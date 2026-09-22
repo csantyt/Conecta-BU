@@ -3,6 +3,7 @@ import { asyncHandler } from "../../../middlewares/asyncHandler.js";
 import { authMiddleware } from "../../../middlewares/authMiddleware.js";
 import { soloAdministrador } from "../../../middlewares/roleMiddleware.js";
 import {
+  actualizarEvento,
   actualizarHorario,
   cancelarCita,
   cancelarInscripcion,
@@ -11,12 +12,15 @@ import {
   crearEvento,
   crearHorario,
   desactivarHorario,
+  eliminarEvento,
   inscribirseEvento,
   listarCitas,
   listarEventos,
   listarHorarios,
+  listarInscripcionesEvento,
   listarServicios,
   registrarAsistencia,
+  registrarAsistenciaEvento,
 } from "../controllers/desarrolloHumanoController.js";
 
 const desarrolloHumanoRoutes = Router();
@@ -63,6 +67,26 @@ desarrolloHumanoRoutes.post(
   "/eventos",
   soloAdministrador,
   asyncHandler(crearEvento),
+);
+desarrolloHumanoRoutes.patch(
+  "/eventos/:id",
+  soloAdministrador,
+  asyncHandler(actualizarEvento),
+);
+desarrolloHumanoRoutes.delete(
+  "/eventos/:id",
+  soloAdministrador,
+  asyncHandler(eliminarEvento),
+);
+desarrolloHumanoRoutes.get(
+  "/eventos/:id/inscripciones",
+  soloAdministrador,
+  asyncHandler(listarInscripcionesEvento),
+);
+desarrolloHumanoRoutes.patch(
+  "/eventos/:id/asistencia",
+  soloAdministrador,
+  asyncHandler(registrarAsistenciaEvento),
 );
 desarrolloHumanoRoutes.post(
   "/eventos/:id/inscripciones",

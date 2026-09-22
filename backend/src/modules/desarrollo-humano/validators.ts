@@ -47,5 +47,15 @@ export const crearEventoSchema = z.object({
   descripcion: z.string().trim().max(2000).optional(),
   fecha_inicio: z.string().min(10),
   fecha_fin: z.string().min(10).optional(),
+  fecha_limite_inscripcion: z.string().min(10).optional(),
   cupo_total: z.number().int().min(1),
+});
+
+export const actualizarEventoSchema = crearEventoSchema.partial().extend({
+  activo: z.boolean().optional(),
+});
+
+export const asistenciaEventoSchema = z.object({
+  usuario_id: uuidSchema,
+  asistencia: z.enum(["ASISTIO", "NO_ASISTIO"]),
 });

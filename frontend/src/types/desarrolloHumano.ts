@@ -36,7 +36,18 @@ export type EventoDH = {
   descripcion: string | null;
   fecha_inicio: string;
   fecha_fin: string | null;
+  fecha_limite_inscripcion: string | null;
   cupo_total: number;
   cupo_disponible: number;
   inscrito: boolean;
+  activo?: boolean;
+};
+
+export type InscripcionEvento = {
+  id: string;
+  evento_id: string;
+  usuario_id: string;
+  estado: "INSCRITO" | "CANCELADO";
+  asistencia: "ASISTIO" | "NO_ASISTIO" | null;
+  fecha_inscripcion: string;
 };
