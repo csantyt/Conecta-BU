@@ -11,7 +11,7 @@ export function construirUrlGoogle(): string {
     scope: "openid email profile",
     nonce,
     prompt: "select_account",
-    hd: "uniautonoma.edu.co",
+    hd: import.meta.env.VITE_GOOGLE_HOSTED_DOMAIN || "uniautonoma.edu.co",
   });
 
   return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;

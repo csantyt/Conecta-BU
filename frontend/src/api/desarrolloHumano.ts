@@ -1,11 +1,27 @@
 import { api } from "./http";
-import type { Cita, EventoDH, Servicio } from "../types/desarrolloHumano";
+import type { Cita, EventoDH, Horario, Servicio } from "../types/desarrolloHumano";
 
 const base = "/desarrollo-humano";
 
 export async function obtenerServicios(): Promise<Servicio[]> {
   const { data } = await api.get<{ servicios: Servicio[] }>(`${base}/servicios`);
   return data.servicios;
+}
+
+export async function obtenerHorarios(): Promise<Horario[]> {
+  const { data } = await api.get<{ horarios: Horario[] }>(`${base}/horarios`);
+  return data.horarios;
+}
+
+export async function obtenerHorariosDisponibles(params: {
+  fecha: string;
+  servicio_id?: string;
+}): Promise<Horario[]> {
+  const { data } = await api.get<{ horarios: Horario[] }>(
+    `${base}/horarios/disponibles`,
+    { params },
+  );
+  return data.horarios;
 }
 
 export async function crearHorario(payload: {
@@ -17,6 +33,24 @@ export async function crearHorario(payload: {
   cupo: number;
 }): Promise<void> {
   await api.post(`${base}/horarios`, payload);
+}
+
+export async function actualizarHorario(
+  id: string,
+  payload: Partial<{
+    profesional: string;
+    dia_semana: number;
+    hora_inicio: string;
+    hora_fin: string;
+    cupo: number;
+    activo: boolean;
+  }>,
+): Promise<void> {
+  await api.patch(`${base}/horarios/${id}`, payload);
+}
+
+export async function deshabilitarHorario(id: string): Promise<void> {
+  await api.patch(`${base}/horarios/${id}/deshabilitar`);
 }
 
 export async function obtenerCitas(): Promise<Cita[]> {
