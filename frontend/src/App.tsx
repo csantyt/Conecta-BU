@@ -4,6 +4,7 @@ import LogoInstitucional from "./components/LogoInstitucional";
 import ChatbotOrientacion from "./components/ChatbotOrientacion";
 import type { ModuloId } from "./config/modulos";
 import DesarrolloHumanoPage from "./pages/DesarrolloHumanoPage";
+import DeportePage from "./pages/DeportePage";
 import HomePage from "./pages/HomePage";
 import LoginPage from "./pages/LoginPage";
 import { etiquetaRol, type Usuario } from "./types/auth";
@@ -65,6 +66,8 @@ function App() {
           usuario={usuario}
           onVolver={() => setModuloActivo(null)}
         />
+      ) : moduloActivo === "deporte" ? (
+        <DeportePage usuario={usuario} onVolver={() => setModuloActivo(null)} />
       ) : (
         <HomePage usuario={usuario} onAbrirModulo={setModuloActivo} />
       )}

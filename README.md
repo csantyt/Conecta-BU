@@ -17,7 +17,7 @@ Solo está habilitado **Desarrollo humano y orientación**. Los otros cuatro mó
 | Desarrollo humano y orientación | Activo (citas, horarios, eventos, IA) |
 | Permanencia estudiantil | Visible, aún no implementado |
 | Salud integral | Visible, aún no implementado |
-| Deporte | Modelo PISU + API por roles (catálogo/docente/estudiante/admin) |
+| Deporte | Activo (autoinscripción PISU RF-019) |
 | Cultura | Visible, aún no implementado |
 
 **Roles:** `USUARIO` (el RF “Estudiante” se mapea aquí) y `ADMINISTRADOR`. El primer administrador se promueve desde la home, después de iniciar sesión con Google institucional (`uniautonoma.edu.co`).

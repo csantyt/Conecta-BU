@@ -6,7 +6,7 @@ import {
 } from "../services/deportesService.js";
 
 export async function getDeportes(req: Request, res: Response): Promise<void> {
-  const deportes = await listarDeportesActivos();
+  const deportes = await listarDeportesActivos(req.usuarioPisu);
   res.status(200).json({ deportes, perfil: req.usuarioPisu });
 }
 

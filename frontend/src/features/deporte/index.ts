@@ -1,2 +1,2 @@
-/** Reservado hasta la siguiente fase del módulo. */
-export const MODULO_ACTIVO = false;
+/** Módulo Deporte PISU. */
+export const MODULO_ACTIVO = true;
