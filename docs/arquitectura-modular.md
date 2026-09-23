@@ -14,17 +14,23 @@ conecta-bu/
 │       └── modules/
 │           ├── auth/
 │           ├── desarrollo-humano/   # único módulo activo
+│           ├── ia/                  # puente a n8n (orientación y recomendaciones)
 │           ├── permanencia-estudiantil/
 │           ├── salud-integral/
 │           ├── deporte/
 │           └── cultura/
-└── frontend/
-    └── src/
-        ├── api/ / auth/ / pages/
-        └── config/modulos.ts        # catálogo de los 5 módulos
+├── frontend/
+│   └── src/
+│       ├── api/ / auth/ / pages/ / components/
+│       ├── features/desarrollo-humano/
+│       └── config/modulos.ts        # catálogo de los 5 módulos
+├── n8n/                             # código de los webhooks de orientación
+└── docs/                            # arquitectura, bitácora, prompt RN-011
 ```
 
-Cada módulo de backend sigue el mismo patrón: `models`, `controllers`, `routes` (y `validators` / `seed` cuando haga falta). El API se monta en `/api/v1/{modulo}`.
+Cada módulo de backend sigue el mismo patrón: `models`, `controllers`, `routes` (y `validators` / `seed` cuando haga falta). El API se monta en `/api/v1/{modulo}`. El chat de orientación vive en `/api/v1/ia` (también `/api/ia`) y no pertenece a un schema propio: llama a n8n.
+
+Bitácora de commits y guía de onboarding: [BITACORA.md](BITACORA.md) y el [README](../README.md) de la raíz.
 
 ## 2. Base de datos independiente por módulo
 
