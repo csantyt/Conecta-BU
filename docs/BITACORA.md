@@ -104,7 +104,8 @@ Repositorio: https://github.com/csantyt/Conecta-BU
 
 ## Avance 6 — Esta documentación
 
-**Commit:** el que publique este archivo en `main`.
+**Commit:** [`e50a609`](https://github.com/csantyt/Conecta-BU/commit/e50a609)  
+**Mensaje:** *Document stack, module map, and per-commit history for collaborators.*
 
 **Qué se hizo.** README del repositorio, bitácora y comentarios en GitHub para onboarding.
 
