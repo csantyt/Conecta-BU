@@ -14,6 +14,7 @@ import "./modules/auth/models/Usuario.js";
 import "./modules/desarrollo-humano/models/index.js";
 import "./modules/deporte/models/index.js";
 import { sembrarServiciosDesarrolloHumano } from "./modules/desarrollo-humano/seed.js";
+import { sembrarDeportesPisu } from "./modules/deporte/seed.js";
 
 const PORT = Number(process.env["PORT"] ?? 3000);
 
@@ -29,6 +30,7 @@ async function iniciarServidor(): Promise<void> {
     await alinearRolesUsuarios();
     await sembrarRoles();
     await sembrarServiciosDesarrolloHumano();
+    await sembrarDeportesPisu();
     console.log("Esquemas por módulo listos y modelos sincronizados.");
 
     app.listen(PORT, () => {

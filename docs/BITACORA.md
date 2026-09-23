@@ -135,7 +135,7 @@ Repositorio: https://github.com/csantyt/Conecta-BU
 
 ## Avance 8 — API PISU por capas (JWT + RBAC)
 
-**Commit:** el de este avance en `main`.  
+**Commit:** [`979ee5d`](https://github.com/csantyt/Conecta-BU/commit/979ee5d)  
 **Mensaje:** *Add PISU Express layers with JWT auth and role-based routes.*
 
 **Qué se hizo.** Se montó el servidor PISU en capas (Routes → Middlewares → Controllers → Services → Models). El JWT de Conecta BU sigue siendo el de Google; el middleware PISU lo verifica y carga el perfil en `deporte.usuarios`. El RBAC restringe **Administrador**, **Docente** y **Estudiante**.
@@ -149,3 +149,22 @@ Repositorio: https://github.com/csantyt/Conecta-BU
 **Para qué.** Dejar la API lista para el frontend de deportes, con 401 sin token y 403 si el rol no corresponde. Un admin de Conecta se provisiona como Administrador PISU; un usuario, como Estudiante. El docente se asigna después.
 
 **Para continuar.** Implementar POST de inscripciones, asistencia y alertas sobre estos controladores.
+
+---
+
+## Avance 9 — Autoinscripción a deportes (RF-019) y módulo Deporte activo
+
+**Commit:** el de este avance en `main`.  
+**Mensaje:** *Add ACID sports self-enrollment and enable the Deporte module.*
+
+**Qué se hizo.** Autoinscripción de estudiantes con transacción ACID (lock de deporte y estudiante) y reglas RN-001 (cruce de horario), RN-002 (categoría) y RN-003 (cupo). Deporte queda como segundo módulo activo, debajo de Desarrollo humano.
+
+**Qué se subió.**
+
+- `inscripcionesService.ts` + `POST /api/v1/estudiante/inscripciones` (201 o 400/409)
+- Catálogo con cupo disponible y pantalla `DeportePage`
+- Semilla de Fútbol, Baloncesto y Voleibol
+
+**Para qué.** Que el estudiante se inscriba sin sobrecupos ni cruces, y que el módulo se vea y se use en la home.
+
+**Para continuar.** Publicar horarios de docente y toma de asistencia.

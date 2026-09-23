@@ -24,8 +24,9 @@ export default function HomePage({ usuario, onAbrirModulo }: HomePageProps) {
           Módulos de Conecta BU
         </h1>
         <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300">
-          Hola, {nombre}. Conecta BU está organizado en cinco módulos. Por ahora
-          solo está habilitado Desarrollo humano y orientación.
+          Hola, {nombre}. Están habilitados Desarrollo humano y orientación y
+          Deporte. Los demás módulos aparecen para que el catálogo de Bienestar
+          se mantenga visible.
         </p>
         <p className="mt-4 text-sm text-slate-400">{usuario.email}</p>
       </section>

@@ -7,6 +7,13 @@ export const MODULOS = [
     activo: true,
   },
   {
+    id: "deporte",
+    titulo: "Deporte",
+    descripcion:
+      "Autoinscripción a disciplinas PISU, horarios, cupos y práctica formativa.",
+    activo: true,
+  },
+  {
     id: "permanencia-estudiantil",
     titulo: "Permanencia estudiantil",
     descripcion:
@@ -18,13 +25,6 @@ export const MODULOS = [
     titulo: "Salud integral",
     descripcion:
       "Promoción, prevención y atención en salud para la comunidad universitaria.",
-    activo: false,
-  },
-  {
-    id: "deporte",
-    titulo: "Deporte",
-    descripcion:
-      "Actividad física, deporte formativo y espacios de recreación.",
     activo: false,
   },
   {
