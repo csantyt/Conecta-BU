@@ -1,6 +1,7 @@
 import "dotenv/config";
 import app from "./app.js";
 import {
+  alinearEsquemaDeportePisu,
   alinearEsquemaEventos,
   alinearRolesUsuarios,
   asegurarEsquemasIndependientes,
@@ -11,6 +12,7 @@ import { sembrarRoles } from "./modules/auth/seed.js";
 import "./modules/auth/models/Rol.js";
 import "./modules/auth/models/Usuario.js";
 import "./modules/desarrollo-humano/models/index.js";
+import "./modules/deporte/models/index.js";
 import { sembrarServiciosDesarrolloHumano } from "./modules/desarrollo-humano/seed.js";
 
 const PORT = Number(process.env["PORT"] ?? 3000);
@@ -21,6 +23,7 @@ async function iniciarServidor(): Promise<void> {
     console.log("Conexión a PostgreSQL establecida correctamente.");
 
     await asegurarEsquemasIndependientes();
+    await alinearEsquemaDeportePisu();
     await sequelize.sync();
     await alinearEsquemaEventos();
     await alinearRolesUsuarios();

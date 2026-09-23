@@ -110,8 +110,7 @@ CREATE TABLE IF NOT EXISTS desarrollo_humano.inscripciones (
 );
 
 -- -----------------------------------------------------------------------------
--- Módulos 2-5: esquemas vacíos a propósito.
--- Cuando se implementen, sus tablas nacen DENTRO de su schema
--- (ej. deporte.eventos), sin alterar desarrollo_humano ni auth.
--- usuario_id se guarda como UUID, sin FK cruzada entre módulos.
+-- Módulos restantes: tablas DENTRO de su schema, sin FK a auth.
+-- Deportes PISU: ejecutar también backend/database/deporte_pisu.sql
+-- (el backend lo aplica al arrancar). Permanencia, salud y cultura siguen vacíos.
 -- -----------------------------------------------------------------------------

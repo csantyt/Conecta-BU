@@ -110,3 +110,23 @@ Repositorio: https://github.com/csantyt/Conecta-BU
 **Qué se hizo.** README del repositorio, bitácora y comentarios en GitHub para onboarding.
 
 **Para continuar.** Empieza por el README, luego este archivo, luego el código del módulo que te toque. Si tu avance es grande, añade una sección aquí y un comentario en el commit.
+
+---
+
+## Avance 7 — Modelo relacional Deportes PISU
+
+**Commit:** el de este avance en `main` (comentario en el commit de GitHub).  
+**Mensaje:** *Add Deportes PISU relational schema in the deporte PostgreSQL schema.*
+
+**Qué se hizo.** Se inicializó el modelo de datos del módulo Deportes PISU para inscribir estudiantes, asignar horarios a docentes, tomar asistencia y emitir alertas, sin mezclar tablas con Desarrollo humano ni con `auth`.
+
+**Qué se subió.**
+
+- `backend/database/deporte_pisu.sql` (DDL, FKs, índices, checks)
+- Modelos Sequelize en `backend/src/modules/deporte/models/`
+- `schema.prisma` de referencia (el runtime sigue en Sequelize)
+- Aplicación del SQL al arrancar el backend
+
+**Para qué.** Dejar la base lista para el REST de PISU (inscripciones, cupos, asistencia). El API `/api/v1/deporte` todavía responde 501.
+
+**Para continuar.** Montar rutas y reglas de cupo sobre estas tablas. `auth_usuario_id` en `deporte.usuarios` es el puente al login Google, sin FK cruzada.

@@ -1,3 +1,6 @@
+import { readFile } from "node:fs/promises";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import "dotenv/config";
 import { Sequelize } from "sequelize";
 import { SCHEMAS } from "./schemas.js";
@@ -59,4 +62,29 @@ export async function alinearRolesUsuarios(): Promise<void> {
       END IF;
     END $$;
   `);
+}
+
+export async function alinearEsquemaDeportePisu(): Promise<void> {
+  const archivo = path.join(
+    path.dirname(fileURLToPath(import.meta.url)),
+    "../../database/deporte_pisu.sql",
+  );
+  const sql = await readFile(archivo, "utf8");
+  const sentencias = sql
+    .split(";")
+    .map((parte) => parte.trim())
+    .filter((parte) => {
+      if (!parte) {
+        return false;
+      }
+      const sinComentarios = parte
+        .split("\n")
+        .map((linea) => linea.trim())
+        .filter((linea) => linea.length > 0 && !linea.startsWith("--"));
+      return sinComentarios.length > 0;
+    });
+
+  for (const sentencia of sentencias) {
+    await sequelize.query(`${sentencia};`);
+  }
 }
