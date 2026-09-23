@@ -115,7 +115,7 @@ Repositorio: https://github.com/csantyt/Conecta-BU
 
 ## Avance 7 — Modelo relacional Deportes PISU
 
-**Commit:** el de este avance en `main` (comentario en el commit de GitHub).  
+**Commit:** [`e9a7a35`](https://github.com/csantyt/Conecta-BU/commit/e9a7a35)  
 **Mensaje:** *Add Deportes PISU relational schema in the deporte PostgreSQL schema.*
 
 **Qué se hizo.** Se inicializó el modelo de datos del módulo Deportes PISU para inscribir estudiantes, asignar horarios a docentes, tomar asistencia y emitir alertas, sin mezclar tablas con Desarrollo humano ni con `auth`.
@@ -129,4 +129,23 @@ Repositorio: https://github.com/csantyt/Conecta-BU
 
 **Para qué.** Dejar la base lista para el REST de PISU (inscripciones, cupos, asistencia). El API `/api/v1/deporte` todavía responde 501.
 
-**Para continuar.** Montar rutas y reglas de cupo sobre estas tablas. `auth_usuario_id` en `deporte.usuarios` es el puente al login Google, sin FK cruzada.
+**Para continuar.** Montar el REST de inscribir, tomar asistencia y publicar alertas sobre las rutas PISU.
+
+---
+
+## Avance 8 — API PISU por capas (JWT + RBAC)
+
+**Commit:** el de este avance en `main`.  
+**Mensaje:** *Add PISU Express layers with JWT auth and role-based routes.*
+
+**Qué se hizo.** Se montó el servidor PISU en capas (Routes → Middlewares → Controllers → Services → Models). El JWT de Conecta BU sigue siendo el de Google; el middleware PISU lo verifica y carga el perfil en `deporte.usuarios`. El RBAC restringe **Administrador**, **Docente** y **Estudiante**.
+
+**Qué se subió.**
+
+- `backend/src/modules/deporte/middlewares/authMiddleware.ts` y `rbacMiddleware.ts`
+- `routes/`, `controllers/`, `services/`
+- Rutas en `app.ts`: `/api/v1/deportes`, `/docente`, `/estudiante`, `/admin`
+
+**Para qué.** Dejar la API lista para el frontend de deportes, con 401 sin token y 403 si el rol no corresponde. Un admin de Conecta se provisiona como Administrador PISU; un usuario, como Estudiante. El docente se asigna después.
+
+**Para continuar.** Implementar POST de inscripciones, asistencia y alertas sobre estos controladores.
