@@ -17,8 +17,7 @@ Solo está habilitado **Desarrollo humano y orientación**. Los otros cuatro mó
 | Desarrollo humano y orientación | Activo (citas, horarios, eventos, IA) |
 | Permanencia estudiantil | Visible, aún no implementado |
 | Salud integral | Visible, aún no implementado |
-| Deporte | Modelo PISU en PostgreSQL listo; API REST aún no |
-
+| Deporte | Modelo PISU + API por roles (catálogo/docente/estudiante/admin) |
 | Cultura | Visible, aún no implementado |
 
 **Roles:** `USUARIO` (el RF “Estudiante” se mapea aquí) y `ADMINISTRADOR`. El primer administrador se promueve desde la home, después de iniciar sesión con Google institucional (`uniautonoma.edu.co`).
@@ -92,6 +91,11 @@ API activa (todas con JWT, salvo el login):
 - `GET|PATCH /api/v1/auth/usuarios` (solo admin)
 - `/api/v1/desarrollo-humano/servicios|horarios|citas|eventos`
 - `POST /api/v1/ia/orientacion` y `POST /api/v1/ia/recomendaciones` (también `/api/ia/...`)
+- PISU (JWT + roles Administrador/Docente/Estudiante):
+  - `/api/v1/deportes`
+  - `/api/v1/docente`
+  - `/api/v1/estudiante`
+  - `/api/v1/admin`
 
 ## Cómo continuar un módulo nuevo
 

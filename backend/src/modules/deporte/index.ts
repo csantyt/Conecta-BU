@@ -15,3 +15,11 @@ export {
   InscripcionDeporte,
   UsuarioPisu,
 } from "./models/index.js";
+export { authMiddleware } from "./middlewares/authMiddleware.js";
+export { rbacMiddleware } from "./middlewares/rbacMiddleware.js";
+export {
+  adminRoutes,
+  deportesRoutes,
+  docenteRoutes,
+  estudianteRoutes,
+} from "./routes/index.js";
