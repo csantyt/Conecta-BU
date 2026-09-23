@@ -1,6 +1,7 @@
 import axios from "axios";
 import { useEffect, useState } from "react";
 import { actualizarRolUsuario, listarUsuarios } from "../api/auth";
+import EventosSugeridosIA from "../components/EventosSugeridosIA";
 import { MODULOS, type ModuloId } from "../config/modulos";
 import { etiquetaRol, type Usuario } from "../types/auth";
 
@@ -14,12 +15,12 @@ export default function HomePage({ usuario, onAbrirModulo }: HomePageProps) {
   const esAdmin = usuario.rol === "ADMINISTRADOR";
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-10">
-      <section className="mb-10 rounded-3xl border border-white/10 bg-white/5 p-8">
+    <main className="mx-auto max-w-6xl px-4 py-6 pb-28 sm:px-6 sm:py-10">
+      <section className="mb-8 rounded-3xl border border-white/10 bg-white/5 p-5 sm:mb-10 sm:p-8">
         <p className="text-sm font-medium text-emerald-300">
           Bienestar Universitario · Corporación Universitaria Autónoma del Cauca
         </p>
-        <h1 className="mt-2 text-3xl font-semibold tracking-tight">
+        <h1 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">
           Módulos de Conecta BU
         </h1>
         <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300">
@@ -28,6 +29,8 @@ export default function HomePage({ usuario, onAbrirModulo }: HomePageProps) {
         </p>
         <p className="mt-4 text-sm text-slate-400">{usuario.email}</p>
       </section>
+
+      <EventosSugeridosIA onIrAEventos={() => onAbrirModulo("desarrollo-humano")} />
 
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {MODULOS.map((modulo) => (

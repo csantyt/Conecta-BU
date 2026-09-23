@@ -3,6 +3,7 @@ import express from "express";
 import { crearRouterModuloPendiente } from "./modules/crearRouterModuloPendiente.js";
 import authRoutes from "./modules/auth/routes/authRoutes.js";
 import desarrolloHumanoRoutes from "./modules/desarrollo-humano/routes/desarrolloHumanoRoutes.js";
+import iaRoutes from "./modules/ia/routes/iaRoutes.js";
 
 const app = express();
 
@@ -10,6 +11,8 @@ app.use(cors());
 app.use(express.json());
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/desarrollo-humano", desarrolloHumanoRoutes);
+app.use("/api/v1/ia", iaRoutes);
+app.use("/api/ia", iaRoutes);
 app.use(
   "/api/v1/permanencia-estudiantil",
   crearRouterModuloPendiente("Permanencia estudiantil"),

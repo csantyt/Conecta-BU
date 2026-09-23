@@ -38,6 +38,7 @@ export async function crearHorario(payload: {
 export async function actualizarHorario(
   id: string,
   payload: Partial<{
+    servicio_id: string;
     profesional: string;
     dia_semana: number;
     hora_inicio: string;

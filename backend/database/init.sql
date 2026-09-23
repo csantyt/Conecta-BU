@@ -47,6 +47,9 @@ CREATE TABLE IF NOT EXISTS desarrollo_humano.servicios (
   fecha_creacion TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE UNIQUE INDEX IF NOT EXISTS servicios_nombre_unico
+  ON desarrollo_humano.servicios (lower(trim(nombre)));
+
 CREATE TABLE IF NOT EXISTS desarrollo_humano.horarios (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   servicio_id UUID NOT NULL REFERENCES desarrollo_humano.servicios (id) ON DELETE CASCADE,
