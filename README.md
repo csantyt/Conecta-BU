@@ -17,7 +17,8 @@ Solo está habilitado **Desarrollo humano y orientación**. Los otros cuatro mó
 | Desarrollo humano y orientación | Activo (citas, horarios, eventos, IA) |
 | Permanencia estudiantil | Visible, aún no implementado |
 | Salud integral | Visible, aún no implementado |
-| Deporte | Visible, aún no implementado |
+| Deporte | Modelo PISU en PostgreSQL listo; API REST aún no |
+
 | Cultura | Visible, aún no implementado |
 
 **Roles:** `USUARIO` (el RF “Estudiante” se mapea aquí) y `ADMINISTRADOR`. El primer administrador se promueve desde la home, después de iniciar sesión con Google institucional (`uniautonoma.edu.co`).
@@ -78,7 +79,8 @@ Variables importantes:
 backend/src/modules/auth/                 login Google, usuarios, roles
 backend/src/modules/desarrollo-humano/    citas, horarios, eventos
 backend/src/modules/ia/                   puente a n8n
-backend/src/modules/{permanencia,salud,deporte,cultura}/  placeholders
+backend/src/modules/deporte/            tablas PISU (usuarios, deportes, horarios, inscripciones, asistencias, eventos, alertas)
+backend/src/modules/{permanencia,salud,cultura}/  placeholders
 frontend/src/pages/                        login, home, módulo DH
 frontend/src/features/desarrollo-humano/   calendario, paneles estudiante/admin
 frontend/src/config/modulos.ts             catálogo de los cinco módulos

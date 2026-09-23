@@ -1,0 +1,170 @@
+// Referencia del modelo relacional PISU (schema deporte).
+// El runtime de Conecta BU usa Sequelize + backend/database/deporte_pisu.sql.
+// No instales Prisma en paralelo: un solo ORM por servicio.
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["multiSchema"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  schemas  = ["deporte"]
+}
+
+enum RolPisu {
+  Administrador
+  Docente
+  Estudiante
+
+  @@schema("deporte")
+}
+
+enum CategoriaPisu {
+  Pregrado
+  Postgrado
+  Egresado
+
+  @@schema("deporte")
+}
+
+enum EstadoInscripcionPisu {
+  Activa
+  Cancelada
+
+  @@schema("deporte")
+}
+
+enum AudienciaAlertaPisu {
+  Todos
+  Docentes
+  Estudiantes
+
+  @@schema("deporte")
+}
+
+model UsuarioPisu {
+  id              String    @id @default(uuid()) @db.Uuid
+  authUsuarioId   String?   @map("auth_usuario_id") @db.Uuid
+  nombre          String    @db.VarChar(180)
+  correo          String    @db.VarChar(255)
+  passwordHash    String?   @map("password_hash") @db.VarChar(255)
+  rol             RolPisu
+  categoria       CategoriaPisu?
+  estado          Boolean   @default(true)
+  fechaCreacion   DateTime  @default(now()) @map("fecha_creacion") @db.Timestamptz()
+
+  horariosDictados     HorarioDeporte[]     @relation("HorarioDocente")
+  inscripciones        InscripcionDeporte[] @relation("InscripcionEstudiante")
+  asistenciasEstudiante Asistencia[]        @relation("AsistenciaEstudiante")
+  asistenciasTomadas    Asistencia[]        @relation("AsistenciaDocente")
+
+  @@unique([correo])
+  @@index([rol])
+  @@index([estado])
+  @@map("usuarios")
+  @@schema("deporte")
+}
+
+model Deporte {
+  id                    String   @id @default(uuid()) @db.Uuid
+  nombre                String   @db.VarChar(150)
+  descripcion           String?  @db.Text
+  cupoMaximo            Int      @map("cupo_maximo")
+  categoriasPermitidas  String[] @default(["Pregrado", "Postgrado", "Egresado"]) @map("categorias_permitidas")
+  estado                Boolean  @default(true)
+  fechaCreacion         DateTime @default(now()) @map("fecha_creacion") @db.Timestamptz()
+
+  horarios       HorarioDeporte[]
+  inscripciones  InscripcionDeporte[]
+
+  @@map("deportes")
+  @@schema("deporte")
+}
+
+model EventoDeporte {
+  id            String   @id @default(uuid()) @db.Uuid
+  nombre        String   @db.VarChar(180)
+  descripcion   String?  @db.Text
+  fecha         DateTime @db.Timestamptz()
+  lugar         String   @db.VarChar(180)
+  cupoMaximo    Int      @map("cupo_maximo")
+  estado        Boolean  @default(true)
+  fechaCreacion DateTime @default(now()) @map("fecha_creacion") @db.Timestamptz()
+
+  @@index([fecha])
+  @@index([estado])
+  @@map("eventos")
+  @@schema("deporte")
+}
+
+model HorarioDeporte {
+  id         String   @id @default(uuid()) @db.Uuid
+  deporteId  String   @map("deporte_id") @db.Uuid
+  docenteId  String   @map("docente_id") @db.Uuid
+  diaSemana  Int      @map("dia_semana") @db.SmallInt
+  horaInicio DateTime @map("hora_inicio") @db.Time()
+  horaFin    DateTime @map("hora_fin") @db.Time()
+  lugar      String   @db.VarChar(180)
+  estado     Boolean  @default(true)
+
+  deporte     Deporte     @relation(fields: [deporteId], references: [id], onDelete: Restrict)
+  docente     UsuarioPisu @relation("HorarioDocente", fields: [docenteId], references: [id], onDelete: Restrict)
+  asistencias Asistencia[]
+
+  @@index([deporteId])
+  @@index([docenteId])
+  @@index([diaSemana, horaInicio])
+  @@map("horarios")
+  @@schema("deporte")
+}
+
+model InscripcionDeporte {
+  id               String                @id @default(uuid()) @db.Uuid
+  estudianteId     String                @map("estudiante_id") @db.Uuid
+  deporteId        String                @map("deporte_id") @db.Uuid
+  fechaInscripcion DateTime              @default(now()) @map("fecha_inscripcion") @db.Timestamptz()
+  estado           EstadoInscripcionPisu @default(Activa)
+
+  estudiante UsuarioPisu @relation("InscripcionEstudiante", fields: [estudianteId], references: [id], onDelete: Restrict)
+  deporte    Deporte     @relation(fields: [deporteId], references: [id], onDelete: Restrict)
+
+  @@index([estudianteId])
+  @@index([deporteId])
+  @@map("inscripciones")
+  @@schema("deporte")
+}
+
+model Asistencia {
+  id            String   @id @default(uuid()) @db.Uuid
+  horarioId     String   @map("horario_id") @db.Uuid
+  estudianteId  String   @map("estudiante_id") @db.Uuid
+  docenteId     String   @map("docente_id") @db.Uuid
+  fecha         DateTime @db.Date
+  presente      Boolean  @default(false)
+  fechaRegistro DateTime @default(now()) @map("fecha_registro") @db.Timestamptz()
+
+  horario    HorarioDeporte @relation(fields: [horarioId], references: [id], onDelete: Cascade)
+  estudiante UsuarioPisu    @relation("AsistenciaEstudiante", fields: [estudianteId], references: [id], onDelete: Restrict)
+  docente    UsuarioPisu    @relation("AsistenciaDocente", fields: [docenteId], references: [id], onDelete: Restrict)
+
+  @@unique([horarioId, estudianteId, fecha])
+  @@index([estudianteId, fecha])
+  @@index([docenteId, fecha])
+  @@map("asistencias")
+  @@schema("deporte")
+}
+
+model Alerta {
+  id             String             @id @default(uuid()) @db.Uuid
+  titulo         String             @db.VarChar(180)
+  mensaje        String             @db.Text
+  audiencia      AudienciaAlertaPisu
+  fechaCreacion  DateTime           @default(now()) @map("fecha_creacion") @db.Timestamptz()
+
+  @@index([audiencia])
+  @@index([fechaCreacion(sort: Desc)])
+  @@map("alertas")
+  @@schema("deporte")
+}
