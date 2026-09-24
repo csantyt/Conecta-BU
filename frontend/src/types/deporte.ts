@@ -39,6 +39,16 @@ export type PerfilPisu = {
   categoria: string | null;
 };
 
+export type UsuarioPisuAdmin = {
+  id: string | null;
+  auth_usuario_id: string | null;
+  nombre: string;
+  correo: string;
+  rol: PerfilPisu["rol"] | null;
+  categoria: string | null;
+  estado: boolean;
+};
+
 export type ClaseDocente = HorarioPisu & {
   docente_id: string;
   deporte?: { id: string; nombre: string; descripcion?: string | null };

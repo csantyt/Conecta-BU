@@ -39,3 +39,19 @@ export const registrarAsistenciaSchema = z.preprocess((raw) => {
 export const editarAsistenciaSchema = z.object({
   presente: z.boolean(),
 });
+
+export const crearDeporteSchema = z.object({
+  nombre: z.string().min(2).max(150),
+  descripcion: z.string().nullable().optional(),
+  cupo_maximo: z.number().int().min(1),
+  categorias_permitidas: z
+    .array(z.enum(["Pregrado", "Postgrado", "Egresado"]))
+    .min(1)
+    .optional(),
+});
+
+export const asignarRolPisuSchema = z.object({
+  rol: z.enum(["Administrador", "Docente", "Estudiante"]),
+  categoria: z.enum(["Pregrado", "Postgrado", "Egresado"]).nullable().optional(),
+  auth_usuario_id: z.string().uuid().optional(),
+});

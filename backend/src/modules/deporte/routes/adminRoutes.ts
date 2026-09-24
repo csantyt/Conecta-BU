@@ -4,13 +4,28 @@ import {
   getAlertasAdmin,
   getResumenAdmin,
   getUsuariosAdmin,
+  patchRolUsuarioAdmin,
+  postDeporteAdmin,
 } from "../controllers/adminController.js";
 import { authMiddleware } from "../middlewares/authMiddleware.js";
-import { soloAdministradorPisu } from "../middlewares/rbacMiddleware.js";
+import {
+  administradorPisuOConecta,
+  soloAdministradorPisu,
+} from "../middlewares/rbacMiddleware.js";
 
 export const adminRoutes = Router();
 
-adminRoutes.use(authMiddleware, soloAdministradorPisu);
-adminRoutes.get("/resumen", asyncHandler(getResumenAdmin));
-adminRoutes.get("/usuarios", asyncHandler(getUsuariosAdmin));
-adminRoutes.get("/alertas", asyncHandler(getAlertasAdmin));
+adminRoutes.use(authMiddleware);
+adminRoutes.get("/resumen", soloAdministradorPisu, asyncHandler(getResumenAdmin));
+adminRoutes.get(
+  "/usuarios",
+  administradorPisuOConecta,
+  asyncHandler(getUsuariosAdmin),
+);
+adminRoutes.patch(
+  "/usuarios/:id",
+  administradorPisuOConecta,
+  asyncHandler(patchRolUsuarioAdmin),
+);
+adminRoutes.post("/deportes", soloAdministradorPisu, asyncHandler(postDeporteAdmin));
+adminRoutes.get("/alertas", soloAdministradorPisu, asyncHandler(getAlertasAdmin));

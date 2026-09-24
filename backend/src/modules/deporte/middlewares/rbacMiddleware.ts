@@ -1,4 +1,5 @@
 import type { NextFunction, Request, Response } from "express";
+import { ROLES } from "../../auth/roles.js";
 import type { RolPisu } from "../constantes.js";
 
 export function rbacMiddleware(rolesPermitidos: RolPisu[]) {
@@ -26,6 +27,29 @@ export function rbacMiddleware(rolesPermitidos: RolPisu[]) {
 
     next();
   };
+}
+
+export function administradorPisuOConecta(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): void {
+  const perfil = req.usuarioPisu;
+  if (!perfil) {
+    res.status(401).json({ message: "No autenticado." });
+    return;
+  }
+  if (!perfil.estado) {
+    res.status(403).json({ message: "La cuenta PISU se encuentra inactiva." });
+    return;
+  }
+  if (perfil.rol === "Administrador" || req.user?.rol === ROLES.ADMINISTRADOR) {
+    next();
+    return;
+  }
+  res.status(403).json({
+    message: "No tienes permisos para gestionar usuarios PISU.",
+  });
 }
 
 export const soloAdministradorPisu = rbacMiddleware(["Administrador"]);
