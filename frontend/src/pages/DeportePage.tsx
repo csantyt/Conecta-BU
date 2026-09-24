@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { obtenerCatalogoDeportes } from "../api/deporte";
 import CatalogoDeportes from "../features/deporte/CatalogoDeportes";
+import PanelUsuariosPisu from "../features/deporte/PanelUsuariosPisu";
 import TomarAsistencia from "../features/deporte/TomarAsistencia";
 import { mensajeError } from "../features/deporte/utils";
 import type { Usuario } from "../types/auth";
@@ -11,7 +12,7 @@ type DeportePageProps = {
   onVolver: () => void;
 };
 
-type VistaPisu = "catalogo" | "asistencia";
+type VistaPisu = "catalogo" | "asistencia" | "usuarios";
 
 export default function DeportePage({ usuario, onVolver }: DeportePageProps) {
   const [deportes, setDeportes] = useState<DeportePisu[]>([]);
@@ -49,13 +50,15 @@ export default function DeportePage({ usuario, onVolver }: DeportePageProps) {
   }, [recargar]);
 
   useEffect(() => {
-    if (perfil?.rol === "Docente") {
+    if (perfil?.rol === "Docente" && usuario.rol !== "ADMINISTRADOR") {
       setVista("asistencia");
     }
-  }, [perfil?.rol]);
+  }, [perfil?.rol, usuario.rol]);
 
   const verAsistencia =
     perfil?.rol === "Docente" || perfil?.rol === "Administrador";
+  const verUsuarios =
+    perfil?.rol === "Administrador" || usuario.rol === "ADMINISTRADOR";
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-6 pb-28 sm:px-6 sm:py-10">
@@ -84,7 +87,7 @@ export default function DeportePage({ usuario, onVolver }: DeportePageProps) {
         </p>
       </section>
 
-      {verAsistencia ? (
+      {verAsistencia || verUsuarios ? (
         <nav className="mb-5 flex gap-2 overflow-x-auto pb-1">
           <button
             type="button"
@@ -97,17 +100,32 @@ export default function DeportePage({ usuario, onVolver }: DeportePageProps) {
           >
             Catálogo
           </button>
-          <button
-            type="button"
-            onClick={() => setVista("asistencia")}
-            className={`shrink-0 rounded-full px-4 py-2 text-sm ${
-              vista === "asistencia"
-                ? "bg-white text-slate-900"
-                : "border border-white/15 text-slate-300"
-            }`}
-          >
-            Tomar asistencia
-          </button>
+          {verAsistencia ? (
+            <button
+              type="button"
+              onClick={() => setVista("asistencia")}
+              className={`shrink-0 rounded-full px-4 py-2 text-sm ${
+                vista === "asistencia"
+                  ? "bg-white text-slate-900"
+                  : "border border-white/15 text-slate-300"
+              }`}
+            >
+              Tomar asistencia
+            </button>
+          ) : null}
+          {verUsuarios ? (
+            <button
+              type="button"
+              onClick={() => setVista("usuarios")}
+              className={`shrink-0 rounded-full px-4 py-2 text-sm ${
+                vista === "usuarios"
+                  ? "bg-white text-slate-900"
+                  : "border border-white/15 text-slate-300"
+              }`}
+            >
+              Usuarios PISU
+            </button>
+          ) : null}
         </nav>
       ) : null}
 
@@ -122,7 +140,7 @@ export default function DeportePage({ usuario, onVolver }: DeportePageProps) {
         </p>
       ) : null}
 
-      {vista === "catalogo" || !verAsistencia ? (
+      {vista === "catalogo" || (!verAsistencia && !verUsuarios) ? (
         <CatalogoDeportes
           deportes={deportes}
           perfil={perfil}
@@ -135,6 +153,15 @@ export default function DeportePage({ usuario, onVolver }: DeportePageProps) {
 
       {vista === "asistencia" && verAsistencia ? (
         <TomarAsistencia onAviso={onAviso} onError={onError} />
+      ) : null}
+
+      {vista === "usuarios" && verUsuarios && perfil ? (
+        <PanelUsuariosPisu
+          perfil={perfil}
+          onAviso={onAviso}
+          onError={onError}
+          onRecargarSesion={recargar}
+        />
       ) : null}
     </main>
   );

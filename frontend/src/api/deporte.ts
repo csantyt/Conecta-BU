@@ -6,6 +6,7 @@ import type {
   EstudianteDeClase,
   InscripcionPisu,
   PerfilPisu,
+  UsuarioPisuAdmin,
 } from "../types/deporte";
 
 export async function obtenerCatalogoDeportes(): Promise<{
@@ -68,4 +69,25 @@ export async function guardarAsistenciaDocente(params: {
     params,
   );
   return data.asistencias;
+}
+
+export async function obtenerUsuariosPisuAdmin(): Promise<UsuarioPisuAdmin[]> {
+  const { data } = await api.get<{ usuarios: UsuarioPisuAdmin[] }>(
+    "/admin/usuarios",
+  );
+  return data.usuarios;
+}
+
+export async function asignarRolPisuAdmin(params: {
+  id: string | null;
+  authUsuarioId: string | null;
+  rol: PerfilPisu["rol"];
+  categoria?: string | null;
+}): Promise<void> {
+  const destino = params.id ?? "nuevo";
+  await api.patch(`/admin/usuarios/${destino}`, {
+    rol: params.rol,
+    categoria: params.categoria ?? null,
+    ...(params.authUsuarioId ? { auth_usuario_id: params.authUsuarioId } : {}),
+  });
 }

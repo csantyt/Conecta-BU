@@ -5,6 +5,7 @@ import { Deporte } from "../models/Deporte.js";
 import { EventoDeporte } from "../models/EventoDeporte.js";
 import { HorarioDeporte } from "../models/HorarioDeporte.js";
 import { InscripcionDeporte } from "../models/InscripcionDeporte.js";
+import { hayTraslape } from "../utils/horarios.js";
 
 export class RecursoNoEncontradoError extends Error {}
 export class DatosInvalidosError extends Error {}
@@ -14,24 +15,7 @@ export class CruceHorarioError extends Error {}
 export class YaInscritoError extends Error {}
 export class OperacionNoPermitidaError extends Error {}
 
-function normalizarHora(hora: string): string {
-  const texto = String(hora);
-  return texto.length === 5 ? `${texto}:00` : texto.slice(0, 8);
-}
-
-function aMinutos(hora: string): number {
-  const [horas, minutos] = normalizarHora(hora).split(":").map(Number);
-  return (horas ?? 0) * 60 + (minutos ?? 0);
-}
-
-export function hayTraslape(
-  inicioA: string,
-  finA: string,
-  inicioB: string,
-  finB: string,
-): boolean {
-  return aMinutos(inicioA) < aMinutos(finB) && aMinutos(finA) > aMinutos(inicioB);
-}
+export { hayTraslape };
 
 async function bloquearClave(clave: string, transaction: Transaction): Promise<void> {
   await sequelize.query("SELECT pg_advisory_xact_lock(hashtext(:clave))", {
