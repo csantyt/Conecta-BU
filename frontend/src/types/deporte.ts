@@ -1,6 +1,7 @@
 export type HorarioPisu = {
   id: string;
   deporte_id: string;
+  docente_id?: string;
   dia_semana: number;
   hora_inicio: string;
   hora_fin: string;
@@ -36,4 +37,31 @@ export type PerfilPisu = {
   correo: string;
   rol: "Administrador" | "Docente" | "Estudiante";
   categoria: string | null;
+};
+
+export type ClaseDocente = HorarioPisu & {
+  docente_id: string;
+  deporte?: { id: string; nombre: string; descripcion?: string | null };
+};
+
+export type EstudianteDeClase = {
+  inscripcion_id: string;
+  estudiante: {
+    id: string;
+    nombre: string;
+    correo: string;
+    categoria: string | null;
+    rol: string;
+    estado: boolean;
+  } | null;
+};
+
+export type AsistenciaPisu = {
+  id: string;
+  horario_id: string;
+  estudiante_id: string;
+  docente_id: string;
+  fecha: string;
+  presente: boolean;
+  fecha_registro: string;
 };

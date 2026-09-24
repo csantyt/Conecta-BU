@@ -1,33 +1,17 @@
-import axios from "axios";
-import { useEffect, useState } from "react";
-import {
-  autoinscribirseDeporte,
-  cancelarInscripcionPisu,
-  obtenerCatalogoDeportes,
-} from "../api/deporte";
+import { useCallback, useEffect, useState } from "react";
+import { obtenerCatalogoDeportes } from "../api/deporte";
+import CatalogoDeportes from "../features/deporte/CatalogoDeportes";
+import TomarAsistencia from "../features/deporte/TomarAsistencia";
+import { mensajeError } from "../features/deporte/utils";
 import type { Usuario } from "../types/auth";
 import type { DeportePisu, PerfilPisu } from "../types/deporte";
-
-const DIAS = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
 
 type DeportePageProps = {
   usuario: Usuario;
   onVolver: () => void;
 };
 
-function mensajeError(error: unknown): string {
-  if (axios.isAxiosError(error)) {
-    const message = error.response?.data?.message;
-    if (typeof message === "string") {
-      return message;
-    }
-  }
-  return "No se pudo completar la acción.";
-}
-
-function horaCorta(hora: string): string {
-  return hora.slice(0, 5);
-}
+type VistaPisu = "catalogo" | "asistencia";
 
 export default function DeportePage({ usuario, onVolver }: DeportePageProps) {
   const [deportes, setDeportes] = useState<DeportePisu[]>([]);
@@ -35,57 +19,43 @@ export default function DeportePage({ usuario, onVolver }: DeportePageProps) {
   const [error, setError] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
   const [cargando, setCargando] = useState(true);
-  const [enviandoId, setEnviandoId] = useState<string | null>(null);
+  const [vista, setVista] = useState<VistaPisu>("catalogo");
 
-  async function recargar() {
+  const onAviso = useCallback((valor: string) => {
+    setError(null);
+    setAviso(valor);
+  }, []);
+
+  const onError = useCallback((valor: string) => {
+    setAviso(null);
+    setError(valor);
+  }, []);
+
+  const recargar = useCallback(async () => {
     setCargando(true);
     try {
       const data = await obtenerCatalogoDeportes();
       setDeportes(data.deportes);
       setPerfil(data.perfil);
     } catch (err) {
-      setError(mensajeError(err));
+      onError(mensajeError(err));
     } finally {
       setCargando(false);
     }
-  }
+  }, [onError]);
 
   useEffect(() => {
     void recargar();
-  }, []);
+  }, [recargar]);
 
-  async function inscribir(deporte: DeportePisu) {
-    setEnviandoId(deporte.id);
-    setError(null);
-    setAviso(null);
-    try {
-      await autoinscribirseDeporte(deporte.id);
-      setAviso(`Quedaste inscrito en ${deporte.nombre}.`);
-      await recargar();
-    } catch (err) {
-      setError(mensajeError(err));
-    } finally {
-      setEnviandoId(null);
+  useEffect(() => {
+    if (perfil?.rol === "Docente") {
+      setVista("asistencia");
     }
-  }
+  }, [perfil?.rol]);
 
-  async function cancelar(deporte: DeportePisu) {
-    if (!deporte.inscripcion_id) {
-      return;
-    }
-    setEnviandoId(deporte.id);
-    setError(null);
-    setAviso(null);
-    try {
-      await cancelarInscripcionPisu(deporte.inscripcion_id);
-      setAviso(`Se canceló tu inscripción a ${deporte.nombre}.`);
-      await recargar();
-    } catch (err) {
-      setError(mensajeError(err));
-    } finally {
-      setEnviandoId(null);
-    }
-  }
+  const verAsistencia =
+    perfil?.rol === "Docente" || perfil?.rol === "Administrador";
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-6 pb-28 sm:px-6 sm:py-10">
@@ -103,14 +73,43 @@ export default function DeportePage({ usuario, onVolver }: DeportePageProps) {
           Deporte · PISU
         </h1>
         <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300">
-          Autoinscripción a disciplinas (RF-019). El cupo, tu categoría y los
-          cruces de horario se validan en el servidor.
+          Catálogo de disciplinas para estudiantes e inscripción con validación
+          de cupo. Los docentes toman asistencia del grupo asignado.
         </p>
         <p className="mt-2 text-xs text-slate-400">
           {usuario.nombre_completo || usuario.email}
-          {perfil ? ` · ${perfil.rol}${perfil.categoria ? ` · ${perfil.categoria}` : ""}` : ""}
+          {perfil
+            ? ` · ${perfil.rol}${perfil.categoria ? ` · ${perfil.categoria}` : ""}`
+            : ""}
         </p>
       </section>
+
+      {verAsistencia ? (
+        <nav className="mb-5 flex gap-2 overflow-x-auto pb-1">
+          <button
+            type="button"
+            onClick={() => setVista("catalogo")}
+            className={`shrink-0 rounded-full px-4 py-2 text-sm ${
+              vista === "catalogo"
+                ? "bg-white text-slate-900"
+                : "border border-white/15 text-slate-300"
+            }`}
+          >
+            Catálogo
+          </button>
+          <button
+            type="button"
+            onClick={() => setVista("asistencia")}
+            className={`shrink-0 rounded-full px-4 py-2 text-sm ${
+              vista === "asistencia"
+                ? "bg-white text-slate-900"
+                : "border border-white/15 text-slate-300"
+            }`}
+          >
+            Tomar asistencia
+          </button>
+        </nav>
+      ) : null}
 
       {error ? (
         <p className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -123,67 +122,19 @@ export default function DeportePage({ usuario, onVolver }: DeportePageProps) {
         </p>
       ) : null}
 
-      {cargando ? (
-        <p className="text-sm text-slate-400">Cargando disciplinas...</p>
-      ) : (
-        <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {deportes.map((deporte) => (
-            <article
-              key={deporte.id}
-              className="rounded-2xl border border-white/10 bg-white p-5 text-slate-900"
-            >
-              <h2 className="text-lg font-semibold">{deporte.nombre}</h2>
-              <p className="mt-2 text-sm leading-6 text-slate-600">
-                {deporte.descripcion}
-              </p>
-              <p className="mt-3 text-xs text-slate-500">
-                Cupo {deporte.cupo_disponible}/{deporte.cupo_maximo} · Categorías:{" "}
-                {deporte.categorias_permitidas.join(", ")}
-              </p>
-              {deporte.horarios.length > 0 ? (
-                <ul className="mt-3 space-y-1 text-xs text-slate-600">
-                  {deporte.horarios.map((horario) => (
-                    <li key={horario.id}>
-                      {DIAS[horario.dia_semana]} {horaCorta(horario.hora_inicio)}–
-                      {horaCorta(horario.hora_fin)} · {horario.lugar}
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="mt-3 text-xs text-slate-400">
-                  Aún no hay horarios publicados.
-                </p>
-              )}
-              {deporte.inscrito ? (
-                <button
-                  type="button"
-                  disabled={enviandoId === deporte.id}
-                  onClick={() => void cancelar(deporte)}
-                  className="mt-4 w-full rounded-xl border px-4 py-2.5 text-sm disabled:opacity-50"
-                >
-                  Cancelar inscripción
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  disabled={
-                    enviandoId === deporte.id ||
-                    deporte.cupo_disponible <= 0 ||
-                    perfil?.rol !== "Estudiante"
-                  }
-                  onClick={() => void inscribir(deporte)}
-                  className="mt-4 w-full rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white disabled:opacity-50"
-                >
-                  Inscribirme
-                </button>
-              )}
-            </article>
-          ))}
-        </section>
-      )}
+      {vista === "catalogo" || !verAsistencia ? (
+        <CatalogoDeportes
+          deportes={deportes}
+          perfil={perfil}
+          cargando={cargando}
+          onAviso={onAviso}
+          onError={onError}
+          onRecargar={recargar}
+        />
+      ) : null}
 
-      {!cargando && deportes.length === 0 ? (
-        <p className="text-sm text-slate-400">No hay disciplinas publicadas.</p>
+      {vista === "asistencia" && verAsistencia ? (
+        <TomarAsistencia onAviso={onAviso} onError={onError} />
       ) : null}
     </main>
   );
