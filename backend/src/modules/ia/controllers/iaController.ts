@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import type { AuthUser } from "../../../middlewares/authMiddleware.js";
+import { ConsultaIa } from "../../desarrollo-humano/models/ConsultaIa.js";
 import {
   listarEventosDisponiblesParaIa,
   SERVICIOS_CONTEXTO_IA,
@@ -12,6 +13,22 @@ import {
   type RecomendacionIa,
 } from "../n8nClient.js";
 import { mensajeChatSchema } from "../validators.js";
+
+async function registrarConsultaIa(params: {
+  usuarioId: string;
+  consultaClinica: boolean;
+  fuente: "n8n" | "local";
+}): Promise<void> {
+  try {
+    await ConsultaIa.create({
+      usuario_id: params.usuarioId,
+      consulta_clinica: params.consultaClinica,
+      fuente: params.fuente,
+    });
+  } catch {
+    // El chat no debe fallar si el conteo del dashboard no se pudo guardar.
+  }
+}
 
 function usuarioAutenticado(req: Request, res: Response): AuthUser | null {
   const usuario = req.user;
@@ -64,6 +81,12 @@ export async function consultarOrientacion(req: Request, res: Response): Promise
       return;
     }
 
+    await registrarConsultaIa({
+      usuarioId: usuario.id,
+      consultaClinica,
+      fuente: "n8n",
+    });
+
     res.status(200).json({
       respuesta,
       consulta_clinica: consultaClinica,
@@ -72,6 +95,11 @@ export async function consultarOrientacion(req: Request, res: Response): Promise
   } catch (error) {
     const motivo = error instanceof Error ? error.message : "ERROR";
     if (motivo === "WEBHOOK_NO_CONFIGURADO") {
+      await registrarConsultaIa({
+        usuarioId: usuario.id,
+        consultaClinica,
+        fuente: "local",
+      });
       res.status(200).json({
         respuesta: consultaClinica
           ? RESPUESTA_RN011

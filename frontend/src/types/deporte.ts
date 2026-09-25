@@ -75,3 +75,45 @@ export type AsistenciaPisu = {
   presente: boolean;
   fecha_registro: string;
 };
+
+export type ResumenPisu = {
+  usuarios: number;
+  deportes_activos: number;
+  inscripciones_activas: number;
+  asistencias: number;
+  alertas: number;
+  horarios_activos: number;
+  eventos_activos: number;
+};
+
+export type EventoPisu = {
+  id: string;
+  nombre: string;
+  descripcion: string | null;
+  fecha: string;
+  lugar: string;
+  cupo_maximo: number;
+  estado: boolean;
+  fecha_creacion?: string;
+};
+
+export type AlertaPisu = {
+  id: string;
+  titulo: string;
+  mensaje: string;
+  audiencia: "Todos" | "Docentes" | "Estudiantes";
+  fecha_creacion: string;
+};
+
+export type HorarioAdminPisu = HorarioPisu & {
+  docente_id: string;
+  deporte?: { id: string; nombre: string };
+  docente?: { id: string; nombre: string; correo: string; rol: string };
+};
+
+export type DocentePisu = {
+  id: string;
+  nombre: string;
+  correo: string;
+  rol: PerfilPisu["rol"];
+};

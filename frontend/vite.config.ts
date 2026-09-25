@@ -12,7 +12,7 @@ export default defineConfig({
   },
   envPrefix: "VITE_",
   server: {
-    host: "localhost",
+    host: true,
     port: 5173,
     strictPort: true,
     proxy: {
@@ -23,7 +23,7 @@ export default defineConfig({
     },
   },
   preview: {
-    host: "localhost",
+    host: true,
     port: 4173,
     strictPort: true,
     proxy: {

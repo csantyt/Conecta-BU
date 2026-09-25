@@ -140,3 +140,24 @@ export async function registrarAsistenciaEvento(
     asistencia,
   });
 }
+
+export type DashboardDesarrolloHumano = {
+  citas_mes_actual: number;
+  porcentaje_asistencia: number;
+  eventos_activos: number;
+  consultas_ia: number;
+  detalle_asistencia: {
+    atendidas: number;
+    no_asistio: number;
+    agendadas: number;
+    canceladas: number;
+    total_mes: number;
+  };
+};
+
+export async function obtenerDashboardAdmin(): Promise<DashboardDesarrolloHumano> {
+  const { data } = await api.get<{ dashboard: DashboardDesarrolloHumano }>(
+    `${base}/admin/dashboard`,
+  );
+  return data.dashboard;
+}

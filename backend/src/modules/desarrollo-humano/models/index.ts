@@ -3,6 +3,7 @@ import { Horario } from "./Horario.js";
 import { Cita } from "./Cita.js";
 import { Evento } from "./Evento.js";
 import { Inscripcion } from "./Inscripcion.js";
+import { ConsultaIa } from "./ConsultaIa.js";
 
 Servicio.hasMany(Horario, { foreignKey: "servicio_id", as: "horarios" });
 Horario.belongsTo(Servicio, { foreignKey: "servicio_id", as: "servicio" });
@@ -15,4 +16,4 @@ Cita.belongsTo(Horario, { foreignKey: "horario_id", as: "horario" });
 Evento.hasMany(Inscripcion, { foreignKey: "evento_id", as: "inscripciones" });
 Inscripcion.belongsTo(Evento, { foreignKey: "evento_id", as: "evento" });
 
-export { Cita, Evento, Horario, Inscripcion, Servicio };
+export { Cita, ConsultaIa, Evento, Horario, Inscripcion, Servicio };

@@ -45,6 +45,7 @@ import {
   NoInscritoError,
   registrarAsistenciaEventoSql,
 } from "../services/eventosService.js";
+import { obtenerDashboardDesarrolloHumano } from "../services/dashboardService.js";
 
 function responderErrorNegocio(res: Response, error: unknown): boolean {
   if (error instanceof RecursoNoEncontradoError) {
@@ -107,6 +108,14 @@ export async function listarServicios(_req: Request, res: Response): Promise<voi
     order: [["nombre", "ASC"]],
   });
   res.status(200).json({ servicios });
+}
+
+export async function obtenerDashboardAdmin(
+  _req: Request,
+  res: Response,
+): Promise<void> {
+  const dashboard = await obtenerDashboardDesarrolloHumano();
+  res.status(200).json({ dashboard });
 }
 
 export async function listarHorarios(req: Request, res: Response): Promise<void> {
