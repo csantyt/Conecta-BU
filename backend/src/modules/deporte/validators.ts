@@ -55,3 +55,45 @@ export const asignarRolPisuSchema = z.object({
   categoria: z.enum(["Pregrado", "Postgrado", "Egresado"]).nullable().optional(),
   auth_usuario_id: z.string().uuid().optional(),
 });
+
+export const actualizarDeporteSchema = z.object({
+  nombre: z.string().min(2).max(150).optional(),
+  descripcion: z.string().nullable().optional(),
+  cupo_maximo: z.number().int().min(1).optional(),
+  categorias_permitidas: z
+    .array(z.enum(["Pregrado", "Postgrado", "Egresado"]))
+    .min(1)
+    .optional(),
+  estado: z.boolean().optional(),
+});
+
+export const crearHorarioPisuSchema = z.object({
+  deporte_id: z.string().uuid(),
+  docente_id: z.string().uuid(),
+  dia_semana: z.number().int().min(0).max(6),
+  hora_inicio: z.string().regex(/^\d{2}:\d{2}(:\d{2})?$/),
+  hora_fin: z.string().regex(/^\d{2}:\d{2}(:\d{2})?$/),
+  lugar: z.string().min(2).max(180),
+});
+
+export const actualizarHorarioPisuSchema = crearHorarioPisuSchema.partial().extend({
+  estado: z.boolean().optional(),
+});
+
+export const crearEventoPisuSchema = z.object({
+  nombre: z.string().min(2).max(180),
+  descripcion: z.string().nullable().optional(),
+  fecha: z.string().min(8),
+  lugar: z.string().min(2).max(180),
+  cupo_maximo: z.number().int().min(1),
+});
+
+export const actualizarEventoPisuSchema = crearEventoPisuSchema.partial().extend({
+  estado: z.boolean().optional(),
+});
+
+export const crearAlertaPisuSchema = z.object({
+  titulo: z.string().min(2).max(180),
+  mensaje: z.string().min(2),
+  audiencia: z.enum(["Todos", "Docentes", "Estudiantes"]),
+});
