@@ -48,7 +48,7 @@ export function administradorPisuOConecta(
     return;
   }
   res.status(403).json({
-    message: "No tienes permisos para gestionar usuarios PISU.",
+    message: "No tienes permisos de administración PISU.",
   });
 }
 

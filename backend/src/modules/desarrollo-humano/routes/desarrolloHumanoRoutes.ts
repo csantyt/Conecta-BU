@@ -19,6 +19,7 @@ import {
   listarHorarios,
   listarInscripcionesEvento,
   listarServicios,
+  obtenerDashboardAdmin,
   registrarAsistencia,
   registrarAsistenciaEvento,
 } from "../controllers/desarrolloHumanoController.js";
@@ -26,6 +27,12 @@ import {
 const desarrolloHumanoRoutes = Router();
 
 desarrolloHumanoRoutes.use(authMiddleware);
+
+desarrolloHumanoRoutes.get(
+  "/admin/dashboard",
+  soloAdministrador,
+  asyncHandler(obtenerDashboardAdmin),
+);
 
 desarrolloHumanoRoutes.get("/servicios", asyncHandler(listarServicios));
 desarrolloHumanoRoutes.get(

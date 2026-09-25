@@ -7,6 +7,10 @@ import {
   leerIdTokenDesdeHash,
   limpiarHashDeLaUrl,
 } from "../auth/googleRedirect";
+import {
+  dominioGoogleInstitucional,
+  validarCorreoInstitucionalEnToken,
+} from "../auth/googleToken";
 import { guardarSesion, limpiarSesion } from "../auth/session";
 import LogoInstitucional from "../components/LogoInstitucional";
 import type { Usuario } from "../types/auth";
@@ -15,7 +19,10 @@ type LoginPageProps = {
   onAutenticado: (usuario: Usuario) => void;
 };
 
+const PENDING_TOKEN_KEY = "google_id_token_pending";
+
 const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+const hostedDomain = dominioGoogleInstitucional();
 const googleConfigurado =
   Boolean(googleClientId) &&
   googleClientId !== "tu_google_client_id_aqui" &&
@@ -24,20 +31,42 @@ const googleConfigurado =
 export default function LoginPage({ onAutenticado }: LoginPageProps) {
   const [error, setError] = useState<string | null>(null);
   const [cargando, setCargando] = useState(false);
+  const [origen, setOrigen] = useState("");
+
+  useEffect(() => {
+    setOrigen(window.location.origin);
+  }, []);
 
   async function enviarIdToken(idToken: string) {
+    const validacion = validarCorreoInstitucionalEnToken(idToken);
+    if (!validacion.ok) {
+      sessionStorage.removeItem(PENDING_TOKEN_KEY);
+      limpiarSesion();
+      setCargando(false);
+      setError(validacion.message);
+      return;
+    }
+
     setCargando(true);
     setError(null);
 
     try {
       const data = await loginConGoogle(idToken);
+      sessionStorage.removeItem(PENDING_TOKEN_KEY);
       guardarSesion(data.token, data.usuario);
       onAutenticado(data.usuario);
     } catch (err) {
       limpiarSesion();
+      sessionStorage.removeItem(PENDING_TOKEN_KEY);
 
       if (axios.isAxiosError(err)) {
-        const message = err.response?.data?.message;
+        if (!err.response) {
+          setError(
+            "No se pudo contactar al servidor. Confirma que el backend esté en marcha y que abras la app por la IP de la PC (no localhost en el teléfono).",
+          );
+          return;
+        }
+        const message = err.response.data?.message;
         setError(
           typeof message === "string"
             ? message
@@ -53,35 +82,57 @@ export default function LoginPage({ onAutenticado }: LoginPageProps) {
   }
 
   useEffect(() => {
+    // Limpia estados viejos que dejaban el botón deshabilitado.
     const errorGoogle = leerErrorGoogleDesdeRetorno();
-    const idToken = leerIdTokenDesdeHash();
-
     if (errorGoogle) {
       setError(errorGoogle);
       limpiarHashDeLaUrl();
+      sessionStorage.removeItem(PENDING_TOKEN_KEY);
       return;
     }
 
+    const desdeHash = leerIdTokenDesdeHash();
+    if (desdeHash) {
+      sessionStorage.setItem(PENDING_TOKEN_KEY, desdeHash);
+      limpiarHashDeLaUrl();
+    }
+
+    const idToken = desdeHash ?? sessionStorage.getItem(PENDING_TOKEN_KEY);
     if (!idToken) {
       return;
     }
 
-    limpiarHashDeLaUrl();
     void enviarIdToken(idToken);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function iniciarSesionConGoogle() {
-    window.location.assign(construirUrlGoogle());
+    if (!googleConfigurado) {
+      setError("Falta configurar VITE_GOOGLE_CLIENT_ID.");
+      return;
+    }
+    setError(null);
+    sessionStorage.removeItem(PENDING_TOKEN_KEY);
+    try {
+      const url = construirUrlGoogle();
+      window.location.assign(url);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "No se pudo abrir Google. Recarga e inténtalo de nuevo.",
+      );
+    }
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-slate-950 px-4 py-10">
-      <div className="absolute inset-0 overflow-hidden">
+    <main className="relative flex min-h-screen items-center justify-center bg-slate-950 px-4 py-10">
+      <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
         <div className="absolute -left-24 top-16 h-72 w-72 rounded-full bg-sky-500/20 blur-3xl" />
         <div className="absolute -right-16 bottom-10 h-80 w-80 rounded-full bg-emerald-400/10 blur-3xl" />
       </div>
 
-      <section className="relative w-full max-w-md rounded-3xl border border-white/10 bg-white/95 p-8 shadow-2xl backdrop-blur">
+      <section className="relative z-10 w-full max-w-md rounded-3xl border border-white/10 bg-white p-8 shadow-2xl">
         <div className="mb-8 text-center">
           <LogoInstitucional
             variante="claro"
@@ -92,8 +143,11 @@ export default function LoginPage({ onAutenticado }: LoginPageProps) {
             Uniautónoma del Cauca
           </p>
           <p className="mt-2 text-sm leading-6 text-slate-600">
-            Accede con tu correo institucional de la Corporación Universitaria
-            Autónoma del Cauca.
+            Se mostrará la lista de cuentas. Elige la institucional{" "}
+            <span className="font-semibold text-slate-800">
+              @{hostedDomain}
+            </span>
+            .
           </p>
         </div>
 
@@ -102,17 +156,15 @@ export default function LoginPage({ onAutenticado }: LoginPageProps) {
             <button
               type="button"
               onClick={iniciarSesionConGoogle}
-              disabled={cargando}
-              className="flex w-full items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+              className="flex w-full items-center justify-center gap-3 rounded-xl bg-slate-900 px-4 py-3.5 text-sm font-semibold text-white shadow-lg transition active:scale-[0.98] hover:bg-slate-800"
             >
               <GoogleIcon />
-              Continuar con Google
+              Elegir cuenta de Google
             </button>
           ) : (
             <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-center text-sm text-amber-800">
-              Configura un{" "}
-              <span className="font-medium">VITE_GOOGLE_CLIENT_ID</span> real en{" "}
-              <span className="font-medium">frontend/.env</span>.
+              Configura <span className="font-medium">VITE_GOOGLE_CLIENT_ID</span>{" "}
+              en <span className="font-medium">frontend/.env</span>.
             </p>
           )}
 
@@ -125,19 +177,22 @@ export default function LoginPage({ onAutenticado }: LoginPageProps) {
           {error ? (
             <p
               role="alert"
-              className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-center text-sm text-red-700"
+              className="whitespace-pre-line rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-left text-sm text-red-700"
             >
               {error}
             </p>
           ) : (
             <p className="text-center text-xs leading-5 text-slate-500">
-              Solo se permite el acceso con correos{" "}
-              <span className="font-medium text-slate-700">
-                @uniautonoma.edu.co
-              </span>
-              .
+              Toca la cuenta @{hostedDomain} en la lista. La personal será
+              rechazada por la app.
             </p>
           )}
+
+          {origen ? (
+            <p className="break-all text-center text-[11px] text-slate-400">
+              Origen: {origen}
+            </p>
+          ) : null}
         </div>
       </section>
     </main>

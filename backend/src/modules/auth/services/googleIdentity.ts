@@ -60,13 +60,8 @@ export async function verificarIdTokenGoogle(
     );
   }
 
-  const dominioPermitido = obtenerDominioInstitucional();
-  const hd = payload.hd?.toLowerCase() ?? null;
-
-  if (hd && hd !== dominioPermitido) {
-    throw new DominioNoPermitidoError();
-  }
-
+  // Solo validamos el correo. No exigimos claim `hd` (a veces falta en tokens
+  // de Workspace y bloqueaba cuentas institucionales válidas).
   if (!esCorreoInstitucional(email)) {
     throw new DominioNoPermitidoError();
   }
@@ -74,6 +69,6 @@ export async function verificarIdTokenGoogle(
   return {
     email,
     nombreCompleto,
-    hostedDomain: hd,
+    hostedDomain: payload.hd?.toLowerCase() ?? null,
   };
 }

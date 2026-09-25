@@ -20,6 +20,7 @@ import type {
   InscripcionEvento,
   Servicio,
 } from "../../types/desarrolloHumano";
+import DashboardAdminOrientacion from "./DashboardAdminOrientacion";
 import {
   DIAS,
   esMismaFecha,
@@ -39,7 +40,7 @@ type PanelAdministradorProps = {
   onRecargar: () => Promise<void>;
 };
 
-type VistaAdmin = "horarios" | "hoy" | "eventos";
+type VistaAdmin = "dashboard" | "horarios" | "hoy" | "eventos";
 
 export default function PanelAdministrador({
   servicios,
@@ -49,30 +50,41 @@ export default function PanelAdministrador({
   onError,
   onRecargar,
 }: PanelAdministradorProps) {
-  const [vista, setVista] = useState<VistaAdmin>("horarios");
+  const [vista, setVista] = useState<VistaAdmin>("dashboard");
+
+  const tabs: Array<{ id: VistaAdmin; etiqueta: string }> = [
+    { id: "dashboard", etiqueta: "Dashboard" },
+    { id: "horarios", etiqueta: "Horarios" },
+    { id: "hoy", etiqueta: "Citas del día" },
+    { id: "eventos", etiqueta: "Eventos" },
+  ];
 
   return (
     <div>
       <nav className="mb-5 flex gap-2 overflow-x-auto pb-1">
-        {(
-          [
-            ["horarios", "Horarios"],
-            ["hoy", "Citas del día"],
-            ["eventos", "Eventos"],
-          ] as const
-        ).map(([id, etiqueta]) => (
+        {tabs.map(({ id, etiqueta }) => (
           <button
             key={id}
             type="button"
             onClick={() => setVista(id)}
-            className={`shrink-0 rounded-full px-4 py-2 text-sm ${
-              vista === id ? "bg-white text-slate-900" : "border border-white/15 text-slate-300"
+            className={`shrink-0 rounded-full px-4 py-2 text-sm font-medium transition ${
+              vista === id
+                ? "bg-gradient-to-r from-sky-400 to-cyan-300 text-slate-950 shadow-[0_10px_24px_-12px_rgba(56,189,248,0.9)]"
+                : "border border-white/15 text-slate-300 hover:border-sky-400/35 hover:bg-white/5 hover:text-white"
             }`}
           >
             {etiqueta}
           </button>
         ))}
       </nav>
+      {vista === "dashboard" ? (
+        <DashboardAdminOrientacion
+          citas={citas}
+          onAviso={onAviso}
+          onError={onError}
+          onRecargar={onRecargar}
+        />
+      ) : null}
       {vista === "horarios" ? (
         <GestionHorarios
           servicios={servicios}
@@ -352,7 +364,7 @@ function CitasDelDia({
               <div className="mt-3 flex flex-wrap gap-2">
                 <button
                   type="button"
-                  className="rounded-lg bg-emerald-700 px-3 py-1.5 text-xs text-white"
+                  className="rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 px-3.5 py-1.5 text-xs font-semibold text-white shadow-[0_8px_20px_-10px_rgba(16,185,129,0.9)] transition hover:brightness-110"
                   onClick={() =>
                     void registrarAsistencia(cita.id, "ASISTIO")
                       .then(() => {
@@ -366,7 +378,7 @@ function CitasDelDia({
                 </button>
                 <button
                   type="button"
-                  className="rounded-lg bg-slate-700 px-3 py-1.5 text-xs text-white"
+                  className="rounded-full border border-white/15 bg-slate-900/5 px-3.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700"
                   onClick={() =>
                     void registrarAsistencia(cita.id, "NO_ASISTIO")
                       .then(() => {
