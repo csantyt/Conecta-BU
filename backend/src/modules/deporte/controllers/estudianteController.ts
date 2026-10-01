@@ -1,8 +1,19 @@
 import type { Request, Response } from "express";
 import {
+  listarAsistenciasEstudiante,
   listarHorariosDeInscripciones,
   listarInscripcionesEstudiante,
 } from "../services/estudianteService.js";
+import {
+  CupoEventoAgotadoError,
+  EventoCerradoError,
+  EventoNoEncontradoError,
+  NoInscritoEventoError,
+  OperacionEventoNoPermitidaError,
+  YaInscritoEventoError,
+  cancelarInscripcionAEvento,
+  inscribirseAEvento,
+} from "../services/eventosService.js";
 import {
   CategoriaNoPermitidaError,
   CruceHorarioError,
@@ -14,7 +25,7 @@ import {
   autoinscribirseADeporte,
   cancelarInscripcionDeporte,
 } from "../services/inscripcionesService.js";
-import { autoinscripcionSchema } from "../validators.js";
+import { autoinscripcionSchema, uuidSchema } from "../validators.js";
 
 export async function getPerfilEstudiante(
   req: Request,
@@ -47,6 +58,99 @@ export async function getHorariosEstudiante(
   }
   const horarios = await listarHorariosDeInscripciones(perfil);
   res.status(200).json({ horarios });
+}
+
+export async function getAsistenciasEstudiante(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const perfil = req.usuarioPisu;
+  if (!perfil) {
+    res.status(401).json({ message: "No autenticado." });
+    return;
+  }
+  const resultado = await listarAsistenciasEstudiante(perfil);
+  res.status(200).json(resultado);
+}
+
+function idDeRuta(req: Request): string | null {
+  const valor = req.params["id"];
+  const id = Array.isArray(valor) ? valor[0] : valor;
+  return id || null;
+}
+
+function responderErrorEvento(res: Response, error: unknown): boolean {
+  if (error instanceof EventoNoEncontradoError) {
+    res.status(404).json({ message: error.message });
+    return true;
+  }
+  if (error instanceof OperacionEventoNoPermitidaError) {
+    res.status(403).json({ message: error.message });
+    return true;
+  }
+  if (error instanceof EventoCerradoError) {
+    res.status(400).json({ message: error.message });
+    return true;
+  }
+  if (
+    error instanceof CupoEventoAgotadoError ||
+    error instanceof YaInscritoEventoError ||
+    error instanceof NoInscritoEventoError
+  ) {
+    res.status(409).json({ message: error.message });
+    return true;
+  }
+  return false;
+}
+
+export async function postInscripcionEvento(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const perfil = req.usuarioPisu;
+  if (!perfil) {
+    res.status(401).json({ message: "No autenticado." });
+    return;
+  }
+  const eventoId = idDeRuta(req);
+  if (!eventoId || !uuidSchema.safeParse(eventoId).success) {
+    res.status(400).json({ message: "Identificador de evento inválido." });
+    return;
+  }
+
+  try {
+    const inscripcion = await inscribirseAEvento({ perfil, eventoId });
+    res.status(201).json({ message: "Inscripción al evento realizada.", inscripcion });
+  } catch (error) {
+    if (!responderErrorEvento(res, error)) {
+      throw error;
+    }
+  }
+}
+
+export async function deleteInscripcionEvento(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const perfil = req.usuarioPisu;
+  if (!perfil) {
+    res.status(401).json({ message: "No autenticado." });
+    return;
+  }
+  const eventoId = idDeRuta(req);
+  if (!eventoId || !uuidSchema.safeParse(eventoId).success) {
+    res.status(400).json({ message: "Identificador de evento inválido." });
+    return;
+  }
+
+  try {
+    await cancelarInscripcionAEvento({ perfil, eventoId });
+    res.status(200).json({ message: "Inscripción al evento cancelada." });
+  } catch (error) {
+    if (!responderErrorEvento(res, error)) {
+      throw error;
+    }
+  }
 }
 
 function responderErrorInscripcion(res: Response, error: unknown): boolean {

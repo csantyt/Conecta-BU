@@ -1,6 +1,7 @@
 import { api } from "./http";
 import type {
   AlertaPisu,
+  AsistenciaEstudiantePisu,
   AsistenciaPisu,
   ClaseDocente,
   DeportePisu,
@@ -8,8 +9,11 @@ import type {
   EstudianteDeClase,
   EventoPisu,
   HorarioAdminPisu,
+  HorarioEstudiantePisu,
   InscripcionPisu,
+  InscritoEventoPisu,
   PerfilPisu,
+  ResumenAsistenciaPisu,
   ResumenPisu,
   UsuarioPisuAdmin,
 } from "../types/deporte";
@@ -47,6 +51,32 @@ export async function autoinscribirseDeporte(deporteId: string): Promise<void> {
 
 export async function cancelarInscripcionPisu(id: string): Promise<void> {
   await api.patch(`/estudiante/inscripciones/${id}/cancelar`);
+}
+
+export async function inscribirseEventoPisu(eventoId: string): Promise<void> {
+  await api.post(`/estudiante/eventos/${eventoId}/inscripcion`);
+}
+
+export async function cancelarInscripcionEventoPisu(eventoId: string): Promise<void> {
+  await api.delete(`/estudiante/eventos/${eventoId}/inscripcion`);
+}
+
+export async function obtenerMisHorariosPisu(): Promise<HorarioEstudiantePisu[]> {
+  const { data } = await api.get<{ horarios: HorarioEstudiantePisu[] }>(
+    "/estudiante/horarios",
+  );
+  return data.horarios;
+}
+
+export async function obtenerMisAsistenciasPisu(): Promise<{
+  asistencias: AsistenciaEstudiantePisu[];
+  resumen: ResumenAsistenciaPisu[];
+}> {
+  const { data } = await api.get<{
+    asistencias: AsistenciaEstudiantePisu[];
+    resumen: ResumenAsistenciaPisu[];
+  }>("/estudiante/asistencias");
+  return data;
 }
 
 export async function obtenerMisClasesDocente(): Promise<ClaseDocente[]> {
@@ -209,6 +239,15 @@ export async function actualizarHorarioAdmin(
 export async function obtenerEventosAdmin(): Promise<EventoPisu[]> {
   const { data } = await api.get<{ eventos: EventoPisu[] }>("/admin/eventos");
   return data.eventos;
+}
+
+export async function obtenerInscritosEventoAdmin(
+  eventoId: string,
+): Promise<InscritoEventoPisu[]> {
+  const { data } = await api.get<{ inscripciones: InscritoEventoPisu[] }>(
+    `/admin/eventos/${eventoId}/inscritos`,
+  );
+  return data.inscripciones;
 }
 
 export async function crearEventoAdmin(payload: {

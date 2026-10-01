@@ -52,6 +52,9 @@ async function deduplicarServiciosPorNombre(): Promise<void> {
       }
 
       const [conservado, ...duplicados] = grupo;
+      if (!conservado) {
+        continue;
+      }
       const horariosConservados = await Horario.findAll({
         where: { servicio_id: conservado.id },
         transaction,

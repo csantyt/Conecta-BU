@@ -20,7 +20,7 @@ type TomarAsistenciaProps = {
 
 const VENTANA_24H_MS = 24 * 60 * 60 * 1000;
 
-function editableDentro24h(asistenciaRegistro: string | undefined): boolean {
+function editableDentro24h(fechaRegistro: string | undefined): boolean {
   if (!fechaRegistro) {
     return false;
   }

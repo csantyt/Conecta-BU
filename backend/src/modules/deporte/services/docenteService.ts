@@ -7,6 +7,7 @@ import {
   InscripcionDeporte,
   UsuarioPisu,
 } from "../models/index.js";
+import { generarAlertasInasistencia } from "./alertasService.js";
 
 export class RecursoDocenteNoEncontradoError extends Error {}
 export class ClaseNoAsignadaError extends Error {}
@@ -108,7 +109,7 @@ export async function registrarAsistenciaLista(params: {
     throw new DatosAsistenciaInvalidosError("Debes enviar al menos un estudiante.");
   }
 
-  return sequelize.transaction(async (transaction) => {
+  const { guardadas, deporteId } = await sequelize.transaction(async (transaction) => {
     const horario = await HorarioDeporte.findByPk(params.horarioId, {
       transaction,
       lock: transaction.LOCK.UPDATE,
@@ -190,8 +191,17 @@ export async function registrarAsistenciaLista(params: {
       }
     }
 
-    return guardadas;
+    return { guardadas, deporteId: horario.deporte_id };
   });
+
+  await generarAlertasInasistencia({
+    deporteId,
+    estudianteIds: params.registros
+      .filter((registro) => !registro.presente)
+      .map((registro) => registro.estudianteId),
+  });
+
+  return guardadas;
 }
 
 export async function editarAsistencia(params: {
@@ -221,6 +231,19 @@ export async function editarAsistencia(params: {
   }
 
   await asistencia.update({ presente: params.presente });
+
+  if (!params.presente) {
+    const horario = await HorarioDeporte.findByPk(asistencia.horario_id, {
+      attributes: ["deporte_id"],
+    });
+    if (horario) {
+      await generarAlertasInasistencia({
+        deporteId: horario.deporte_id,
+        estudianteIds: [asistencia.estudiante_id],
+      });
+    }
+  }
+
   return asistencia;
 }
 

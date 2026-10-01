@@ -115,7 +115,8 @@ export async function autoinscribirseADeporte(params: {
     );
   }
 
-  if (!params.perfil.categoria) {
+  const categoria = params.perfil.categoria;
+  if (!categoria) {
     throw new DatosInvalidosError(
       "Tu perfil de estudiante no tiene categoría académica (Pregrado, Postgrado o Egresado).",
     );
@@ -135,9 +136,9 @@ export async function autoinscribirseADeporte(params: {
     }
 
     const categorias = deporte.categorias_permitidas ?? [];
-    if (!categorias.includes(params.perfil.categoria)) {
+    if (!categorias.includes(categoria)) {
       throw new CategoriaNoPermitidaError(
-        `Tu categoría (${params.perfil.categoria}) no está permitida en este deporte (RN-002).`,
+        `Tu categoría (${categoria}) no está permitida en este deporte (RN-002).`,
       );
     }
 

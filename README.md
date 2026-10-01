@@ -10,15 +10,17 @@ Este repositorio es el punto de entrada para quien continúe el proyecto. Aquí 
 
 ## Qué hay listo
 
-Solo está habilitado **Desarrollo humano y orientación**. Los otros cuatro módulos ya aparecen en la home y tienen schema/API vacío para no rediseñar después.
+Están habilitados **Desarrollo humano y orientación** y **Deporte (PISU)**. Los otros tres módulos ya aparecen en la home y tienen schema/API vacío para no rediseñar después.
 
 | Módulo | Estado |
 |---|---|
-| Desarrollo humano y orientación | Activo (citas, horarios, eventos, IA) |
+| Desarrollo humano y orientación | Activo (citas, horarios, eventos, dashboard, IA) |
+| Deporte | Activo (inscripción RF-019, asistencia docente, eventos con cupo, alertas automáticas, administración) |
 | Permanencia estudiantil | Visible, aún no implementado |
 | Salud integral | Visible, aún no implementado |
-| Deporte | Activo (autoinscripción PISU RF-019) |
 | Cultura | Visible, aún no implementado |
+
+**Arquitectura:** monolito modular (un schema PostgreSQL y una carpeta por módulo) con capas dentro de cada módulo: rutas → middlewares → controladores → servicios → modelos.
 
 **Roles:** `USUARIO` (el RF “Estudiante” se mapea aquí) y `ADMINISTRADOR`. El primer administrador se promueve desde la home, después de iniciar sesión con Google institucional (`uniautonoma.edu.co`).
 
@@ -78,10 +80,11 @@ Variables importantes:
 backend/src/modules/auth/                 login Google, usuarios, roles
 backend/src/modules/desarrollo-humano/    citas, horarios, eventos
 backend/src/modules/ia/                   puente a n8n
-backend/src/modules/deporte/            tablas PISU (usuarios, deportes, horarios, inscripciones, asistencias, eventos, alertas)
+backend/src/modules/deporte/              PISU por capas (usuarios, deportes, horarios, inscripciones, asistencias, eventos, alertas)
 backend/src/modules/{permanencia,salud,cultura}/  placeholders
-frontend/src/pages/                        login, home, módulo DH
+frontend/src/pages/                        login, home, módulo DH, módulo Deporte
 frontend/src/features/desarrollo-humano/   calendario, paneles estudiante/admin
+frontend/src/features/deporte/             catálogo, mi actividad, asistencia, usuarios, administración
 frontend/src/config/modulos.ts             catálogo de los cinco módulos
 ```
 
@@ -92,10 +95,12 @@ API activa (todas con JWT, salvo el login):
 - `/api/v1/desarrollo-humano/servicios|horarios|citas|eventos`
 - `POST /api/v1/ia/orientacion` y `POST /api/v1/ia/recomendaciones` (también `/api/ia/...`)
 - PISU (JWT + roles Administrador/Docente/Estudiante):
-  - `/api/v1/deportes`
-  - `/api/v1/docente`
-  - `/api/v1/estudiante`
-  - `/api/v1/admin`
+  - `/api/v1/deportes` — catálogo, eventos y alertas (los tres roles)
+  - `/api/v1/estudiante` — inscripciones, horarios, asistencias, inscripción a eventos
+  - `/api/v1/docente` — clases, lista de inscritos, toma y edición de asistencia
+  - `/api/v1/admin` — resumen, usuarios, deportes, horarios, eventos (con inscritos) y alertas
+
+Pruebas: `cd backend && npm test` (necesita PostgreSQL y el `.env`).
 
 ## Cómo continuar un módulo nuevo
 

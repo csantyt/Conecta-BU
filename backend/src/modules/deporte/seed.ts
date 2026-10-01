@@ -1,6 +1,12 @@
+import type { CategoriaPisu } from "./constantes.js";
 import { Deporte } from "./models/Deporte.js";
 
-const DEPORTES_INICIALES = [
+const DEPORTES_INICIALES: Array<{
+  nombre: string;
+  descripcion: string;
+  cupo_maximo: number;
+  categorias_permitidas: CategoriaPisu[];
+}> = [
   {
     nombre: "Fútbol",
     descripcion: "Entrenamiento y recréate en cancha. Cupo según categoría.",

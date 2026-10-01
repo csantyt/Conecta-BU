@@ -1,11 +1,14 @@
 import { Router } from "express";
 import { asyncHandler } from "../../../middlewares/asyncHandler.js";
 import {
+  deleteInscripcionEvento,
+  getAsistenciasEstudiante,
   getHorariosEstudiante,
   getInscripciones,
   getPerfilEstudiante,
   patchCancelarInscripcion,
   postAutoinscripcion,
+  postInscripcionEvento,
 } from "../controllers/estudianteController.js";
 import { authMiddleware } from "../middlewares/authMiddleware.js";
 import { soloEstudiantePisu } from "../middlewares/rbacMiddleware.js";
@@ -21,3 +24,12 @@ estudianteRoutes.patch(
   asyncHandler(patchCancelarInscripcion),
 );
 estudianteRoutes.get("/horarios", asyncHandler(getHorariosEstudiante));
+estudianteRoutes.get("/asistencias", asyncHandler(getAsistenciasEstudiante));
+estudianteRoutes.post(
+  "/eventos/:id/inscripcion",
+  asyncHandler(postInscripcionEvento),
+);
+estudianteRoutes.delete(
+  "/eventos/:id/inscripcion",
+  asyncHandler(deleteInscripcionEvento),
+);

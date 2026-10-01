@@ -13,6 +13,7 @@ import {
   obtenerDocentesPisu,
   obtenerEventosAdmin,
   obtenerHorariosAdmin,
+  obtenerInscritosEventoAdmin,
   obtenerResumenPisu,
 } from "../../api/deporte";
 import type {
@@ -21,6 +22,7 @@ import type {
   DocentePisu,
   EventoPisu,
   HorarioAdminPisu,
+  InscritoEventoPisu,
   ResumenPisu,
 } from "../../types/deporte";
 import { DIAS, etiquetaHorario, mensajeError } from "./utils";
@@ -535,9 +537,24 @@ function GestionEventos({
   const [lugar, setLugar] = useState("");
   const [cupo, setCupo] = useState(40);
   const [guardando, setGuardando] = useState(false);
+  const [abierto, setAbierto] = useState<string | null>(null);
+  const [inscritos, setInscritos] = useState<InscritoEventoPisu[]>([]);
 
   async function recargar() {
     setEventos(await obtenerEventosAdmin());
+  }
+
+  async function verInscritos(eventoId: string) {
+    if (abierto === eventoId) {
+      setAbierto(null);
+      return;
+    }
+    try {
+      setInscritos(await obtenerInscritosEventoAdmin(eventoId));
+      setAbierto(eventoId);
+    } catch (err) {
+      onError(mensajeError(err));
+    }
   }
 
   useEffect(() => {
@@ -642,24 +659,56 @@ function GestionEventos({
               {new Date(evento.fecha).toLocaleString("es-CO")} · {evento.lugar}
             </p>
             <p className="mt-1 text-xs text-slate-500">
-              Cupo {evento.cupo_maximo} · {evento.estado ? "Activo" : "Inactivo"}
+              Inscritos {evento.inscritos ?? 0}/{evento.cupo_maximo} ·{" "}
+              {evento.estado ? "Activo" : "Inactivo"}
             </p>
-            <button
-              type="button"
-              className="mt-3 rounded-full border border-slate-200 px-3 py-1.5 text-xs font-semibold"
-              onClick={() =>
-                void actualizarEventoAdmin(evento.id, { estado: !evento.estado })
-                  .then(() => {
-                    onAviso(
-                      evento.estado ? "Evento desactivado." : "Evento reactivado.",
-                    );
-                    return recargar();
-                  })
-                  .catch((err) => onError(mensajeError(err)))
-              }
-            >
-              {evento.estado ? "Desactivar" : "Activar"}
-            </button>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button
+                type="button"
+                className="rounded-full border border-slate-200 px-3 py-1.5 text-xs font-semibold"
+                onClick={() =>
+                  void actualizarEventoAdmin(evento.id, { estado: !evento.estado })
+                    .then(() => {
+                      onAviso(
+                        evento.estado ? "Evento desactivado." : "Evento reactivado.",
+                      );
+                      return recargar();
+                    })
+                    .catch((err) => onError(mensajeError(err)))
+                }
+              >
+                {evento.estado ? "Desactivar" : "Activar"}
+              </button>
+              <button
+                type="button"
+                className="rounded-full border border-sky-200 px-3 py-1.5 text-xs font-semibold text-sky-700"
+                onClick={() => void verInscritos(evento.id)}
+              >
+                {abierto === evento.id ? "Ocultar inscritos" : "Ver inscritos"}
+              </button>
+            </div>
+            {abierto === evento.id ? (
+              inscritos.length === 0 ? (
+                <p className="mt-3 text-xs text-slate-500">Nadie inscrito todavía.</p>
+              ) : (
+                <ul className="mt-3 space-y-1 border-t border-slate-100 pt-3 text-xs text-slate-700">
+                  {inscritos.map((item) => (
+                    <li key={item.id}>
+                      <span className="font-medium">
+                        {item.estudiante?.nombre ?? "Estudiante"}
+                      </span>
+                      {item.estudiante
+                        ? ` · ${item.estudiante.correo}${
+                            item.estudiante.categoria
+                              ? ` · ${item.estudiante.categoria}`
+                              : ""
+                          }`
+                        : ""}
+                    </li>
+                  ))}
+                </ul>
+              )
+            ) : null}
           </article>
         ))}
       </div>
@@ -764,8 +813,10 @@ function GestionAlertas({
                 <p className="font-semibold">{alerta.titulo}</p>
                 <p className="mt-1 text-sm text-slate-600">{alerta.mensaje}</p>
                 <p className="mt-2 text-xs text-slate-500">
-                  {alerta.audiencia} ·{" "}
-                  {new Date(alerta.fecha_creacion).toLocaleString("es-CO")}
+                  {alerta.estudiante_id
+                    ? `Automática · para ${alerta.estudiante?.nombre ?? "un estudiante"}`
+                    : alerta.audiencia}{" "}
+                  · {new Date(alerta.fecha_creacion).toLocaleString("es-CO")}
                 </p>
               </div>
               <button

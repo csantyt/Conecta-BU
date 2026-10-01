@@ -1,8 +1,5 @@
 import type { Request, Response } from "express";
 import type { AuthUser } from "../../../middlewares/authMiddleware.js";
-import { Cita } from "../models/Cita.js";
-import { Horario } from "../models/Horario.js";
-import { Servicio } from "../models/Servicio.js";
 import {
   actualizarHorarioConValidacion,
   agendarCitaConReglas,
@@ -13,7 +10,10 @@ import {
   CupoAgotadoError,
   deshabilitarHorario,
   HorarioNoDisponibleError,
+  listarCitasVisibles,
   listarHorariosDisponibles,
+  listarHorariosFiltrados,
+  listarServiciosActivos,
   OperacionNoPermitidaError,
   RecursoNoEncontradoError,
   registrarAsistenciaCita,
@@ -95,18 +95,7 @@ function usuarioAutenticado(req: Request, res: Response): AuthUser | null {
 }
 
 export async function listarServicios(_req: Request, res: Response): Promise<void> {
-  const servicios = await Servicio.findAll({
-    where: { activo: true },
-    include: [
-      {
-        model: Horario,
-        as: "horarios",
-        where: { activo: true },
-        required: false,
-      },
-    ],
-    order: [["nombre", "ASC"]],
-  });
+  const servicios = await listarServiciosActivos();
   res.status(200).json({ servicios });
 }
 
@@ -125,16 +114,9 @@ export async function listarHorarios(req: Request, res: Response): Promise<void>
     return;
   }
 
-  const horarios = await Horario.findAll({
-    where: {
-      ...(parsed.data.servicio_id ? { servicio_id: parsed.data.servicio_id } : {}),
-      ...(parsed.data.activo === undefined ? {} : { activo: parsed.data.activo }),
-    },
-    include: [{ model: Servicio, as: "servicio" }],
-    order: [
-      ["dia_semana", "ASC"],
-      ["hora_inicio", "ASC"],
-    ],
+  const horarios = await listarHorariosFiltrados({
+    ...(parsed.data.servicio_id ? { servicioId: parsed.data.servicio_id } : {}),
+    ...(parsed.data.activo === undefined ? {} : { activo: parsed.data.activo }),
   });
 
   res.status(200).json({ horarios });
@@ -240,16 +222,9 @@ export async function listarCitas(req: Request, res: Response): Promise<void> {
     return;
   }
 
-  const filtro =
-    usuario.rol === "ADMINISTRADOR" ? {} : { usuario_id: usuario.id };
-
-  const citas = await Cita.findAll({
-    where: filtro,
-    include: [
-      { model: Servicio, as: "servicio" },
-      { model: Horario, as: "horario" },
-    ],
-    order: [["fecha_hora", "DESC"]],
+  const citas = await listarCitasVisibles({
+    usuarioId: usuario.id,
+    esAdministrador: usuario.rol === "ADMINISTRADOR",
   });
 
   res.status(200).json({ citas });

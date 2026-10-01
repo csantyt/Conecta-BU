@@ -1,12 +1,20 @@
-import { Op } from "sequelize";
+import { Op, type InferAttributes } from "sequelize";
 import { Alerta } from "../models/Alerta.js";
 import { Deporte } from "../models/Deporte.js";
-import { EventoDeporte } from "../models/EventoDeporte.js";
 import { HorarioDeporte } from "../models/HorarioDeporte.js";
 import { InscripcionDeporte } from "../models/InscripcionDeporte.js";
 import type { UsuarioPisuSesion } from "../middlewares/tipos.js";
 
-export async function listarDeportesActivos(perfil?: UsuarioPisuSesion) {
+export type DeporteCatalogo = InferAttributes<Deporte> & {
+  cupo_disponible: number;
+  inscrito: boolean;
+  inscripcion_id: string | null;
+  horarios: HorarioDeporte[];
+};
+
+export async function listarDeportesActivos(
+  perfil?: UsuarioPisuSesion,
+): Promise<DeporteCatalogo[]> {
   const deportes = await Deporte.findAll({
     where: { estado: true },
     order: [["nombre", "ASC"]],
@@ -55,23 +63,20 @@ export async function listarDeportesActivos(perfil?: UsuarioPisuSesion) {
   });
 }
 
-export async function listarEventosActivos() {
-  return EventoDeporte.findAll({
-    where: { estado: true },
-    order: [["fecha", "ASC"]],
-  });
-}
-
 export async function listarAlertasPara(perfil: UsuarioPisuSesion) {
+  if (perfil.rol === "Administrador") {
+    return Alerta.findAll({ order: [["fecha_creacion", "DESC"]] });
+  }
+
   const audiencias =
-    perfil.rol === "Administrador"
-      ? ["Todos", "Docentes", "Estudiantes"]
-      : perfil.rol === "Docente"
-        ? ["Todos", "Docentes"]
-        : ["Todos", "Estudiantes"];
+    perfil.rol === "Docente" ? ["Todos", "Docentes"] : ["Todos", "Estudiantes"];
+  const destinatario =
+    perfil.rol === "Estudiante"
+      ? { [Op.or]: [{ estudiante_id: null }, { estudiante_id: perfil.id }] }
+      : { estudiante_id: null };
 
   return Alerta.findAll({
-    where: { audiencia: { [Op.in]: audiencias } },
+    where: { audiencia: { [Op.in]: audiencias }, ...destinatario },
     order: [["fecha_creacion", "DESC"]],
   });
 }

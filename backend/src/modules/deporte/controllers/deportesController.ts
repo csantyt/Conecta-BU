@@ -2,16 +2,16 @@ import type { Request, Response } from "express";
 import {
   listarAlertasPara,
   listarDeportesActivos,
-  listarEventosActivos,
 } from "../services/deportesService.js";
+import { listarEventosActivos } from "../services/eventosService.js";
 
 export async function getDeportes(req: Request, res: Response): Promise<void> {
   const deportes = await listarDeportesActivos(req.usuarioPisu);
   res.status(200).json({ deportes, perfil: req.usuarioPisu });
 }
 
-export async function getEventos(_req: Request, res: Response): Promise<void> {
-  const eventos = await listarEventosActivos();
+export async function getEventos(req: Request, res: Response): Promise<void> {
+  const eventos = await listarEventosActivos(req.usuarioPisu);
   res.status(200).json({ eventos });
 }
 

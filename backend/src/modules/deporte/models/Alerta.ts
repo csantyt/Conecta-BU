@@ -17,6 +17,8 @@ export class Alerta extends Model<
   declare titulo: string;
   declare mensaje: string;
   declare audiencia: AudienciaAlertaPisu;
+  declare estudiante_id: CreationOptional<string | null>;
+  declare clave: CreationOptional<string | null>;
   declare fecha_creacion: CreationOptional<Date>;
 }
 
@@ -38,6 +40,14 @@ Alerta.init(
     audiencia: {
       type: DataTypes.STRING(32),
       allowNull: false,
+    },
+    estudiante_id: {
+      type: DataTypes.UUID,
+      allowNull: true,
+    },
+    clave: {
+      type: DataTypes.STRING(200),
+      allowNull: true,
     },
     fecha_creacion: {
       type: DataTypes.DATE,
