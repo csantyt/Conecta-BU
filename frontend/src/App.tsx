@@ -26,38 +26,55 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100">
-      <header className="border-b border-white/10 bg-slate-950/80 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:gap-4 sm:py-4">
+    <div className="min-h-screen text-slate-100">
+      <header className="relative overflow-hidden border-b border-white/10 bg-uni-noche/70 backdrop-blur">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute right-0 top-0 h-full w-28 bg-uni-azul/70 [clip-path:polygon(35%_0,100%_0,100%_100%)] sm:w-40"
+        />
+        <div className="relative mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:gap-6 sm:py-4">
           <button
             type="button"
             onClick={() => setModuloActivo(null)}
             className="flex items-center gap-3 text-left"
           >
             <LogoInstitucional variante="oscuro" className="h-10 w-auto sm:h-14" />
-            <div>
-              <p className="text-sm font-semibold tracking-wide">Conecta BU</p>
-              <p className="text-xs text-slate-400">Bienestar Universitario</p>
+            <div className="border-l border-white/20 pl-3">
+              <p className="text-sm font-black uppercase tracking-wider sm:text-base">
+                Conecta BU
+              </p>
+              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-uni-cian sm:text-xs">
+                Bienestar Universitario
+              </p>
             </div>
           </button>
 
-          <div className="flex items-center gap-3">
-            <div className="min-w-0 max-w-[42vw] text-right sm:max-w-none">
-              <p className="truncate text-xs font-medium sm:text-sm">
+          <nav className="flex items-center gap-4 text-xs font-extrabold uppercase tracking-wider sm:gap-6 sm:text-sm">
+            {moduloActivo ? (
+              <button
+                type="button"
+                onClick={() => setModuloActivo(null)}
+                className="hidden text-white transition hover:text-uni-cian md:inline"
+              >
+                <span className="text-uni-cian">→</span> Módulos
+              </button>
+            ) : null}
+            <div className="hidden min-w-0 text-right normal-case sm:block">
+              <p className="max-w-[16rem] truncate text-xs font-bold uppercase tracking-wide text-white">
                 {usuario.nombre_completo || usuario.email}
               </p>
-              <p className="truncate text-[11px] tracking-wide text-slate-400 sm:text-xs">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-uni-cian">
                 {etiquetaRol(usuario.rol)}
               </p>
             </div>
             <button
               type="button"
               onClick={cerrarSesion}
-              className="shrink-0 rounded-xl border border-white/15 px-3 py-2 text-xs text-slate-200 transition hover:bg-white/5 sm:text-sm"
+              className="shrink-0 text-uni-mandarina transition hover:text-uni-amarillo"
             >
-              Cerrar sesión
+              → Salir
             </button>
-          </div>
+          </nav>
         </div>
       </header>
 

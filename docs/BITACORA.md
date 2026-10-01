@@ -226,6 +226,9 @@ Repositorio: https://github.com/csantyt/Conecta-BU
 
 ## Avance 14 — Eventos con inscripción, alertas automáticas y "Mi actividad"
 
+**Commit:** [`5bb6c3f`](https://github.com/csantyt/Conecta-BU/commit/5bb6c3f)  
+**Mensaje:** *Agrega inscripción a eventos PISU, alertas automáticas por inasistencias y vista de actividad del estudiante.*
+
 **Qué se hizo.** Se cerraron los huecos de Deporte y se corrigieron errores de compilación que impedían `npm run build`.
 
 **Qué se subió.**
@@ -238,3 +241,17 @@ Repositorio: https://github.com/csantyt/Conecta-BU
 - Pruebas nuevas: `deporte.eventos.test.ts` y `deporte.alertas.test.ts`.
 
 **Para continuar.** `deporte_pisu.sql` se ejecuta al arrancar partiéndolo por `;`: no escribas punto y coma dentro de comentarios ni bloques `DO $$`.
+
+---
+
+## Avance 15 — Identidad visual de la página web Uniautónoma
+
+**Qué se hizo.** La interfaz adopta la paleta y el estilo del sitio institucional: fondo azul noche con fragmentos geométricos, tipografía Montserrat en mayúsculas, acentos cian y naranja, y banda de tarjetas en degradado amarillo → naranja.
+
+**Qué se subió.**
+
+- `frontend/src/index.css`: colores de marca (`uni-noche`, `uni-marino`, `uni-cian`, `uni-amarillo`, `uni-naranja`, `uni-mandarina`) y utilidades `banda-uni` y `sombra-uni`. Las escalas `slate`, `sky` y `cyan` se re-mapean a la paleta, así los paneles existentes la heredan.
+- `public/branding/fondo-geometrico.svg`: fondo de fragmentos triangulares.
+- Cabecera con navegación en mayúsculas y flechas, inicio con título grande y módulos como banda de tarjetas con íconos, login rediseñado, encabezados de Deporte y Desarrollo humano, pestañas y botones principales en degradado y asistente en botón naranja.
+
+**Para continuar.** Usa `banda-uni` para acciones principales y `bg-uni-cian` para etiquetas. Montserrat se carga desde Google Fonts; sin internet se usa la fuente del sistema.

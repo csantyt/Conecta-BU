@@ -34,7 +34,9 @@ export default function EventosSugeridosIA({ onIrAEventos }: EventosSugeridosIAP
           <p className="text-xs font-medium uppercase tracking-wide text-sky-700">
             RF-013 · Recomendador inteligente
           </p>
-          <h2 className="mt-1 text-lg font-semibold">Eventos sugeridos por IA</h2>
+          <h2 className="mt-1 text-lg font-black uppercase tracking-tight text-uni-marino">
+            Eventos sugeridos por IA
+          </h2>
         </div>
         <button
           type="button"

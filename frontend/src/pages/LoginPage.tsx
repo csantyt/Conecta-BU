@@ -126,22 +126,35 @@ export default function LoginPage({ onAutenticado }: LoginPageProps) {
   }
 
   return (
-    <main className="relative flex min-h-screen items-center justify-center bg-slate-950 px-4 py-10">
-      <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
-        <div className="absolute -left-24 top-16 h-72 w-72 rounded-full bg-sky-500/20 blur-3xl" />
-        <div className="absolute -right-16 bottom-10 h-80 w-80 rounded-full bg-emerald-400/10 blur-3xl" />
+    <main className="relative flex min-h-screen flex-col items-center justify-center gap-10 px-4 py-10 lg:flex-row lg:gap-20">
+      <div className="relative z-10 max-w-md text-center lg:text-left">
+        <LogoInstitucional
+          variante="oscuro"
+          className="mx-auto mb-6 h-24 w-auto lg:mx-0"
+        />
+        <span className="inline-block -rotate-3 rounded-md bg-uni-cian px-3 py-1 text-[11px] font-black uppercase tracking-[0.2em] text-uni-noche shadow-lg">
+          Bienestar Universitario
+        </span>
+        <h1 className="mt-5 text-5xl font-black uppercase leading-[0.9] tracking-tight text-white sm:text-6xl">
+          Conecta
+          <span className="text-uni-cian"> BU</span>
+        </h1>
+        <p className="mt-4 text-xs font-bold uppercase tracking-[0.3em] text-white/80">
+          Uniautónoma del Cauca
+        </p>
+        <p className="mt-6 hidden text-sm font-extrabold uppercase tracking-wider text-white lg:block">
+          <span className="text-uni-mandarina">→ Desarrollo humano</span>
+          <span className="mx-3 text-white/30">|</span>
+          → Deporte
+        </p>
       </div>
 
-      <section className="relative z-10 w-full max-w-md rounded-3xl border border-white/10 bg-white p-8 shadow-2xl">
+      <section className="relative z-10 w-full max-w-md overflow-hidden rounded-3xl bg-white p-8 shadow-2xl">
+        <div className="banda-uni absolute inset-x-0 top-0 h-2" aria-hidden />
         <div className="mb-8 text-center">
-          <LogoInstitucional
-            variante="claro"
-            className="mx-auto mb-4 h-28 w-auto"
-          />
-          <h1 className="text-2xl font-semibold text-slate-900">Conecta BU</h1>
-          <p className="mt-1 text-xs font-medium uppercase tracking-[0.2em] text-slate-500">
-            Uniautónoma del Cauca
-          </p>
+          <h2 className="text-xl font-black uppercase tracking-wide text-uni-marino">
+            Iniciar sesión
+          </h2>
           <p className="mt-2 text-sm leading-6 text-slate-600">
             Se mostrará la lista de cuentas. Elige la institucional{" "}
             <span className="font-semibold text-slate-800">
@@ -156,9 +169,11 @@ export default function LoginPage({ onAutenticado }: LoginPageProps) {
             <button
               type="button"
               onClick={iniciarSesionConGoogle}
-              className="flex w-full items-center justify-center gap-3 rounded-xl bg-slate-900 px-4 py-3.5 text-sm font-semibold text-white shadow-lg transition active:scale-[0.98] hover:bg-slate-800"
+              className="banda-uni sombra-uni flex w-full items-center justify-center gap-3 rounded-full px-4 py-3.5 text-sm font-extrabold uppercase tracking-wider text-white transition active:scale-[0.98] hover:brightness-105"
             >
-              <GoogleIcon />
+              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white">
+                <GoogleIcon />
+              </span>
               Elegir cuenta de Google
             </button>
           ) : (

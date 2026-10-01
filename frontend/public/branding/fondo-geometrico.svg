@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice">
+  <rect width="1440" height="900" fill="#050c2c"/>
+  <g fill="#1d4ed8">
+    <polygon points="0,0 260,0 90,210" fill-opacity="0.35"/>
+    <polygon points="90,210 260,0 380,160" fill-opacity="0.18"/>
+    <polygon points="0,0 90,210 0,330" fill-opacity="0.22"/>
+    <polygon points="0,330 90,210 210,420" fill-opacity="0.12"/>
+    <polygon points="90,210 380,160 210,420" fill-opacity="0.08"/>
+    <polygon points="0,330 210,420 0,600" fill-opacity="0.28"/>
+    <polygon points="210,420 380,160 470,380" fill-opacity="0.05"/>
+    <polygon points="0,600 210,420 160,700" fill-opacity="0.1"/>
+    <polygon points="0,600 160,700 0,900" fill-opacity="0.24"/>
+    <polygon points="160,700 360,900 0,900" fill-opacity="0.14"/>
+    <polygon points="160,700 210,420 400,640" fill-opacity="0.06"/>
+    <polygon points="160,700 400,640 360,900" fill-opacity="0.1"/>
+    <polygon points="400,640 620,900 360,900" fill-opacity="0.05"/>
+
+    <polygon points="1440,0 1150,0 1330,190" fill-opacity="0.38"/>
+    <polygon points="1150,0 1330,190 1020,150" fill-opacity="0.16"/>
+    <polygon points="1440,0 1330,190 1440,360" fill-opacity="0.26"/>
+    <polygon points="1330,190 1440,360 1210,420" fill-opacity="0.1"/>
+    <polygon points="1020,150 1330,190 1210,420" fill-opacity="0.07"/>
+    <polygon points="1440,360 1210,420 1440,620" fill-opacity="0.2"/>
+    <polygon points="1210,420 1440,620 1270,700" fill-opacity="0.12"/>
+    <polygon points="1440,620 1270,700 1440,900" fill-opacity="0.3"/>
+    <polygon points="1270,700 1440,900 1080,900" fill-opacity="0.16"/>
+    <polygon points="1210,420 1270,700 1030,640" fill-opacity="0.06"/>
+    <polygon points="1030,640 1270,700 1080,900" fill-opacity="0.1"/>
+    <polygon points="1030,640 1080,900 820,900" fill-opacity="0.05"/>
+    <polygon points="1020,150 1210,420 960,380" fill-opacity="0.04"/>
+  </g>
+  <g fill="#2f6bff">
+    <polygon points="0,0 160,0 40,120" fill-opacity="0.35"/>
+    <polygon points="1440,0 1290,0 1400,110" fill-opacity="0.4"/>
+    <polygon points="1440,900 1330,900 1440,760" fill-opacity="0.35"/>
+    <polygon points="0,900 0,780 110,900" fill-opacity="0.3"/>
+  </g>
+  <g fill="none" stroke="#2f6bff" stroke-opacity="0.12" stroke-width="1">
+    <polyline points="0,330 90,210 260,0"/>
+    <polyline points="0,600 210,420 380,160"/>
+    <polyline points="1440,360 1330,190 1150,0"/>
+    <polyline points="1440,620 1210,420 1020,150"/>
+  </g>
+</svg>

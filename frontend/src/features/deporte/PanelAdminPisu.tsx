@@ -44,12 +44,12 @@ type Vista =
 const tabClass = (activa: boolean) =>
   `shrink-0 rounded-full px-4 py-2 text-sm font-medium transition ${
     activa
-      ? "bg-gradient-to-r from-sky-400 to-cyan-300 text-slate-950 shadow-[0_10px_24px_-12px_rgba(56,189,248,0.9)]"
+      ? "banda-uni sombra-uni text-uni-noche"
       : "border border-white/15 text-slate-300 hover:border-sky-400/35 hover:bg-white/5 hover:text-white"
   }`;
 
 const btnPrimario =
-  "rounded-full bg-gradient-to-r from-sky-400 to-cyan-300 px-4 py-2 text-sm font-semibold text-slate-950 shadow-[0_10px_24px_-12px_rgba(56,189,248,0.9)] transition hover:brightness-110 disabled:opacity-50";
+  "banda-uni sombra-uni rounded-full px-4 py-2 text-sm font-bold text-uni-noche transition hover:brightness-105 disabled:opacity-50";
 const btnSecundario =
   "rounded-full border border-white/15 bg-white/5 px-3.5 py-1.5 text-xs font-semibold text-slate-200 transition hover:border-sky-400/40 hover:bg-sky-400/10";
 const inputClass =

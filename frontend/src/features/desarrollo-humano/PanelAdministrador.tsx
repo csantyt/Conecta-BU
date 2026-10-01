@@ -69,7 +69,7 @@ export default function PanelAdministrador({
             onClick={() => setVista(id)}
             className={`shrink-0 rounded-full px-4 py-2 text-sm font-medium transition ${
               vista === id
-                ? "bg-gradient-to-r from-sky-400 to-cyan-300 text-slate-950 shadow-[0_10px_24px_-12px_rgba(56,189,248,0.9)]"
+                ? "banda-uni sombra-uni text-uni-noche"
                 : "border border-white/15 text-slate-300 hover:border-sky-400/35 hover:bg-white/5 hover:text-white"
             }`}
           >

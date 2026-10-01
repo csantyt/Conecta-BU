@@ -54,15 +54,17 @@ export default function DesarrolloHumanoPage({
       <button
         type="button"
         onClick={onVolver}
-        className="mb-4 text-sm text-slate-300 transition hover:text-white sm:mb-6"
+        className="mb-4 text-xs font-extrabold uppercase tracking-wider text-slate-300 transition hover:text-uni-cian sm:mb-6"
       >
         ← Volver a módulos
       </button>
 
-      <section className="mb-6 rounded-3xl border border-white/10 bg-white/5 p-5 sm:mb-8 sm:p-8">
-        <p className="text-sm font-medium text-sky-300">Módulo activo</p>
-        <h1 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">
-          Desarrollo humano y orientación
+      <section className="mb-6 rounded-3xl border border-white/10 bg-uni-noche/60 p-5 backdrop-blur sm:mb-8 sm:p-8">
+        <span className="inline-block -rotate-2 rounded bg-uni-cian px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-uni-noche">
+          Módulo activo
+        </span>
+        <h1 className="mt-4 text-3xl font-black uppercase tracking-tight sm:text-5xl">
+          Desarrollo humano <span className="text-uni-mandarina">y orientación</span>
         </h1>
         <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300">
           Agenda citas, consulta horarios y participa en eventos de Bienestar.
@@ -76,8 +78,8 @@ export default function DesarrolloHumanoPage({
             onClick={() => setPanel("estudiante")}
             className={`shrink-0 rounded-full px-4 py-2 text-sm ${
               panel === "estudiante"
-                ? "bg-sky-400 text-slate-900"
-                : "border border-white/15 text-slate-300"
+                ? "banda-uni sombra-uni font-bold text-uni-noche"
+                : "border border-white/15 text-slate-300 hover:border-uni-mandarina/60"
             }`}
           >
             Vista estudiante
@@ -87,8 +89,8 @@ export default function DesarrolloHumanoPage({
             onClick={() => setPanel("admin")}
             className={`shrink-0 rounded-full px-4 py-2 text-sm ${
               panel === "admin"
-                ? "bg-sky-400 text-slate-900"
-                : "border border-white/15 text-slate-300"
+                ? "banda-uni sombra-uni font-bold text-uni-noche"
+                : "border border-white/15 text-slate-300 hover:border-uni-mandarina/60"
             }`}
           >
             Panel administrador

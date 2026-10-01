@@ -18,9 +18,9 @@ type DeportePageProps = {
 type VistaPisu = "catalogo" | "actividad" | "asistencia" | "usuarios" | "admin";
 
 const tabActiva =
-  "bg-gradient-to-r from-sky-400 to-cyan-300 text-slate-950 shadow-[0_10px_24px_-12px_rgba(56,189,248,0.9)]";
+  "banda-uni sombra-uni text-uni-noche";
 const tabInactiva =
-  "border border-white/15 text-slate-300 hover:border-sky-400/35 hover:bg-white/5 hover:text-white";
+  "border border-white/15 text-slate-300 hover:border-uni-mandarina/60 hover:bg-white/5 hover:text-white";
 
 export default function DeportePage({ usuario, onVolver }: DeportePageProps) {
   const [deportes, setDeportes] = useState<DeportePisu[]>([]);
@@ -76,15 +76,17 @@ export default function DeportePage({ usuario, onVolver }: DeportePageProps) {
       <button
         type="button"
         onClick={onVolver}
-        className="mb-4 text-sm text-slate-300 transition hover:text-white sm:mb-6"
+        className="mb-4 text-xs font-extrabold uppercase tracking-wider text-slate-300 transition hover:text-uni-cian sm:mb-6"
       >
         ← Volver a módulos
       </button>
 
-      <section className="mb-6 rounded-3xl border border-white/10 bg-white/5 p-5 sm:mb-8 sm:p-8">
-        <p className="text-sm font-medium text-sky-300">Módulo activo</p>
-        <h1 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">
-          Deporte · PISU
+      <section className="mb-6 rounded-3xl border border-white/10 bg-uni-noche/60 p-5 backdrop-blur sm:mb-8 sm:p-8">
+        <span className="inline-block -rotate-2 rounded bg-uni-cian px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-uni-noche">
+          Módulo activo
+        </span>
+        <h1 className="mt-4 text-3xl font-black uppercase tracking-tight sm:text-5xl">
+          Deporte <span className="text-uni-mandarina">· PISU</span>
         </h1>
         <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300">
           Catálogo, inscripción, asistencia docente, eventos, alertas y

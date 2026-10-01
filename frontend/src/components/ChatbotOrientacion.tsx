@@ -106,7 +106,7 @@ export default function ChatbotOrientacion() {
       <button
         type="button"
         onClick={() => setAbierto((valor) => !valor)}
-        className="h-14 w-14 rounded-full bg-sky-500 text-sm font-semibold text-white shadow-lg transition hover:bg-sky-400"
+        className="h-14 w-14 rounded-full bg-uni-mandarina text-sm font-black text-white shadow-[0_12px_28px_-10px_rgba(238,125,0,0.9)] transition hover:bg-uni-naranja"
         aria-label={abierto ? "Cerrar asistente" : "Abrir asistente de orientación"}
       >
         {abierto ? "×" : "IA"}
