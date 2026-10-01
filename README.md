@@ -117,6 +117,6 @@ No mezcles tablas de Desarrollo humano con otro módulo. Copia el patrón de `de
 - RF “Estudiante” = rol `USUARIO`.
 - Una sola cita `AGENDADA` por persona (RN-004).
 - El asistente no da diagnóstico clínico (RN-011).
-- Commits en inglés, documentación de producto en español.
+- Commits y documentación de producto en español.
 
 Historial de lo subido a GitHub: [docs/BITACORA.md](docs/BITACORA.md).

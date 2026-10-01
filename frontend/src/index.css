@@ -1,5 +1,70 @@
 @import "tailwindcss";
 
+/*
+  Paleta institucional Uniautónoma: azul noche de fondo, cian de acento y
+  banda amarillo → naranja. Las escalas slate, sky y cyan se re-mapean para
+  que los componentes existentes hereden la identidad sin reescribirlos.
+*/
+@theme {
+  --font-sans: "Montserrat", ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+    Roboto, sans-serif;
+
+  --color-uni-noche: #050c2c;
+  --color-uni-marino: #0b1a4a;
+  --color-uni-azul: #1d4ed8;
+  --color-uni-rey: #2f6bff;
+  --color-uni-cian: #29c5e6;
+  --color-uni-amarillo: #ffc20e;
+  --color-uni-ambar: #f9a11b;
+  --color-uni-naranja: #ee7d00;
+  --color-uni-mandarina: #f7931e;
+
+  --color-slate-300: #c3cde6;
+  --color-slate-400: #8f9cc6;
+  --color-slate-500: #66739f;
+  --color-slate-700: #1f3a8a;
+  --color-slate-800: #13286b;
+  --color-slate-900: #0b1a4a;
+  --color-slate-950: #050c2c;
+
+  --color-sky-50: #e8f9fd;
+  --color-sky-100: #c6f0fa;
+  --color-sky-200: #93e3f4;
+  --color-sky-300: #5fd5ee;
+  --color-sky-400: #29c5e6;
+  --color-sky-500: #12aed0;
+  --color-sky-600: #0b8db0;
+  --color-sky-700: #0d708c;
+  --color-sky-800: #115a71;
+  --color-sky-900: #134b5f;
+  --color-sky-950: #07303e;
+
+  --color-cyan-50: #e8f9fd;
+  --color-cyan-100: #c6f0fa;
+  --color-cyan-200: #93e3f4;
+  --color-cyan-300: #5fd5ee;
+  --color-cyan-400: #29c5e6;
+  --color-cyan-500: #12aed0;
+  --color-cyan-600: #0b8db0;
+  --color-cyan-700: #0d708c;
+  --color-cyan-800: #115a71;
+  --color-cyan-900: #134b5f;
+  --color-cyan-950: #07303e;
+}
+
+@utility banda-uni {
+  background-image: linear-gradient(
+    100deg,
+    var(--color-uni-amarillo) 0%,
+    var(--color-uni-ambar) 50%,
+    var(--color-uni-naranja) 100%
+  );
+}
+
+@utility sombra-uni {
+  box-shadow: 0 12px 28px -14px rgb(238 125 0 / 0.85);
+}
+
 html,
 body,
 #root {
@@ -8,4 +73,14 @@ body,
 
 body {
   margin: 0;
+  color: #f1f5ff;
+  background-color: var(--color-uni-noche);
+  background-image:
+    url("/branding/fondo-geometrico.svg"),
+    radial-gradient(ellipse at 15% 10%, rgb(47 107 255 / 0.28), transparent 55%),
+    radial-gradient(ellipse at 90% 85%, rgb(29 78 216 / 0.25), transparent 50%);
+  background-size: cover, auto, auto;
+  background-position: center top;
+  background-attachment: fixed;
+  -webkit-font-smoothing: antialiased;
 }
