@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { obtenerCatalogoDeportes } from "../api/deporte";
 import CatalogoDeportes from "../features/deporte/CatalogoDeportes";
 import EventosAlertasPisu from "../features/deporte/EventosAlertasPisu";
+import MiActividadPisu from "../features/deporte/MiActividadPisu";
 import PanelAdminPisu from "../features/deporte/PanelAdminPisu";
 import PanelUsuariosPisu from "../features/deporte/PanelUsuariosPisu";
 import TomarAsistencia from "../features/deporte/TomarAsistencia";
@@ -14,7 +15,7 @@ type DeportePageProps = {
   onVolver: () => void;
 };
 
-type VistaPisu = "catalogo" | "asistencia" | "usuarios" | "admin";
+type VistaPisu = "catalogo" | "actividad" | "asistencia" | "usuarios" | "admin";
 
 const tabActiva =
   "bg-gradient-to-r from-sky-400 to-cyan-300 text-slate-950 shadow-[0_10px_24px_-12px_rgba(56,189,248,0.9)]";
@@ -62,11 +63,13 @@ export default function DeportePage({ usuario, onVolver }: DeportePageProps) {
     }
   }, [perfil?.rol, usuario.rol]);
 
+  const verActividad = perfil?.rol === "Estudiante";
   const verAsistencia =
     perfil?.rol === "Docente" || perfil?.rol === "Administrador";
   const verUsuarios =
     perfil?.rol === "Administrador" || usuario.rol === "ADMINISTRADOR";
   const verAdmin = verUsuarios;
+  const hayPestanas = verActividad || verAsistencia || verUsuarios || verAdmin;
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-6 pb-28 sm:px-6 sm:py-10">
@@ -95,7 +98,7 @@ export default function DeportePage({ usuario, onVolver }: DeportePageProps) {
         </p>
       </section>
 
-      {verAsistencia || verUsuarios || verAdmin ? (
+      {hayPestanas ? (
         <nav className="mb-5 flex gap-2 overflow-x-auto pb-1">
           <button
             type="button"
@@ -106,6 +109,17 @@ export default function DeportePage({ usuario, onVolver }: DeportePageProps) {
           >
             Catálogo
           </button>
+          {verActividad ? (
+            <button
+              type="button"
+              onClick={() => setVista("actividad")}
+              className={`shrink-0 rounded-full px-4 py-2 text-sm font-medium transition ${
+                vista === "actividad" ? tabActiva : tabInactiva
+              }`}
+            >
+              Mi actividad
+            </button>
+          ) : null}
           {verAsistencia ? (
             <button
               type="button"
@@ -153,9 +167,9 @@ export default function DeportePage({ usuario, onVolver }: DeportePageProps) {
         </p>
       ) : null}
 
-      {vista === "catalogo" || (!verAsistencia && !verUsuarios && !verAdmin) ? (
+      {vista === "catalogo" || !hayPestanas ? (
         <>
-          <EventosAlertasPisu onError={onError} />
+          <EventosAlertasPisu perfil={perfil} onAviso={onAviso} onError={onError} />
           <CatalogoDeportes
             deportes={deportes}
             perfil={perfil}
@@ -165,6 +179,10 @@ export default function DeportePage({ usuario, onVolver }: DeportePageProps) {
             onRecargar={recargar}
           />
         </>
+      ) : null}
+
+      {vista === "actividad" && verActividad ? (
+        <MiActividadPisu onError={onError} />
       ) : null}
 
       {vista === "asistencia" && verAsistencia ? (

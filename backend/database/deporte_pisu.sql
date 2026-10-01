@@ -164,3 +164,37 @@ CREATE INDEX IF NOT EXISTS alertas_audiencia_idx
   ON deporte.alertas (audiencia);
 CREATE INDEX IF NOT EXISTS alertas_fecha_idx
   ON deporte.alertas (fecha_creacion DESC);
+
+-- Alertas personales: estudiante_id NULL = aviso general, con valor = solo ese estudiante.
+-- (Este archivo se divide por punto y coma al arrancar: no usarlo dentro de comentarios.)
+-- clave evita duplicar alertas automáticas (p. ej. inasistencias:<deporte>:<estudiante>:<nivel>).
+ALTER TABLE deporte.alertas
+  ADD COLUMN IF NOT EXISTS estudiante_id UUID REFERENCES deporte.usuarios (id) ON DELETE CASCADE;
+ALTER TABLE deporte.alertas
+  ADD COLUMN IF NOT EXISTS clave VARCHAR(200);
+
+CREATE INDEX IF NOT EXISTS alertas_estudiante_idx
+  ON deporte.alertas (estudiante_id);
+CREATE UNIQUE INDEX IF NOT EXISTS alertas_clave_unica
+  ON deporte.alertas (clave)
+  WHERE clave IS NOT NULL;
+
+-- -----------------------------------------------------------------------------
+-- inscripciones_eventos (estudiante ↔ evento deportivo)
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS deporte.inscripciones_eventos (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  evento_id UUID NOT NULL REFERENCES deporte.eventos (id) ON DELETE CASCADE,
+  estudiante_id UUID NOT NULL REFERENCES deporte.usuarios (id) ON DELETE RESTRICT,
+  fecha_inscripcion TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  estado VARCHAR(32) NOT NULL DEFAULT 'Activa'
+    CHECK (estado IN ('Activa', 'Cancelada'))
+);
+
+CREATE INDEX IF NOT EXISTS inscripciones_eventos_evento_idx
+  ON deporte.inscripciones_eventos (evento_id);
+CREATE INDEX IF NOT EXISTS inscripciones_eventos_estudiante_idx
+  ON deporte.inscripciones_eventos (estudiante_id);
+CREATE UNIQUE INDEX IF NOT EXISTS inscripciones_eventos_activa_unica
+  ON deporte.inscripciones_eventos (evento_id, estudiante_id)
+  WHERE estado = 'Activa';

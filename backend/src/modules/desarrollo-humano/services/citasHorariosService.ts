@@ -21,6 +21,52 @@ export type DatosHorario = {
   activo?: boolean;
 };
 
+export async function listarServiciosActivos(): Promise<Servicio[]> {
+  return Servicio.findAll({
+    where: { activo: true },
+    include: [
+      {
+        model: Horario,
+        as: "horarios",
+        where: { activo: true },
+        required: false,
+      },
+    ],
+    order: [["nombre", "ASC"]],
+  });
+}
+
+export async function listarHorariosFiltrados(filtros: {
+  servicioId?: string;
+  activo?: boolean;
+}): Promise<Horario[]> {
+  return Horario.findAll({
+    where: {
+      ...(filtros.servicioId ? { servicio_id: filtros.servicioId } : {}),
+      ...(filtros.activo === undefined ? {} : { activo: filtros.activo }),
+    },
+    include: [{ model: Servicio, as: "servicio" }],
+    order: [
+      ["dia_semana", "ASC"],
+      ["hora_inicio", "ASC"],
+    ],
+  });
+}
+
+export async function listarCitasVisibles(params: {
+  usuarioId: string;
+  esAdministrador: boolean;
+}): Promise<Cita[]> {
+  return Cita.findAll({
+    where: params.esAdministrador ? {} : { usuario_id: params.usuarioId },
+    include: [
+      { model: Servicio, as: "servicio" },
+      { model: Horario, as: "horario" },
+    ],
+    order: [["fecha_hora", "DESC"]],
+  });
+}
+
 function normalizarHora(hora: string): string {
   return hora.length === 5 ? `${hora}:00` : hora.slice(0, 8);
 }

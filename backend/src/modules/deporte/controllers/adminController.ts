@@ -23,6 +23,10 @@ import {
   resumenAdministracion,
 } from "../services/adminService.js";
 import {
+  EventoNoEncontradoError,
+  listarInscritosEvento,
+} from "../services/eventosService.js";
+import {
   actualizarDeporteSchema,
   actualizarEventoPisuSchema,
   actualizarHorarioPisuSchema,
@@ -256,6 +260,28 @@ export async function patchHorarioAdmin(req: Request, res: Response): Promise<vo
 export async function getEventosAdmin(_req: Request, res: Response): Promise<void> {
   const eventos = await listarEventosAdmin();
   res.status(200).json({ eventos });
+}
+
+export async function getInscritosEventoAdmin(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const id = idDeRuta(req, "id");
+  if (!id) {
+    res.status(400).json({ message: "Identificador de evento inválido." });
+    return;
+  }
+
+  try {
+    const resultado = await listarInscritosEvento(id);
+    res.status(200).json(resultado);
+  } catch (error) {
+    if (error instanceof EventoNoEncontradoError) {
+      res.status(404).json({ message: error.message });
+      return;
+    }
+    throw error;
+  }
 }
 
 export async function postEventoAdmin(req: Request, res: Response): Promise<void> {

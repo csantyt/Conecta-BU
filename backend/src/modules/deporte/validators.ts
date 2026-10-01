@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+export const uuidSchema = z.string().uuid();
+
 export const autoinscripcionSchema = z.object({
   deporte_id: z.string().uuid(),
 });

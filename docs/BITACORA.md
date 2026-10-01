@@ -154,7 +154,7 @@ Repositorio: https://github.com/csantyt/Conecta-BU
 
 ## Avance 9 — Autoinscripción a deportes (RF-019) y módulo Deporte activo
 
-**Commit:** el de este avance en `main`.  
+**Commit:** [`9e4150c`](https://github.com/csantyt/Conecta-BU/commit/9e4150c)  
 **Mensaje:** *Add ACID sports self-enrollment and enable the Deporte module.*
 
 **Qué se hizo.** Autoinscripción de estudiantes con transacción ACID (lock de deporte y estudiante) y reglas RN-001 (cruce de horario), RN-002 (categoría) y RN-003 (cupo). Deporte queda como segundo módulo activo, debajo de Desarrollo humano.
@@ -168,3 +168,73 @@ Repositorio: https://github.com/csantyt/Conecta-BU
 **Para qué.** Que el estudiante se inscriba sin sobrecupos ni cruces, y que el módulo se vea y se use en la home.
 
 **Para continuar.** Publicar horarios de docente y toma de asistencia.
+
+---
+
+## Avance 10 — Asistencia docente y catálogo
+
+**Commit:** [`9d5b782`](https://github.com/csantyt/Conecta-BU/commit/9d5b782)  
+**Mensaje:** *Add PISU teacher attendance API and catalog/attendance UI.*
+
+**Qué se hizo.** El docente ve sus clases y la lista de inscritos, toma asistencia por fecha y la corrige dentro de las 24 horas siguientes (RF-016). Solo puede tocar clases asignadas a él (RN-004).
+
+**Qué se subió.**
+
+- `docenteService.ts` y rutas `/api/v1/docente/mis-clases`, `/clases/:horarioId/estudiantes`, `/asistencia`
+- Pantallas `CatalogoDeportes.tsx` (filtros por nombre y día) y `TomarAsistencia.tsx`
+
+---
+
+## Avance 11 — Roles PISU, creación de deportes y pruebas de API
+
+**Commit:** [`05fe47a`](https://github.com/csantyt/Conecta-BU/commit/05fe47a)  
+**Mensaje:** *Add PISU role assignment, sport creation, and Jest API tests.*
+
+**Qué se hizo.** El administrador asigna rol PISU (Administrador, Docente, Estudiante) y categoría a cualquier cuenta y crea deportes. Se configuró Jest con pruebas de integración contra PostgreSQL.
+
+**Qué se subió.**
+
+- `PATCH /api/v1/admin/usuarios/:id`, `POST /api/v1/admin/deportes`, pantalla `PanelUsuariosPisu.tsx`
+- `backend/tests/` con pruebas de 401/403 y de concurrencia de cupos (8 inscripciones simultáneas al último cupo)
+
+---
+
+## Avance 12 — Pruebas unitarias
+
+**Commit:** [`4652028`](https://github.com/csantyt/Conecta-BU/commit/4652028)  
+**Mensaje:** *Add backend unit tests for auth, DH, deporte, and IA.*
+
+**Qué se hizo.** Pruebas unitarias de roles, validadores Zod de Desarrollo humano y Deporte, cálculo de traslapes, dashboard y cliente de n8n.
+
+**Para continuar.** `npm test` en `backend/` necesita PostgreSQL arriba y el `.env` con `DATABASE_URL` y `JWT_SECRET`.
+
+---
+
+## Avance 13 — Dashboard DH, administración PISU completa y login móvil
+
+**Commit:** [`40aec94`](https://github.com/csantyt/Conecta-BU/commit/40aec94)  
+**Mensaje:** *Add DH admin dashboard, full PISU admin UI, and mobile-ready login.*
+
+**Qué se hizo.** Panel de estadísticas para el administrador de Desarrollo humano (incluye consultas a la IA). Administración PISU completa: resumen, deportes, horarios con docente, eventos y alertas. Login con Google que funciona desde el teléfono por la red local.
+
+**Qué se subió.**
+
+- `dashboardService.ts`, modelo `ConsultaIa` y `GET /api/v1/desarrollo-humano/admin/dashboard`
+- `PanelAdminPisu.tsx`, `EventosAlertasPisu.tsx` y rutas `/api/v1/admin/{resumen,horarios,eventos,alertas}`
+
+---
+
+## Avance 14 — Eventos con inscripción, alertas automáticas y "Mi actividad"
+
+**Qué se hizo.** Se cerraron los huecos de Deporte y se corrigieron errores de compilación que impedían `npm run build`.
+
+**Qué se subió.**
+
+- **Inscripción a eventos deportivos:** tabla `deporte.inscripciones_eventos`, `eventosService.ts` con transacción y bloqueo (sin sobrecupo), rutas `POST|DELETE /api/v1/estudiante/eventos/:id/inscripcion` y `GET /api/v1/admin/eventos/:id/inscritos`. El administrador no puede bajar el cupo por debajo de los inscritos.
+- **Alertas automáticas:** cada 3 inasistencias en un deporte (`UMBRAL_INASISTENCIAS_ALERTA`) se crea un aviso personal para el estudiante. Columnas nuevas `alertas.estudiante_id` y `alertas.clave` (única, evita duplicados). `alertasService.ts`.
+- **Mi actividad (estudiante):** horario semanal y porcentaje de asistencia por deporte. `GET /api/v1/estudiante/asistencias` y pantalla `MiActividadPisu.tsx`.
+- **Capas en Desarrollo humano:** el controlador ya no consulta modelos directamente; usa `listarServiciosActivos`, `listarHorariosFiltrados` y `listarCitasVisibles`.
+- **Correcciones:** 14 errores de TypeScript en backend (el build fallaba) y un error en `TomarAsistencia.tsx` que rompía la lista cuando ya había asistencia registrada.
+- Pruebas nuevas: `deporte.eventos.test.ts` y `deporte.alertas.test.ts`.
+
+**Para continuar.** `deporte_pisu.sql` se ejecuta al arrancar partiéndolo por `;`: no escribas punto y coma dentro de comentarios ni bloques `DO $$`.

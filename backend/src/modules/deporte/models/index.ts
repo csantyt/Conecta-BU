@@ -4,6 +4,7 @@ import { Deporte } from "./Deporte.js";
 import { EventoDeporte } from "./EventoDeporte.js";
 import { HorarioDeporte } from "./HorarioDeporte.js";
 import { InscripcionDeporte } from "./InscripcionDeporte.js";
+import { InscripcionEvento } from "./InscripcionEvento.js";
 import { UsuarioPisu } from "./UsuarioPisu.js";
 
 UsuarioPisu.hasMany(HorarioDeporte, {
@@ -63,6 +64,33 @@ Asistencia.belongsTo(UsuarioPisu, {
   as: "docente",
 });
 
+EventoDeporte.hasMany(InscripcionEvento, {
+  foreignKey: "evento_id",
+  as: "inscripciones",
+});
+InscripcionEvento.belongsTo(EventoDeporte, {
+  foreignKey: "evento_id",
+  as: "evento",
+});
+
+UsuarioPisu.hasMany(InscripcionEvento, {
+  foreignKey: "estudiante_id",
+  as: "inscripciones_eventos",
+});
+InscripcionEvento.belongsTo(UsuarioPisu, {
+  foreignKey: "estudiante_id",
+  as: "estudiante",
+});
+
+UsuarioPisu.hasMany(Alerta, {
+  foreignKey: "estudiante_id",
+  as: "alertas_personales",
+});
+Alerta.belongsTo(UsuarioPisu, {
+  foreignKey: "estudiante_id",
+  as: "estudiante",
+});
+
 export {
   Alerta,
   Asistencia,
@@ -70,5 +98,6 @@ export {
   EventoDeporte,
   HorarioDeporte,
   InscripcionDeporte,
+  InscripcionEvento,
   UsuarioPisu,
 };

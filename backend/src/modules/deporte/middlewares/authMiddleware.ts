@@ -45,7 +45,7 @@ async function resolverPerfilPisu(req: Request, res: Response): Promise<boolean>
     correo: perfil.correo,
     rol: perfil.rol,
     categoria: perfil.categoria ?? null,
-    estado: perfil.estado !== false,
+    estado: true,
   });
   return true;
 }

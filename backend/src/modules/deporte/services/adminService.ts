@@ -10,6 +10,9 @@ import { HorarioDeporte } from "../models/HorarioDeporte.js";
 import { InscripcionDeporte } from "../models/InscripcionDeporte.js";
 import { UsuarioPisu } from "../models/UsuarioPisu.js";
 import { hayTraslape, normalizarHora } from "../utils/horarios.js";
+import { contarInscritosEvento, listarEventosConConteo } from "./eventosService.js";
+
+type CambiosParciales<T> = { [K in keyof T]?: T[K] | undefined };
 
 export class UsuarioPisuNoEncontradoError extends Error {}
 export class DatosRolPisuInvalidosError extends Error {}
@@ -90,7 +93,7 @@ export async function listarUsuariosPisu(): Promise<FichaDirectorioPisu[]> {
 
 function normalizarCategoria(params: {
   rol: RolPisu;
-  categoria?: CategoriaPisu | null;
+  categoria?: CategoriaPisu | null | undefined;
 }): CategoriaPisu | null {
   if (params.rol === "Estudiante") {
     return params.categoria &&
@@ -105,7 +108,7 @@ export async function asignarRolPisu(params: {
   pisuId?: string | null;
   authUsuarioId?: string | null;
   rol: RolPisu;
-  categoria?: CategoriaPisu | null;
+  categoria?: CategoriaPisu | null | undefined;
 }): Promise<UsuarioPisu> {
   if (!(ROLES_PISU as readonly string[]).includes(params.rol)) {
     throw new DatosRolPisuInvalidosError("Rol PISU inválido.");
@@ -181,7 +184,7 @@ export async function resumenAdministracion() {
 
 export async function crearDeporte(params: {
   nombre: string;
-  descripcion?: string | null;
+  descripcion?: string | null | undefined;
   cupo_maximo: number;
   categorias_permitidas?: CategoriaPisu[];
 }): Promise<Deporte> {
@@ -218,7 +221,7 @@ export async function listarDeportesAdmin(): Promise<Deporte[]> {
 
 export async function actualizarDeporte(
   id: string,
-  cambios: Partial<{
+  cambios: CambiosParciales<{
     nombre: string;
     descripcion: string | null;
     cupo_maximo: number;
@@ -382,7 +385,7 @@ export async function crearHorarioAdmin(params: {
 
 export async function actualizarHorarioAdmin(
   id: string,
-  cambios: Partial<{
+  cambios: CambiosParciales<{
     deporte_id: string;
     docente_id: string;
     dia_semana: number;
@@ -443,14 +446,12 @@ export async function actualizarHorarioAdmin(
 }
 
 export async function listarEventosAdmin() {
-  return EventoDeporte.findAll({
-    order: [["fecha", "DESC"]],
-  });
+  return listarEventosConConteo();
 }
 
 export async function crearEventoAdmin(params: {
   nombre: string;
-  descripcion?: string | null;
+  descripcion?: string | null | undefined;
   fecha: string;
   lugar: string;
   cupo_maximo: number;
@@ -479,7 +480,7 @@ export async function crearEventoAdmin(params: {
 
 export async function actualizarEventoAdmin(
   id: string,
-  cambios: Partial<{
+  cambios: CambiosParciales<{
     nombre: string;
     descripcion: string | null;
     fecha: string;
@@ -517,6 +518,12 @@ export async function actualizarEventoAdmin(
     if (cambios.cupo_maximo < 1) {
       throw new DatosRolPisuInvalidosError("El cupo máximo debe ser al menos 1.");
     }
+    const inscritos = await contarInscritosEvento(evento.id);
+    if (cambios.cupo_maximo < inscritos) {
+      throw new DatosRolPisuInvalidosError(
+        `El cupo no puede ser menor que los ${inscritos} estudiantes ya inscritos.`,
+      );
+    }
     evento.cupo_maximo = cambios.cupo_maximo;
   }
   if (cambios.estado !== undefined) {
@@ -529,6 +536,14 @@ export async function actualizarEventoAdmin(
 
 export async function listarAlertasAdmin() {
   return Alerta.findAll({
+    include: [
+      {
+        model: UsuarioPisu,
+        as: "estudiante",
+        attributes: ["id", "nombre", "correo"],
+        required: false,
+      },
+    ],
     order: [["fecha_creacion", "DESC"]],
   });
 }

@@ -7,6 +7,7 @@ import {
   getDocentesAdmin,
   getEventosAdmin,
   getHorariosAdmin,
+  getInscritosEventoAdmin,
   getResumenAdmin,
   getUsuariosAdmin,
   patchDeporteAdmin,
@@ -40,6 +41,7 @@ adminRoutes.post("/horarios", asyncHandler(postHorarioAdmin));
 adminRoutes.patch("/horarios/:id", asyncHandler(patchHorarioAdmin));
 
 adminRoutes.get("/eventos", asyncHandler(getEventosAdmin));
+adminRoutes.get("/eventos/:id/inscritos", asyncHandler(getInscritosEventoAdmin));
 adminRoutes.post("/eventos", asyncHandler(postEventoAdmin));
 adminRoutes.patch("/eventos/:id", asyncHandler(patchEventoAdmin));
 

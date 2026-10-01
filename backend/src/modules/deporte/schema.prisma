@@ -59,6 +59,8 @@ model UsuarioPisu {
   inscripciones        InscripcionDeporte[] @relation("InscripcionEstudiante")
   asistenciasEstudiante Asistencia[]        @relation("AsistenciaEstudiante")
   asistenciasTomadas    Asistencia[]        @relation("AsistenciaDocente")
+  inscripcionesEventos  InscripcionEvento[]
+  alertasPersonales     Alerta[]
 
   @@unique([correo])
   @@index([rol])
@@ -93,9 +95,27 @@ model EventoDeporte {
   estado        Boolean  @default(true)
   fechaCreacion DateTime @default(now()) @map("fecha_creacion") @db.Timestamptz()
 
+  inscripciones InscripcionEvento[]
+
   @@index([fecha])
   @@index([estado])
   @@map("eventos")
+  @@schema("deporte")
+}
+
+model InscripcionEvento {
+  id               String                @id @default(uuid()) @db.Uuid
+  eventoId         String                @map("evento_id") @db.Uuid
+  estudianteId     String                @map("estudiante_id") @db.Uuid
+  fechaInscripcion DateTime              @default(now()) @map("fecha_inscripcion") @db.Timestamptz()
+  estado           EstadoInscripcionPisu @default(Activa)
+
+  evento     EventoDeporte @relation(fields: [eventoId], references: [id], onDelete: Cascade)
+  estudiante UsuarioPisu   @relation(fields: [estudianteId], references: [id], onDelete: Restrict)
+
+  @@index([eventoId])
+  @@index([estudianteId])
+  @@map("inscripciones_eventos")
   @@schema("deporte")
 }
 
@@ -161,9 +181,14 @@ model Alerta {
   titulo         String             @db.VarChar(180)
   mensaje        String             @db.Text
   audiencia      AudienciaAlertaPisu
+  estudianteId   String?            @map("estudiante_id") @db.Uuid
+  clave          String?            @unique @db.VarChar(200)
   fechaCreacion  DateTime           @default(now()) @map("fecha_creacion") @db.Timestamptz()
 
+  estudiante UsuarioPisu? @relation(fields: [estudianteId], references: [id], onDelete: Cascade)
+
   @@index([audiencia])
+  @@index([estudianteId])
   @@index([fechaCreacion(sort: Desc)])
   @@map("alertas")
   @@schema("deporte")
