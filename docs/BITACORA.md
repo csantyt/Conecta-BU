@@ -16,8 +16,8 @@ Repositorio: https://github.com/csantyt/Conecta-BU
 
 ## Avance 1 — Base de la aplicación
 
-**Commit:** [`4487fc6`](https://github.com/csantyt/Conecta-BU/commit/4487fc6)  
-**Mensaje:** *Add Conecta BU backend, frontend auth, and Bienestar modules.*
+**Commit:** [`48062d7`](https://github.com/csantyt/Conecta-BU/commit/48062d7)  
+**Mensaje:** *Agrega el backend de Conecta BU, la autenticación del frontend y los módulos de Bienestar.*
 
 **Qué se hizo.** Se creó el esqueleto de Conecta BU: API en Express, login con Google, SPA en Vite/React y los cinco módulos de Bienestar visibles en la home (solo como catálogo).
 
@@ -34,8 +34,8 @@ Repositorio: https://github.com/csantyt/Conecta-BU
 
 ## Avance 2 — Módulo DH y esquemas independientes
 
-**Commit:** [`dd3a0b2`](https://github.com/csantyt/Conecta-BU/commit/dd3a0b2)  
-**Mensaje:** *Add Desarrollo humano module, independent schemas, and role catalog.*
+**Commit:** [`3d1282a`](https://github.com/csantyt/Conecta-BU/commit/3d1282a)  
+**Mensaje:** *Agrega el módulo de Desarrollo humano, esquemas independientes y el catálogo de roles.*
 
 **Qué se hizo.** Desarrollo humano dejó de ser un placeholder: schema propio, modelos y semilla de servicios. Cada módulo de Bienestar tiene schema PostgreSQL para no compartir tablas.
 
@@ -52,8 +52,8 @@ Repositorio: https://github.com/csantyt/Conecta-BU
 
 ## Avance 3 — REST de citas y promoción de administradores
 
-**Commit:** [`1ab1ef1`](https://github.com/csantyt/Conecta-BU/commit/1ab1ef1)  
-**Mensaje:** *Add DH appointment REST rules and in-app admin role management.*
+**Commit:** [`be60385`](https://github.com/csantyt/Conecta-BU/commit/be60385)  
+**Mensaje:** *Agrega las reglas REST de citas de Desarrollo humano y la gestión de administradores desde la app.*
 
 **Qué se hizo.** API de horarios y citas con reglas de negocio: cupo, una cita activa, transacciones y bloqueo de fila al agendar. Un administrador puede promover a otra persona desde la home (después de que esa persona haya iniciado sesión con Google).
 
@@ -69,8 +69,8 @@ Repositorio: https://github.com/csantyt/Conecta-BU
 
 ## Avance 4 — Eventos e identidad institucional
 
-**Commit:** [`d2077fe`](https://github.com/csantyt/Conecta-BU/commit/d2077fe)  
-**Mensaje:** *Add DH events REST rules and Uniautonoma branding.*
+**Commit:** [`34dd123`](https://github.com/csantyt/Conecta-BU/commit/34dd123)  
+**Mensaje:** *Agrega las reglas REST de eventos de Desarrollo humano y la identidad institucional Uniautónoma.*
 
 **Qué se hizo.** Eventos y talleres con cupo, fecha límite de inscripción, inscripciones y asistencia. Marca de la Corporación Universitaria Autónoma del Cauca (nombre y logo).
 
@@ -86,8 +86,8 @@ Repositorio: https://github.com/csantyt/Conecta-BU
 
 ## Avance 5 — UI completa, IA/n8n y catálogo sin duplicados
 
-**Commit:** [`0ae85f5`](https://github.com/csantyt/Conecta-BU/commit/0ae85f5)  
-**Mensaje:** *Unify DH services by name and ship the student/admin UI with n8n orientation.*
+**Commit:** [`b936abd`](https://github.com/csantyt/Conecta-BU/commit/b936abd)  
+**Mensaje:** *Unifica los servicios de Desarrollo humano por nombre y publica la interfaz de estudiante y administrador con orientación vía n8n.*
 
 **Qué se hizo.** Interfaz de estudiante (tarjetas, calendario, horarios, mis citas, eventos) y de administrador (CRUD de horarios, citas del día con asistencia, eventos con inscritos nominados). Chat de orientación y recomendaciones vía n8n. Se unificaron servicios duplicados y se añadió índice único por nombre.
 
@@ -104,8 +104,8 @@ Repositorio: https://github.com/csantyt/Conecta-BU
 
 ## Avance 6 — Esta documentación
 
-**Commit:** [`e50a609`](https://github.com/csantyt/Conecta-BU/commit/e50a609)  
-**Mensaje:** *Document stack, module map, and per-commit history for collaborators.*
+**Commit:** [`83365e7`](https://github.com/csantyt/Conecta-BU/commit/83365e7)  
+**Mensaje:** *Documenta las tecnologías, el mapa de módulos y el historial por commit para colaboradores.*
 
 **Qué se hizo.** README del repositorio, bitácora y comentarios en GitHub para onboarding.
 
@@ -115,8 +115,8 @@ Repositorio: https://github.com/csantyt/Conecta-BU
 
 ## Avance 7 — Modelo relacional Deportes PISU
 
-**Commit:** [`e9a7a35`](https://github.com/csantyt/Conecta-BU/commit/e9a7a35)  
-**Mensaje:** *Add Deportes PISU relational schema in the deporte PostgreSQL schema.*
+**Commit:** [`e622c11`](https://github.com/csantyt/Conecta-BU/commit/e622c11)  
+**Mensaje:** *Agrega el modelo relacional de Deportes PISU en el esquema deporte de PostgreSQL.*
 
 **Qué se hizo.** Se inicializó el modelo de datos del módulo Deportes PISU para inscribir estudiantes, asignar horarios a docentes, tomar asistencia y emitir alertas, sin mezclar tablas con Desarrollo humano ni con `auth`.
 
@@ -135,8 +135,8 @@ Repositorio: https://github.com/csantyt/Conecta-BU
 
 ## Avance 8 — API PISU por capas (JWT + RBAC)
 
-**Commit:** [`979ee5d`](https://github.com/csantyt/Conecta-BU/commit/979ee5d)  
-**Mensaje:** *Add PISU Express layers with JWT auth and role-based routes.*
+**Commit:** [`06ffca0`](https://github.com/csantyt/Conecta-BU/commit/06ffca0)  
+**Mensaje:** *Agrega las capas Express de PISU con autenticación JWT y rutas por rol.*
 
 **Qué se hizo.** Se montó el servidor PISU en capas (Routes → Middlewares → Controllers → Services → Models). El JWT de Conecta BU sigue siendo el de Google; el middleware PISU lo verifica y carga el perfil en `deporte.usuarios`. El RBAC restringe **Administrador**, **Docente** y **Estudiante**.
 
@@ -154,8 +154,8 @@ Repositorio: https://github.com/csantyt/Conecta-BU
 
 ## Avance 9 — Autoinscripción a deportes (RF-019) y módulo Deporte activo
 
-**Commit:** [`9e4150c`](https://github.com/csantyt/Conecta-BU/commit/9e4150c)  
-**Mensaje:** *Add ACID sports self-enrollment and enable the Deporte module.*
+**Commit:** [`b334991`](https://github.com/csantyt/Conecta-BU/commit/b334991)  
+**Mensaje:** *Agrega la autoinscripción ACID a deportes y habilita el módulo Deporte.*
 
 **Qué se hizo.** Autoinscripción de estudiantes con transacción ACID (lock de deporte y estudiante) y reglas RN-001 (cruce de horario), RN-002 (categoría) y RN-003 (cupo). Deporte queda como segundo módulo activo, debajo de Desarrollo humano.
 
@@ -173,8 +173,8 @@ Repositorio: https://github.com/csantyt/Conecta-BU
 
 ## Avance 10 — Asistencia docente y catálogo
 
-**Commit:** [`9d5b782`](https://github.com/csantyt/Conecta-BU/commit/9d5b782)  
-**Mensaje:** *Add PISU teacher attendance API and catalog/attendance UI.*
+**Commit:** [`042e910`](https://github.com/csantyt/Conecta-BU/commit/042e910)  
+**Mensaje:** *Agrega la API de asistencia docente de PISU y la interfaz de catálogo y asistencia.*
 
 **Qué se hizo.** El docente ve sus clases y la lista de inscritos, toma asistencia por fecha y la corrige dentro de las 24 horas siguientes (RF-016). Solo puede tocar clases asignadas a él (RN-004).
 
@@ -187,8 +187,8 @@ Repositorio: https://github.com/csantyt/Conecta-BU
 
 ## Avance 11 — Roles PISU, creación de deportes y pruebas de API
 
-**Commit:** [`05fe47a`](https://github.com/csantyt/Conecta-BU/commit/05fe47a)  
-**Mensaje:** *Add PISU role assignment, sport creation, and Jest API tests.*
+**Commit:** [`0b1c4a6`](https://github.com/csantyt/Conecta-BU/commit/0b1c4a6)  
+**Mensaje:** *Agrega la asignación de roles PISU, la creación de deportes y pruebas de API con Jest.*
 
 **Qué se hizo.** El administrador asigna rol PISU (Administrador, Docente, Estudiante) y categoría a cualquier cuenta y crea deportes. Se configuró Jest con pruebas de integración contra PostgreSQL.
 
@@ -201,8 +201,8 @@ Repositorio: https://github.com/csantyt/Conecta-BU
 
 ## Avance 12 — Pruebas unitarias
 
-**Commit:** [`4652028`](https://github.com/csantyt/Conecta-BU/commit/4652028)  
-**Mensaje:** *Add backend unit tests for auth, DH, deporte, and IA.*
+**Commit:** [`18246b9`](https://github.com/csantyt/Conecta-BU/commit/18246b9)  
+**Mensaje:** *Agrega pruebas unitarias del backend para autenticación, Desarrollo humano, Deporte e IA.*
 
 **Qué se hizo.** Pruebas unitarias de roles, validadores Zod de Desarrollo humano y Deporte, cálculo de traslapes, dashboard y cliente de n8n.
 
@@ -212,8 +212,8 @@ Repositorio: https://github.com/csantyt/Conecta-BU
 
 ## Avance 13 — Dashboard DH, administración PISU completa y login móvil
 
-**Commit:** [`40aec94`](https://github.com/csantyt/Conecta-BU/commit/40aec94)  
-**Mensaje:** *Add DH admin dashboard, full PISU admin UI, and mobile-ready login.*
+**Commit:** [`961144e`](https://github.com/csantyt/Conecta-BU/commit/961144e)  
+**Mensaje:** *Agrega el dashboard de Desarrollo humano, la administración completa de PISU y el login para móvil.*
 
 **Qué se hizo.** Panel de estadísticas para el administrador de Desarrollo humano (incluye consultas a la IA). Administración PISU completa: resumen, deportes, horarios con docente, eventos y alertas. Login con Google que funciona desde el teléfono por la red local.
 
@@ -226,7 +226,7 @@ Repositorio: https://github.com/csantyt/Conecta-BU
 
 ## Avance 14 — Eventos con inscripción, alertas automáticas y "Mi actividad"
 
-**Commit:** [`5bb6c3f`](https://github.com/csantyt/Conecta-BU/commit/5bb6c3f)  
+**Commit:** [`e7b7538`](https://github.com/csantyt/Conecta-BU/commit/e7b7538)  
 **Mensaje:** *Agrega inscripción a eventos PISU, alertas automáticas por inasistencias y vista de actividad del estudiante.*
 
 **Qué se hizo.** Se cerraron los huecos de Deporte y se corrigieron errores de compilación que impedían `npm run build`.
@@ -245,6 +245,9 @@ Repositorio: https://github.com/csantyt/Conecta-BU
 ---
 
 ## Avance 15 — Identidad visual de la página web Uniautónoma
+
+**Commit:** [`3afae2e`](https://github.com/csantyt/Conecta-BU/commit/3afae2e)  
+**Mensaje:** *Aplica la identidad visual de la página web Uniautónoma a Conecta BU.*
 
 **Qué se hizo.** La interfaz adopta la paleta y el estilo del sitio institucional: fondo azul noche con fragmentos geométricos, tipografía Montserrat en mayúsculas, acentos cian y naranja, y banda de tarjetas en degradado amarillo → naranja.
 

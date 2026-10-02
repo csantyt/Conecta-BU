@@ -1,0 +1,19 @@
+---
+description: Todo el proyecto se escribe en español, incluidos los commits
+alwaysApply: true
+---
+
+# Idioma: siempre español
+
+- **Mensajes de commit:** en español, en tercera persona y con verbo al inicio.
+  - ❌ `Add PISU teacher attendance API.`
+  - ✅ `Agrega la API de asistencia docente de PISU.`
+- **Títulos y descripciones de pull requests:** en español.
+- **Comentarios en el código:** en español.
+- **Documentación** (`README.md`, `docs/`): en español.
+- **Respuestas al usuario:** en español.
+
+Se mantienen en inglés solo los nombres propios de herramientas y los
+elementos técnicos que no se traducen: palabras reservadas, APIs de librerías
+y la línea `Co-authored-by:` de los commits, que GitHub usa para reconocer a los
+coautores.
