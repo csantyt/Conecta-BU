@@ -6,7 +6,7 @@ Este repositorio es el punto de entrada para quien continúe el proyecto. Aquí 
 
 - Bitácora de cada avance: [docs/BITACORA.md](docs/BITACORA.md)
 - Arquitectura de módulos y esquemas: [docs/arquitectura-modular.md](docs/arquitectura-modular.md)
-- Prompt del asistente (RN-011): [docs/n8n-system-prompt-orientacion.md](docs/n8n-system-prompt-orientacion.md)
+- Prompt del asistente (RN-011): `backend/src/modules/ia/prompts.ts` (versión para n8n en [docs/n8n-system-prompt-orientacion.md](docs/n8n-system-prompt-orientacion.md))
 
 ## Qué hay listo
 
@@ -34,14 +34,14 @@ Están habilitados **Desarrollo humano y orientación** y **Deporte (PISU)**. Lo
 | Validación | Zod | Cuerpos y query params |
 | Persistencia | PostgreSQL + Sequelize 6 | Un **schema por módulo** |
 | Identidad | `google-auth-library` + JWT 8 h | Verificar Google y sesión |
-| Automatización / IA | n8n (webhooks locales `:5678`) | Chat de orientación y recomendaciones de eventos |
+| IA | Proveedor compatible con OpenAI (Gemini por defecto; también Groq u OpenAI). n8n opcional | Chat de orientación y recomendaciones de eventos |
 | Control de versiones | Git + GitHub (`csantyt/Conecta-BU`) | Historial y colaboración |
 
-El chat **no diagnostica** (regla RN-011). Si n8n no está arriba, el backend responde con texto local seguro.
+El chat **no diagnostica** (regla RN-011): los mensajes clínicos o de crisis se responden en el backend y nunca se envían a un servicio externo. El backend intenta, en orden, el proveedor de IA, n8n (si hay webhook) y unas reglas locales, así que el asistente responde en cualquier equipo aunque no haya IA configurada. Al proveedor solo se le envía el mensaje, el historial del chat y el rol, nunca el correo.
 
 ## Cómo correrlo en local
 
-Requisitos: Node.js 20+, PostgreSQL, cuenta Google OAuth (client ID) restringida al dominio institucional. Opcional: n8n en `http://localhost:5678`.
+Requisitos: Node.js 20+, PostgreSQL, cuenta Google OAuth (client ID) restringida al dominio institucional. Opcional: clave de un proveedor de IA (por ejemplo, Gemini).
 
 ```bash
 # 1) Base de datos
@@ -63,23 +63,29 @@ npm run dev            # http://localhost:5173  (proxy /api → :3000)
 
 Variables importantes:
 
-- Backend: `DATABASE_URL`, `JWT_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_HOSTED_DOMAIN`, `N8N_WEBHOOK_ORIENTACION`, `N8N_WEBHOOK_RECOMENDACIONES`
+- Backend: `DATABASE_URL`, `JWT_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_HOSTED_DOMAIN`, `IA_API_KEY`, `IA_BASE_URL`, `IA_MODELO`
 - Frontend: `VITE_API_URL`, `VITE_GOOGLE_CLIENT_ID`, `VITE_GOOGLE_HOSTED_DOMAIN`
 
 **No subas archivos `.env`.** Solo existen `.env.example`.
 
+### Activar la IA
+
+1. Crea una clave gratuita en [Google AI Studio](https://aistudio.google.com/apikey).
+2. Pégala en `backend/.env` como `IA_API_KEY=...` y reinicia el backend.
+3. Para otro proveedor compatible con OpenAI cambia `IA_BASE_URL` e `IA_MODELO` (hay ejemplos de Groq y OpenAI en `.env.example`).
+
+Sin clave, el chat responde con las reglas de `backend/src/modules/ia/respuestasLocales.ts` y el recomendador muestra los próximos eventos con cupo.
+
 ### n8n (opcional)
 
-1. Instala y arranca n8n (puerto 5678).
-2. Los flujos esperados son `conecta-bu-orientacion` y `conecta-bu-recomendaciones` (código en `n8n/`).
-3. El prompt del modelo está en `docs/n8n-system-prompt-orientacion.md`.
+Si prefieres orquestar la IA con n8n, define `N8N_WEBHOOK_ORIENTACION` y `N8N_WEBHOOK_RECOMENDACIONES`. Se usan solo si el proveedor de IA no está configurado o falla. El código de los flujos está en `n8n/` y el formato de los webhooks en `docs/n8n-system-prompt-orientacion.md`.
 
 ## Mapa del código
 
 ```
 backend/src/modules/auth/                 login Google, usuarios, roles
 backend/src/modules/desarrollo-humano/    citas, horarios, eventos
-backend/src/modules/ia/                   puente a n8n
+backend/src/modules/ia/                   asistente: proveedor de IA, n8n opcional y reglas locales
 backend/src/modules/deporte/              PISU por capas (usuarios, deportes, horarios, inscripciones, asistencias, eventos, alertas)
 backend/src/modules/{permanencia,salud,cultura}/  placeholders
 frontend/src/pages/                        login, home, módulo DH, módulo Deporte

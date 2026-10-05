@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { consultarRecomendaciones, type EventoSugerido } from "../api/ia";
+import { consultarRecomendaciones, type EventoSugerido, type FuenteIa } from "../api/ia";
 
 function formatearFecha(valor: string): string {
   return new Date(valor).toLocaleString("es-CO", {
@@ -15,7 +15,7 @@ type EventosSugeridosIAProps = {
 export default function EventosSugeridosIA({ onIrAEventos }: EventosSugeridosIAProps) {
   const [eventos, setEventos] = useState<EventoSugerido[]>([]);
   const [cargando, setCargando] = useState(true);
-  const [fuente, setFuente] = useState<"n8n" | "local" | null>(null);
+  const [fuente, setFuente] = useState<FuenteIa | null>(null);
 
   useEffect(() => {
     void consultarRecomendaciones()
@@ -72,7 +72,7 @@ export default function EventosSugeridosIA({ onIrAEventos }: EventosSugeridosIAP
 
       {fuente === "local" && eventos.length > 0 ? (
         <p className="mt-4 text-[11px] text-slate-400">
-          Sugerencias locales mientras se configura el webhook de n8n.
+          Sugerencias por fecha y cupo: la IA no está disponible en este momento.
         </p>
       ) : null}
     </section>

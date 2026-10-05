@@ -15,7 +15,7 @@ export class ConsultaIa extends Model<
   declare id: CreationOptional<string>;
   declare usuario_id: string;
   declare consulta_clinica: CreationOptional<boolean>;
-  declare fuente: CreationOptional<"n8n" | "local">;
+  declare fuente: CreationOptional<"ia" | "n8n" | "local">;
   declare fecha_creacion: CreationOptional<Date>;
 }
 

@@ -1,29 +1,8 @@
-const PALABRAS_CLINICAS = [
-  "diagnostico",
-  "diagnóstico",
-  "prescri",
-  "receta",
-  "medicament",
-  "dosis",
-  "trastorno",
-  "depres",
-  "ansiedad grave",
-  "tde",
-  "tdah",
-  "bipolar",
-  "esquizofr",
-  "autoles",
-  "suicid",
-  "matarme",
-  "quitarme la vida",
-  "ataque de panico",
-  "ataque de pánico",
-  "psiquiat",
-];
-
-export function pareceConsultaClinica(texto: string): boolean {
-  const normalizado = texto.toLowerCase();
-  return PALABRAS_CLINICAS.some((palabra) => normalizado.includes(palabra));
+export function webhookN8nConfigurado(tipo: "orientacion" | "recomendaciones"): boolean {
+  return (
+    webhookUrl(tipo === "orientacion" ? "N8N_WEBHOOK_ORIENTACION" : "N8N_WEBHOOK_RECOMENDACIONES") !==
+    null
+  );
 }
 
 function webhookUrl(nombre: "N8N_WEBHOOK_ORIENTACION" | "N8N_WEBHOOK_RECOMENDACIONES"): string | null {

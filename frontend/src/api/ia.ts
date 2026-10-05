@@ -5,10 +5,12 @@ export type MensajeChat = {
   contenido: string;
 };
 
+export type FuenteIa = "ia" | "n8n" | "local";
+
 export type RespuestaOrientacion = {
   respuesta: string;
   consulta_clinica: boolean;
-  fuente: "n8n" | "local";
+  fuente: FuenteIa;
 };
 
 export type EventoSugerido = {
@@ -33,11 +35,11 @@ export async function consultarOrientacion(
 
 export async function consultarRecomendaciones(): Promise<{
   recomendaciones: EventoSugerido[];
-  fuente: "n8n" | "local";
+  fuente: FuenteIa;
 }> {
   const { data } = await api.post<{
     recomendaciones: EventoSugerido[];
-    fuente: "n8n" | "local";
+    fuente: FuenteIa;
   }>("/ia/recomendaciones");
   return data;
 }

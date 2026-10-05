@@ -17,7 +17,7 @@ conecta-bu/
 │           ├── auth/
 │           ├── desarrollo-humano/   # activo: citas, horarios, eventos
 │           ├── deporte/             # activo: PISU (inscripciones, asistencia, eventos, alertas)
-│           ├── ia/                  # puente a n8n (orientación y recomendaciones)
+│           ├── ia/                  # asistente: proveedor de IA, n8n opcional y reglas locales
 │           ├── permanencia-estudiantil/   # pendiente
 │           ├── salud-integral/            # pendiente
 │           └── cultura/                   # pendiente
@@ -27,11 +27,11 @@ conecta-bu/
 │       ├── features/desarrollo-humano/
 │       ├── features/deporte/
 │       └── config/modulos.ts        # catálogo de los 5 módulos
-├── n8n/                             # código de los webhooks de orientación
+├── n8n/                             # flujos opcionales de n8n (respaldo del proveedor de IA)
 └── docs/                            # arquitectura, bitácora, prompt RN-011
 ```
 
-Cada módulo de backend sigue el mismo patrón: `routes`, `controllers`, `services`, `models` (y `middlewares` / `validators` / `seed` cuando haga falta). Los controladores validan con Zod y llaman a servicios; solo los servicios tocan los modelos. El API se monta en `/api/v1/{modulo}`; Deporte se divide por rol en `/api/v1/deportes`, `/docente`, `/estudiante` y `/admin`. El chat de orientación vive en `/api/v1/ia` (también `/api/ia`) y no pertenece a un schema propio: llama a n8n.
+Cada módulo de backend sigue el mismo patrón: `routes`, `controllers`, `services`, `models` (y `middlewares` / `validators` / `seed` cuando haga falta). Los controladores validan con Zod y llaman a servicios; solo los servicios tocan los modelos. El API se monta en `/api/v1/{modulo}`; Deporte se divide por rol en `/api/v1/deportes`, `/docente`, `/estudiante` y `/admin`. El chat de orientación vive en `/api/v1/ia` (también `/api/ia`) y no pertenece a un schema propio. Su servicio (`ia/services/asistenteService.ts`) responde lo clínico en el propio backend (RN-011) y para lo demás intenta, en orden, un proveedor de IA compatible con OpenAI (`proveedorIa.ts`), n8n si hay webhook y las reglas de `respuestasLocales.ts`, de modo que nunca devuelve error por falta de IA.
 
 Bitácora de commits y guía de onboarding: [BITACORA.md](BITACORA.md) y el [README](../README.md) de la raíz.
 

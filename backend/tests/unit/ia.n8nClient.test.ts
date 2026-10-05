@@ -2,18 +2,10 @@ import { describe, expect, it } from "@jest/globals";
 import {
   extraerRecomendaciones,
   extraerTextoAsistente,
-  pareceConsultaClinica,
 } from "../../src/modules/ia/n8nClient.js";
 import { mensajeChatSchema } from "../../src/modules/ia/validators.js";
 
 describe("ia/n8nClient (unitaria)", () => {
-  it("detecta consultas clínicas (RN-011)", () => {
-    expect(pareceConsultaClinica("¿Puedes darme un diagnóstico?")).toBe(true);
-    expect(pareceConsultaClinica("Quiero una receta de medicamento")).toBe(true);
-    expect(pareceConsultaClinica("ideas de suicidio")).toBe(true);
-    expect(pareceConsultaClinica("¿Cómo agendo una cita?")).toBe(false);
-  });
-
   it("extrae texto del asistente desde distintas formas de payload", () => {
     expect(extraerTextoAsistente({ respuesta: " Hola " })).toBe("Hola");
     expect(extraerTextoAsistente({ output: "Orientación básica" })).toBe(

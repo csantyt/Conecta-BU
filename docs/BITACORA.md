@@ -258,3 +258,21 @@ Repositorio: https://github.com/csantyt/Conecta-BU
 - Cabecera con navegación en mayúsculas y flechas, inicio con título grande y módulos como banda de tarjetas con íconos, login rediseñado, encabezados de Deporte y Desarrollo humano, pestañas y botones principales en degradado y asistente en botón naranja.
 
 **Para continuar.** Usa `banda-uni` para acciones principales y `bg-uni-cian` para etiquetas. Montserrat se carga desde Google Fonts; sin internet se usa la fuente del sistema.
+
+---
+
+## Avance 16 — IA real que funciona en cualquier equipo
+
+**Qué se hizo.** El asistente dejaba de funcionar fuera del PC donde estaba instalado n8n, y en realidad respondía con reglas fijas por palabras clave. Ahora el backend llama directamente a un modelo de lenguaje y conserva las reglas como respaldo, así que el chat responde en cualquier equipo.
+
+**Qué se subió.**
+
+- `ia/proveedorIa.ts`: cliente para cualquier proveedor compatible con OpenAI. Por defecto Gemini (`gemini-3.5-flash-lite`); Groq u OpenAI se usan cambiando `IA_BASE_URL` e `IA_MODELO`.
+- `ia/prompts.ts`: prompt de orientación con RN-011, servicios y eventos reales con cupo (para no inventar fechas), y prompt del recomendador con respuesta en JSON.
+- `ia/respuestasLocales.ts`: las reglas que vivían en n8n, ahora en el backend, más la detección de mensajes clínicos y de crisis.
+- `ia/services/asistenteService.ts`: lo clínico se responde localmente y nunca sale del servidor. Para lo demás intenta IA → n8n → reglas locales. Ya no hay errores 502 cuando n8n está apagado.
+- Al proveedor solo se envían el mensaje, el historial y el rol; nunca el correo.
+- `ConsultaIa.fuente` acepta `"ia"`, y el frontend reconoce esa fuente.
+- Pruebas: `ia.respuestasLocales`, `ia.proveedorIa`, `ia.asistenteService` (unitarias) e `ia.asistente` (integración).
+
+**Para continuar.** La clave va en `backend/.env` (`IA_API_KEY`) y no se sube a GitHub. Sin clave, todo sigue funcionando con las reglas locales.
