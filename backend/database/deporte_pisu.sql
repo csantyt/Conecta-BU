@@ -195,6 +195,17 @@ CREATE INDEX IF NOT EXISTS inscripciones_eventos_evento_idx
   ON deporte.inscripciones_eventos (evento_id);
 CREATE INDEX IF NOT EXISTS inscripciones_eventos_estudiante_idx
   ON deporte.inscripciones_eventos (estudiante_id);
+
+-- Columnas añadidas para gestión administrativa
+ALTER TABLE deporte.deportes
+  ADD COLUMN IF NOT EXISTS imagen TEXT;
+
+ALTER TABLE deporte.eventos
+  ADD COLUMN IF NOT EXISTS tipo VARCHAR(80) NOT NULL DEFAULT 'General';
+
+ALTER TABLE deporte.usuarios
+  ADD COLUMN IF NOT EXISTS documento VARCHAR(60),
+  ADD COLUMN IF NOT EXISTS especialidad VARCHAR(120);
 CREATE UNIQUE INDEX IF NOT EXISTS inscripciones_eventos_activa_unica
   ON deporte.inscripciones_eventos (evento_id, estudiante_id)
   WHERE estado = 'Activa';

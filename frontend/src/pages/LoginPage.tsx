@@ -22,6 +22,7 @@ type LoginPageProps = {
 const PENDING_TOKEN_KEY = "google_id_token_pending";
 
 const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+console.log("CLIENT_ID:", JSON.stringify(googleClientId));
 const hostedDomain = dominioGoogleInstitucional();
 const googleConfigurado =
   Boolean(googleClientId) &&

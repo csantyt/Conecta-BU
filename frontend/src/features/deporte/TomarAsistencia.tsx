@@ -14,7 +14,7 @@ import type {
 import { etiquetaHorario, fechaLocal, mensajeError } from "./utils";
 
 type TomarAsistenciaProps = {
-  onAviso: (valor: string) => void;
+  onAviso: (valor: string, accion?: string) => void;
   onError: (valor: string) => void;
 };
 

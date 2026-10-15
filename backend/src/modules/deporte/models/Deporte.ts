@@ -16,6 +16,7 @@ export class Deporte extends Model<
   declare id: CreationOptional<string>;
   declare nombre: string;
   declare descripcion: CreationOptional<string | null>;
+  declare imagen: CreationOptional<string | null>;
   declare cupo_maximo: number;
   declare categorias_permitidas: CreationOptional<CategoriaPisu[]>;
   declare estado: CreationOptional<boolean>;
@@ -34,6 +35,10 @@ Deporte.init(
       allowNull: false,
     },
     descripcion: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+    imagen: {
       type: DataTypes.TEXT,
       allowNull: true,
     },

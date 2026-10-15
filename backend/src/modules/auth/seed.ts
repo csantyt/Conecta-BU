@@ -4,6 +4,8 @@ import { ROLES, type RolUsuario } from "./roles.js";
 const ROLES_INICIALES: { codigo: RolUsuario; nombre: string }[] = [
   { codigo: ROLES.USUARIO, nombre: "Usuario" },
   { codigo: ROLES.ADMINISTRADOR, nombre: "Administrador" },
+  { codigo: ROLES.DOCENTE, nombre: "Docente" },
+  { codigo: ROLES.ESTUDIANTE, nombre: "Estudiante" },
 ];
 
 export async function sembrarRoles(): Promise<void> {

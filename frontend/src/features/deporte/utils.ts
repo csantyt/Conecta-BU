@@ -12,9 +12,15 @@ export const DIAS = [
 
 export function mensajeError(error: unknown): string {
   if (axios.isAxiosError(error)) {
-    const message = error.response?.data?.message;
+    const data = error.response?.data as
+      | { message?: unknown; conflicto?: { tipo?: unknown } }
+      | undefined;
+    const message = data?.message;
     if (typeof message === "string") {
-      return message;
+      const tipo = data?.conflicto?.tipo;
+      const accion =
+        tipo === "deporte" ? "horarios" : tipo === "evento" ? "eventos" : undefined;
+      return accion ? `${message} (Ver: ${accion})` : message;
     }
   }
   return "No se pudo completar la acción.";

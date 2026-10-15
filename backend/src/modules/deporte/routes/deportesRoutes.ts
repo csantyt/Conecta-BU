@@ -5,6 +5,7 @@ import {
   getDeportes,
   getEventos,
 } from "../controllers/deportesController.js";
+import { getInscritosDeporte } from "../controllers/inscritosController.js";
 import { authMiddleware } from "../middlewares/authMiddleware.js";
 import { cualquierRolPisu } from "../middlewares/rbacMiddleware.js";
 
@@ -12,5 +13,6 @@ export const deportesRoutes = Router();
 
 deportesRoutes.use(authMiddleware, cualquierRolPisu);
 deportesRoutes.get("/", asyncHandler(getDeportes));
+deportesRoutes.get("/:id/inscritos", asyncHandler(getInscritosDeporte));
 deportesRoutes.get("/eventos", asyncHandler(getEventos));
 deportesRoutes.get("/alertas", asyncHandler(getAlertas));
