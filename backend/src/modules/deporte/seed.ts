@@ -1,13 +1,9 @@
 import { randomBytes, scryptSync } from "node:crypto";
 import type { CategoriaPisu } from "./constantes.js";
-import { CATEGORIAS_PISU } from "./constantes.js";
 import { Deporte } from "./models/Deporte.js";
 import { EventoDeporte } from "./models/EventoDeporte.js";
-<<<<<<< HEAD
 import { HorarioDeporte } from "./models/HorarioDeporte.js";
 import { InscripcionDeporte } from "./models/InscripcionDeporte.js";
-=======
->>>>>>> origin/main
 import { UsuarioPisu } from "./models/UsuarioPisu.js";
 
 const DEPORTES_INICIALES: Array<{
@@ -15,7 +11,6 @@ const DEPORTES_INICIALES: Array<{
   descripcion: string;
   cupo_maximo: number;
   categorias_permitidas: CategoriaPisu[];
-  imagen?: string;
 }> = [
   {
     nombre: "Fútbol",
@@ -36,13 +31,12 @@ const DEPORTES_INICIALES: Array<{
     categorias_permitidas: ["Pregrado", "Postgrado", "Egresado"],
   },
   {
-<<<<<<< HEAD
     nombre: "Atletismo",
     descripcion: "Entrenamiento de pista y campo para todos los niveles.",
     cupo_maximo: 30,
     categorias_permitidas: ["Pregrado", "Postgrado", "Egresado"],
   },
-=======
+  {
     nombre: "Ajedrez Relámpago",
     descripcion: "Deporte de 1 cupo para pruebas de concurrencia.",
     cupo_maximo: 1,
@@ -54,13 +48,6 @@ const DEPORTES_INICIALES: Array<{
     cupo_maximo: 12,
     categorias_permitidas: ["Pregrado"],
   },
-];
-
-const ESTUDIANTES_SEED: Array<{ nombre: string; correo: string; categoria: "Pregrado" | "Postgrado" | "Egresado" }> = [
-  { nombre: "Estudiante Pregrado", correo: "pregrado@uniautonoma.edu.co", categoria: "Pregrado" },
-  { nombre: "Estudiante Postgrado", correo: "postgrado@uniautonoma.edu.co", categoria: "Postgrado" },
-  { nombre: "Estudiante Egresado", correo: "egresado@uniautonoma.edu.co", categoria: "Egresado" },
->>>>>>> origin/main
 ];
 
 function hashear(password: string): string {
@@ -79,53 +66,30 @@ export async function sembrarDeportesPisu(): Promise<void> {
     await Deporte.create(item);
   }
 
-<<<<<<< HEAD
   if ((await UsuarioPisu.count({ where: { rol: "Administrador" } })) === 0) {
     await UsuarioPisu.create({
       nombre: "Administrador Deporte",
       correo: "admin.deporte@uniautonoma.edu.co",
       password_hash: hashear("Admin123*"),
       rol: "Administrador",
-=======
-  const correos = new Set(
-    (await UsuarioPisu.findAll({ attributes: ["correo"] })).map((item) => item.correo.toLowerCase()),
-  );
-  for (const estudiante of ESTUDIANTES_SEED) {
-    if (correos.has(estudiante.correo.toLowerCase())) {
-      continue;
-    }
-    await UsuarioPisu.create({
-      nombre: estudiante.nombre,
-      correo: estudiante.correo,
-      rol: "Estudiante",
-      categoria: estudiante.categoria,
->>>>>>> origin/main
       estado: true,
     });
   }
 
-<<<<<<< HEAD
   const docentesExistentes = await UsuarioPisu.count({ where: { rol: "Docente" } });
   if (docentesExistentes === 0) {
     await Promise.all(
-      ["Ana Martínez", "Carlos Pérez", "Laura Gómez"].map((nombre, index) =>
+      ["Ana Martínez", "Carlos Pérez", "Laura Gómez", "Miguel Torres"].map((nombre, index) =>
         UsuarioPisu.create({
           nombre,
           correo: `docente${index + 1}@uniautonoma.edu.co`,
           password_hash: hashear("Docente123*"),
           rol: "Docente",
-          especialidad: ["Entrenamiento deportivo", "Acondicionamiento", "Deportes de conjunto"][index],
           estado: true,
         }),
       ),
     );
   }
-
-  const docentes = await UsuarioPisu.findAll({
-    where: { rol: "Docente" },
-    order: [["nombre", "ASC"]],
-    limit: 3,
-  });
 
   const categorias: CategoriaPisu[] = ["Pregrado", "Postgrado", "Egresado"];
   if ((await UsuarioPisu.count({ where: { rol: "Estudiante" } })) < 10) {
@@ -146,15 +110,20 @@ export async function sembrarDeportesPisu(): Promise<void> {
       estudiantes.push(estudiante);
     }
 
+    const docentes = await UsuarioPisu.findAll({
+      where: { rol: "Docente" },
+      order: [["nombre", "ASC"]],
+      limit: 4,
+    });
     const deportes = await Deporte.findAll({ order: [["nombre", "ASC"]] });
-    const fútbol = deportes.find((d) => d.nombre === "Fútbol");
-    if (fútbol && docentes[0]) {
+    const futbol = deportes.find((d) => d.nombre === "Fútbol");
+    if (futbol && docentes[0]) {
       const horarioExistente = await HorarioDeporte.findOne({
-        where: { deporte_id: fútbol.id, docente_id: docentes[0].id },
+        where: { deporte_id: futbol.id, docente_id: docentes[0].id },
       });
       if (!horarioExistente) {
         await HorarioDeporte.create({
-          deporte_id: fútbol.id,
+          deporte_id: futbol.id,
           docente_id: docentes[0].id,
           dia_semana: 1,
           hora_inicio: "08:00:00",
@@ -165,12 +134,12 @@ export async function sembrarDeportesPisu(): Promise<void> {
       }
       for (let i = 0; i < 3 && estudiantes[i]; i += 1) {
         const existe = await InscripcionDeporte.findOne({
-          where: { estudiante_id: estudiantes[i]!.id, deporte_id: fútbol.id, estado: "Activa" },
+          where: { estudiante_id: estudiantes[i]!.id, deporte_id: futbol.id, estado: "Activa" },
         });
         if (!existe) {
           await InscripcionDeporte.create({
             estudiante_id: estudiantes[i]!.id,
-            deporte_id: fútbol.id,
+            deporte_id: futbol.id,
             estado: "Activa",
           });
         }
@@ -178,15 +147,7 @@ export async function sembrarDeportesPisu(): Promise<void> {
     }
   }
 
-
   if ((await EventoDeporte.count()) === 0) {
-    await EventoDeporte.bulkCreate([
-      { nombre: 'Torneo intersemestral', descripcion: 'Competencia entre equipos.', fecha: new Date('2026-11-15T09:00:00-05:00'), lugar: 'Cancha principal', tipo: 'torneo', cupo_maximo: 12, estado: true },
-      { nombre: 'Masterclass de entrenamiento', descripcion: 'Clase abierta con invitado.', fecha: new Date('2026-11-20T15:00:00-05:00'), lugar: 'Auditorio', tipo: 'masterclass', cupo_maximo: 40, estado: true },
-      { nombre: 'D�a recreativo PISU', descripcion: 'Actividades deportivas y recreaci�n.', fecha: new Date('2026-12-01T08:00:00-05:00'), lugar: 'Cancha principal', tipo: 'otro', cupo_maximo: 80, estado: true },
-=======
-  const eventosExistentes = await EventoDeporte.count();
-  if (eventosExistentes === 0) {
     const ahora = new Date();
     await EventoDeporte.bulkCreate([
       {
@@ -213,7 +174,6 @@ export async function sembrarDeportesPisu(): Promise<void> {
         cupo_maximo: 30,
         estado: true,
       },
->>>>>>> origin/main
     ]);
   }
 }

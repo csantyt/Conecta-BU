@@ -130,17 +130,11 @@ export default function CatalogoDeportes({
                 <div className="flex items-start gap-3">
                   <div
                     aria-hidden
-<<<<<<< HEAD
-                    className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/5 text-orange-300"
+                    className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white/5 text-orange-300"
                   >
-                    <SportIcon nombre={deporte.nombre} />
-                  </span>
-=======
-                    className={`relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl text-2xl ${visual.clase}`}
-                  >
-                    {deporte.imagen_url ? (
+                    {deporte.imagen_url || deporte.imagen ? (
                       <img
-                        src={String(deporte.imagen_url)}
+                        src={String(deporte.imagen_url ?? deporte.imagen)}
                         alt=""
                         className="absolute inset-0 h-full w-full object-cover"
                         onError={(event) => {
@@ -148,9 +142,8 @@ export default function CatalogoDeportes({
                         }}
                       />
                     ) : null}
-                    <span className="relative">{visual.emoji}</span>
+                    <SportIcon nombre={deporte.nombre} />
                   </div>
->>>>>>> origin/main
                   <div className="min-w-0">
                     <h2 className="text-lg font-semibold">{deporte.nombre}</h2>
                     <p className="mt-1 text-xs font-medium text-slate-400">
@@ -187,11 +180,7 @@ export default function CatalogoDeportes({
                   </div>
                 </div>
 
-<<<<<<< HEAD
-                <p className="mt-3 line-clamp-3 text-sm leading-6 text-slate-300">
-=======
-                <p className="mt-3 line-clamp-2 text-sm leading-6 text-slate-600">
->>>>>>> origin/main
+                <p className="mt-3 line-clamp-2 text-sm leading-6 text-slate-300">
                   {deporte.descripcion || "Disciplina del programa PISU."}
                 </p>
 
@@ -207,11 +196,7 @@ export default function CatalogoDeportes({
                 </div>
 
                 {deporte.horarios.length > 0 ? (
-<<<<<<< HEAD
-                  <ul className="mt-3 space-y-1 text-xs text-slate-300">
-=======
                   <div className="mt-3 flex flex-wrap gap-1.5">
->>>>>>> origin/main
                     {deporte.horarios.map((horario) => (
                       <span
                         key={horario.id}
