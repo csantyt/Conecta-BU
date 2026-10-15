@@ -8,6 +8,7 @@ import {
   deportesRoutes,
   docenteRoutes,
   estudianteRoutes,
+  eventosAliasRoutes,
 } from "./modules/deporte/routes/index.js";
 import iaRoutes from "./modules/ia/routes/iaRoutes.js";
 
@@ -22,6 +23,7 @@ app.use("/api/v1/ia", iaRoutes);
 app.use("/api/ia", iaRoutes);
 
 app.use("/api/v1/deportes", deportesRoutes);
+app.use("/api/v1/eventos", eventosAliasRoutes);
 app.use("/api/v1/docente", docenteRoutes);
 app.use("/api/v1/estudiante", estudianteRoutes);
 app.use("/api/v1/admin", adminRoutes);

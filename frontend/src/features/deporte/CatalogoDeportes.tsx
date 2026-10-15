@@ -128,22 +128,59 @@ export default function CatalogoDeportes({
                 className="flex flex-col rounded-2xl border border-white/10 bg-white p-5 text-slate-900"
               >
                 <div className="flex items-start gap-3">
-                  <span
+                  <div
                     aria-hidden
-                    className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl text-2xl ${visual.clase}`}
+                    className={`relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl text-2xl ${visual.clase}`}
                   >
-                    {visual.emoji}
-                  </span>
+                    {deporte.imagen_url ? (
+                      <img
+                        src={String(deporte.imagen_url)}
+                        alt=""
+                        className="absolute inset-0 h-full w-full object-cover"
+                        onError={(event) => {
+                          event.currentTarget.style.display = "none";
+                        }}
+                      />
+                    ) : null}
+                    <span className="relative">{visual.emoji}</span>
+                  </div>
                   <div className="min-w-0">
                     <h2 className="text-lg font-semibold">{deporte.nombre}</h2>
                     <p className="mt-1 text-xs font-medium text-slate-500">
                       Cupos {deporte.cupo_disponible}/{deporte.cupo_maximo}
                       <span className="text-slate-400"> · {ocupados} inscritos</span>
                     </p>
+                    <div className="mt-2">
+                      <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+                        <div
+                          className={`h-full ${
+                            deporte.cupo_disponible <= 0
+                              ? "bg-rose-500"
+                              : deporte.cupo_disponible <=
+                                  Math.max(1, Math.ceil(deporte.cupo_maximo * 0.2))
+                                ? "bg-amber-500"
+                                : "bg-emerald-500"
+                          }`}
+                          style={{
+                            width: `${Math.min(100, Math.round(((deporte.cupo_maximo - deporte.cupo_disponible) / deporte.cupo_maximo) * 100))}%`,
+                          }}
+                        />
+                      </div>
+                      <p className="mt-1 text-[11px] font-medium uppercase tracking-wide text-slate-500">
+                        {deporte.cupo_disponible <= 0
+                          ? "Lleno"
+                          : deporte.cupo_disponible <=
+                              Math.max(1, Math.ceil(deporte.cupo_maximo * 0.2))
+                            ? "Últimos cupos"
+                            : "Disponible"}
+                        {" · "}
+                        {deporte.cupo_disponible} cupos libres de {deporte.cupo_maximo}
+                      </p>
+                    </div>
                   </div>
                 </div>
 
-                <p className="mt-3 line-clamp-3 text-sm leading-6 text-slate-600">
+                <p className="mt-3 line-clamp-2 text-sm leading-6 text-slate-600">
                   {deporte.descripcion || "Disciplina del programa PISU."}
                 </p>
 
@@ -159,11 +196,17 @@ export default function CatalogoDeportes({
                 </div>
 
                 {deporte.horarios.length > 0 ? (
-                  <ul className="mt-3 space-y-1 text-xs text-slate-600">
+                  <div className="mt-3 flex flex-wrap gap-1.5">
                     {deporte.horarios.map((horario) => (
-                      <li key={horario.id}>{etiquetaHorario(horario)}</li>
+                      <span
+                        key={horario.id}
+                        className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-700"
+                      >
+                        {etiquetaHorario(horario)}
+                        {horario.docente ? ` · ${horario.docente.nombre}` : ""}
+                      </span>
                     ))}
-                  </ul>
+                  </div>
                 ) : (
                   <p className="mt-3 text-xs text-slate-400">
                     Aún no hay horarios publicados.
@@ -183,6 +226,13 @@ export default function CatalogoDeportes({
                   ) : (
                     <button
                       type="button"
+                      title={
+                        !puedeInscribirse
+                          ? "Solo estudiantes pueden inscribirse."
+                          : deporte.cupo_disponible <= 0
+                            ? "No hay cupos disponibles."
+                            : "Inscribirme"
+                      }
                       disabled={
                         enviandoId === deporte.id ||
                         deporte.cupo_disponible <= 0 ||

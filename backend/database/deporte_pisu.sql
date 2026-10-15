@@ -198,3 +198,9 @@ CREATE INDEX IF NOT EXISTS inscripciones_eventos_estudiante_idx
 CREATE UNIQUE INDEX IF NOT EXISTS inscripciones_eventos_activa_unica
   ON deporte.inscripciones_eventos (evento_id, estudiante_id)
   WHERE estado = 'Activa';
+
+ALTER TABLE deporte.deportes
+  ADD COLUMN IF NOT EXISTS imagen_url VARCHAR(500);
+
+ALTER TABLE deporte.asistencias
+  ADD COLUMN IF NOT EXISTS estado VARCHAR(32);
