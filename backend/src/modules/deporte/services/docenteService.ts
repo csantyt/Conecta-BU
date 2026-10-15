@@ -1,4 +1,4 @@
-import { UniqueConstraintError } from "sequelize";
+import { Op, UniqueConstraintError } from "sequelize";
 import { sequelize } from "../../../config/database.js";
 import type { UsuarioPisuSesion } from "../middlewares/tipos.js";
 import {
@@ -11,6 +11,7 @@ import {
 import { Comunicado } from "../models/Comunicado.js";
 import { Deporte } from "../models/Deporte.js";
 import { generarAlertasInasistencia } from "./alertasService.js";
+import { actualizarDeporte, actualizarHorarioAdmin, crearHorarioAdmin } from "./adminService.js";
 
 export class RecursoDocenteNoEncontradoError extends Error {}
 export class ClaseNoAsignadaError extends Error {}
@@ -325,4 +326,110 @@ export async function listarAsistenciasDocente(
     order: [["fecha", "DESC"]],
     include: [{ model: AsistenciaDetalle, as: "detalles" }],
   });
+}
+
+export async function listarEstudiantesDocente(filtro?: string) {
+  const where: Record<string, unknown> = { rol: "Estudiante" };
+  if (filtro && filtro.trim()) {
+    where.nombre = { [Op.iLike]: `%${filtro.trim()}%` };
+  }
+  return UsuarioPisu.findAll({
+    where,
+    order: [["nombre", "ASC"]],
+  });
+}
+
+export async function actualizarEstudianteDocente(
+  id: string,
+  cambios: Partial<{
+    nombre: string;
+    correo: string;
+    categoria: string | null;
+    documento: string | null;
+    especialidad: string | null;
+    estado: boolean;
+  }>,
+): Promise<UsuarioPisu> {
+  const estudiante = await UsuarioPisu.findByPk(id);
+  if (!estudiante || estudiante.rol !== "Estudiante") {
+    throw new RecursoDocenteNoEncontradoError("El estudiante no existe.");
+  }
+  if (cambios.estado === false) {
+    await InscripcionDeporte.update(
+      { estado: "Cancelada" },
+      { where: { estudiante_id: id, estado: "Activa" } },
+    );
+  }
+  await estudiante.update(cambios as Record<string, unknown>);
+  return estudiante;
+}
+
+export async function desactivarEstudianteDocente(id: string): Promise<UsuarioPisu> {
+  return actualizarEstudianteDocente(id, { estado: false });
+}
+
+export async function actualizarDeporteDocente(
+  id: string,
+  cambios: Partial<{
+    nombre: string;
+    descripcion: string | null;
+    cupo_maximo: number;
+    categorias_permitidas: string[];
+    estado: boolean;
+  }>,
+) {
+  return actualizarDeporte(id, cambios as Record<string, unknown>);
+}
+
+export async function desactivarDeporteDocente(id: string) {
+  return actualizarDeporte(id, { estado: false });
+}
+
+export async function crearHorarioDocente(
+  perfil: UsuarioPisuSesion,
+  params: {
+    deporte_id: string;
+    dia_semana: number;
+    hora_inicio: string;
+    hora_fin: string;
+    lugar: string;
+  },
+) {
+  return crearHorarioAdmin({
+    deporte_id: params.deporte_id,
+    docente_id: perfil.id,
+    dia_semana: params.dia_semana,
+    hora_inicio: params.hora_inicio,
+    hora_fin: params.hora_fin,
+    lugar: params.lugar,
+  });
+}
+
+export async function actualizarHorarioDocente(
+  perfil: UsuarioPisuSesion,
+  id: string,
+  cambios: Partial<{
+    deporte_id: string;
+    dia_semana: number;
+    hora_inicio: string;
+    hora_fin: string;
+    lugar: string;
+    estado: boolean;
+  }>,
+) {
+  const horario = await HorarioDeporte.findByPk(id);
+  if (!horario) {
+    throw new RecursoDocenteNoEncontradoError("El horario no existe.");
+  }
+  if (horario.docente_id !== perfil.id) {
+    throw new ClaseNoAsignadaError("No puedes editar un horario que no te pertenece.");
+  }
+  return actualizarHorarioAdmin(id, { ...cambios, docente_id: perfil.id } as Record<string, unknown>);
+}
+
+export async function desactivarHorarioDocente(
+  perfil: UsuarioPisuSesion,
+  id: string,
+) {
+  return actualizarHorarioDocente(perfil, id, { estado: false });
 }

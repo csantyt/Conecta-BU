@@ -134,6 +134,43 @@ export async function guardarAsistenciaDocente(params: {
   return data.asistencias;
 }
 
+export async function listarEstudiantesGestion() {
+  const { data } = await api.get("/docente/estudiantes-gestion");
+  return data.estudiantes as Array<Record<string, unknown>>;
+}
+
+export async function actualizarEstudianteGestion(id: string, payload: Record<string, unknown>) {
+  const { data } = await api.patch(`/docente/estudiantes-gestion/${id}`, payload);
+  return data.estudiante;
+}
+
+export async function eliminarEstudianteGestion(id: string) {
+  await api.delete(`/docente/estudiantes-gestion/${id}`);
+}
+
+export async function actualizarDeporteGestion(id: string, payload: Record<string, unknown>) {
+  const { data } = await api.patch(`/docente/deportes-gestion/${id}`, payload);
+  return data.deporte;
+}
+
+export async function eliminarDeporteGestion(id: string) {
+  await api.delete(`/docente/deportes-gestion/${id}`);
+}
+
+export async function crearHorarioGestion(payload: Record<string, unknown>) {
+  const { data } = await api.post("/docente/horarios", payload);
+  return data.horario;
+}
+
+export async function actualizarHorarioGestion(id: string, payload: Record<string, unknown>) {
+  const { data } = await api.patch(`/docente/horarios-gestion/${id}`, payload);
+  return data.horario;
+}
+
+export async function eliminarHorarioGestion(id: string) {
+  await api.delete(`/docente/horarios-gestion/${id}`);
+}
+
 export async function editarAsistenciaDocente(
   asistenciaId: string,
   presente: boolean,

@@ -6,9 +6,17 @@ import {
   EstudianteNoInscritoError,
   RecursoDocenteNoEncontradoError,
   VentanaAsistenciaCerradaError,
+  actualizarDeporteDocente,
+  actualizarEstudianteDocente,
+  actualizarHorarioDocente,
+  crearHorarioDocente,
+  desactivarDeporteDocente,
+  desactivarEstudianteDocente,
+  desactivarHorarioDocente,
   editarAsistencia,
   listarAsistenciasDocente,
   listarEstudiantesDeClase,
+  listarEstudiantesDocente,
   listarMisClases,
   listarMisClasesHoy,
   registrarAsistenciaLista,
@@ -158,6 +166,200 @@ export async function postAsistencia(req: Request, res: Response): Promise<void>
       message: "Asistencia registrada.",
       asistencias,
     });
+  } catch (error) {
+    if (!responderErrorDocente(res, error)) {
+      throw error;
+    }
+  }
+}
+
+export async function getEstudiantesDocente(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const perfil = req.usuarioPisu;
+  if (!perfil) {
+    res.status(401).json({ message: "No autenticado." });
+    return;
+  }
+  const q = req.query["q"];
+  const filtro = typeof q === "string" ? q : undefined;
+  try {
+    const estudiantes = await listarEstudiantesDocente(filtro);
+    res.status(200).json({ estudiantes });
+  } catch (error) {
+    if (!responderErrorDocente(res, error)) {
+      throw error;
+    }
+  }
+}
+
+export async function patchEstudianteDocente(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const perfil = req.usuarioPisu;
+  if (!perfil) {
+    res.status(401).json({ message: "No autenticado." });
+    return;
+  }
+  const id = idDeRuta(req, "id");
+  if (!id) {
+    res.status(400).json({ message: "Identificador inválido." });
+    return;
+  }
+  const body = (req.body ?? {}) as Record<string, unknown>;
+  try {
+    const estudiante = await actualizarEstudianteDocente(id, body as Record<string, unknown> & never);
+    res.status(200).json({ estudiante });
+  } catch (error) {
+    if (!responderErrorDocente(res, error)) {
+      throw error;
+    }
+  }
+}
+
+export async function deleteEstudianteDocente(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const perfil = req.usuarioPisu;
+  if (!perfil) {
+    res.status(401).json({ message: "No autenticado." });
+    return;
+  }
+  const id = idDeRuta(req, "id");
+  if (!id) {
+    res.status(400).json({ message: "Identificador inválido." });
+    return;
+  }
+  try {
+    const estudiante = await desactivarEstudianteDocente(id);
+    res.status(200).json({ message: "Estudiante desactivado.", estudiante });
+  } catch (error) {
+    if (!responderErrorDocente(res, error)) {
+      throw error;
+    }
+  }
+}
+
+export async function patchDeporteDocente(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const perfil = req.usuarioPisu;
+  if (!perfil) {
+    res.status(401).json({ message: "No autenticado." });
+    return;
+  }
+  const id = idDeRuta(req, "id");
+  if (!id) {
+    res.status(400).json({ message: "Identificador inválido." });
+    return;
+  }
+  const body = (req.body ?? {}) as Record<string, unknown>;
+  try {
+    const deporte = await actualizarDeporteDocente(id, body as Record<string, unknown> & never);
+    res.status(200).json({ deporte });
+  } catch (error) {
+    if (!responderErrorDocente(res, error)) {
+      throw error;
+    }
+  }
+}
+
+export async function deleteDeporteDocente(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const perfil = req.usuarioPisu;
+  if (!perfil) {
+    res.status(401).json({ message: "No autenticado." });
+    return;
+  }
+  const id = idDeRuta(req, "id");
+  if (!id) {
+    res.status(400).json({ message: "Identificador inválido." });
+    return;
+  }
+  try {
+    const deporte = await desactivarDeporteDocente(id);
+    res.status(200).json({ message: "Deporte desactivado.", deporte });
+  } catch (error) {
+    if (!responderErrorDocente(res, error)) {
+      throw error;
+    }
+  }
+}
+
+export async function postHorarioDocente(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const perfil = req.usuarioPisu;
+  if (!perfil) {
+    res.status(401).json({ message: "No autenticado." });
+    return;
+  }
+  const body = (req.body ?? {}) as Record<string, unknown>;
+  try {
+    const horario = await crearHorarioDocente(perfil, {
+      deporte_id: String(body["deporte_id"] ?? body["deporteId"] ?? ""),
+      dia_semana: Number(body["dia_semana"] ?? body["diaSemana"]),
+      hora_inicio: String(body["hora_inicio"] ?? body["horaInicio"] ?? ""),
+      hora_fin: String(body["hora_fin"] ?? body["horaFin"] ?? ""),
+      lugar: String(body["lugar"] ?? ""),
+    });
+    res.status(201).json({ horario });
+  } catch (error) {
+    if (!responderErrorDocente(res, error)) {
+      throw error;
+    }
+  }
+}
+
+export async function patchHorarioDocente(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const perfil = req.usuarioPisu;
+  if (!perfil) {
+    res.status(401).json({ message: "No autenticado." });
+    return;
+  }
+  const id = idDeRuta(req, "id");
+  if (!id) {
+    res.status(400).json({ message: "Identificador inválido." });
+    return;
+  }
+  const body = (req.body ?? {}) as Record<string, unknown>;
+  try {
+    const horario = await actualizarHorarioDocente(perfil, id, body as Record<string, unknown> & never);
+    res.status(200).json({ horario });
+  } catch (error) {
+    if (!responderErrorDocente(res, error)) {
+      throw error;
+    }
+  }
+}
+
+export async function deleteHorarioDocente(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const perfil = req.usuarioPisu;
+  if (!perfil) {
+    res.status(401).json({ message: "No autenticado." });
+    return;
+  }
+  const id = idDeRuta(req, "id");
+  if (!id) {
+    res.status(400).json({ message: "Identificador inválido." });
+    return;
+  }
+  try {
+    const horario = await desactivarHorarioDocente(perfil, id);
+    res.status(200).json({ message: "Horario desactivado.", horario });
   } catch (error) {
     if (!responderErrorDocente(res, error)) {
       throw error;

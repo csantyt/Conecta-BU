@@ -6,6 +6,7 @@ import MiActividadPisu from "../features/deporte/MiActividadPisu";
 import PanelAdminPisu from "../features/deporte/PanelAdminPisu";
 import PanelUsuariosPisu from "../features/deporte/PanelUsuariosPisu";
 import TomarAsistencia from "../features/deporte/TomarAsistencia";
+import GestionDocente from "../features/deporte/GestionDocente";
 import DashboardDocente from "../features/deporte/DashboardDocente";
 import { mensajeError } from "../features/deporte/utils";
 import type { Usuario } from "../types/auth";
@@ -16,7 +17,7 @@ type DeportePageProps = {
   onVolver: () => void;
 };
 
-type VistaPisu = "catalogo" | "dashboard" | "actividad" | "asistencia" | "usuarios" | "admin";
+type VistaPisu = "catalogo" | "dashboard" | "actividad" | "asistencia" | "usuarios" | "admin" | "gestion";
 
 const tabActiva =
   "banda-uni sombra-uni text-uni-noche";
@@ -137,6 +138,17 @@ export default function DeportePage({ usuario, onVolver }: DeportePageProps) {
           {verAsistencia ? (
             <button
               type="button"
+              onClick={() => setVista("gestion")}
+              className={`shrink-0 rounded-full px-4 py-2 text-sm font-medium transition ${
+                vista === "gestion" ? tabActiva : tabInactiva
+              }`}
+            >
+              Gestión
+            </button>
+          ) : null}
+          {verAsistencia ? (
+            <button
+              type="button"
               onClick={() => setVista("asistencia")}
               className={`shrink-0 rounded-full px-4 py-2 text-sm font-medium transition ${
                 vista === "asistencia" ? tabActiva : tabInactiva
@@ -201,6 +213,10 @@ export default function DeportePage({ usuario, onVolver }: DeportePageProps) {
 
       {vista === "dashboard" && verAsistencia ? (
         <DashboardDocente onAviso={onAviso} onError={onError} />
+      ) : null}
+
+      {vista === "gestion" && verAsistencia ? (
+        <GestionDocente onAviso={onAviso} onError={onError} />
       ) : null}
 
       {vista === "asistencia" && verAsistencia ? (

@@ -31,6 +31,18 @@ const DEPORTES_INICIALES: Array<{
     cupo_maximo: 14,
     categorias_permitidas: ["Pregrado", "Postgrado", "Egresado"],
   },
+  {
+    nombre: "Natación",
+    descripcion: "Práctica de natación para la comunidad universitaria.",
+    cupo_maximo: 20,
+    categorias_permitidas: ["Pregrado", "Postgrado", "Egresado"],
+  },
+  {
+    nombre: "Tenis",
+    descripcion: "Entrenamiento de tenis para todos los niveles.",
+    cupo_maximo: 12,
+    categorias_permitidas: ["Pregrado", "Postgrado", "Egresado"],
+  },
 ];
 
 export async function sembrarDeportesPisu(): Promise<void> {
@@ -175,26 +187,19 @@ export async function sembrarDeportesPisu(): Promise<void> {
       },
     });
 
-    const estudiantes: { nombre: string; correo: string; categoria: CategoriaPisu }[] = [
-      {
-        nombre: "Estudiante PISU Uno",
-        correo: "estudiante1.pisu@uniautonoma.edu.co",
-        categoria: "Pregrado",
-      },
-      {
-        nombre: "Estudiante PISU Dos",
-        correo: "estudiante2.pisu@uniautonoma.edu.co",
-        categoria: "Postgrado",
-      },
-    ];
-    for (const est of estudiantes) {
+    const categorias: CategoriaPisu[] = ["Pregrado", "Postgrado", "Egresado"];
+    for (let i = 1; i <= 10; i += 1) {
+      const numero = String(i).padStart(2, "0");
+      const categoria = categorias[(i - 1) % categorias.length] ?? "Pregrado";
+      const correo = `estudiante${numero}@uniautonoma.edu.co`;
       const perfilEst = await UsuarioPisu.findOrCreate({
-        where: { correo: est.correo },
+        where: { correo },
         defaults: {
-          nombre: est.nombre,
-          correo: est.correo,
+          nombre: `Estudiante PISU ${numero}`,
+          correo,
           rol: "Estudiante",
-          categoria: est.categoria,
+          categoria,
+          ...(i === 3 || i === 7 ? { documento: null, especialidad: null } : {}),
         },
       });
       await InscripcionDeporte.findOrCreate({
