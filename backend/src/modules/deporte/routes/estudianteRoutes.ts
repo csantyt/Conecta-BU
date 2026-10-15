@@ -11,6 +11,7 @@ import {
   postInscripcionEvento,
 } from "../controllers/estudianteController.js";
 import { authMiddleware } from "../middlewares/authMiddleware.js";
+import { getMisInscripcionesCompletas } from "../controllers/inscritosController.js";
 import { soloEstudiantePisu } from "../middlewares/rbacMiddleware.js";
 
 export const estudianteRoutes = Router();
@@ -18,6 +19,7 @@ export const estudianteRoutes = Router();
 estudianteRoutes.use(authMiddleware, soloEstudiantePisu);
 estudianteRoutes.get("/perfil", asyncHandler(getPerfilEstudiante));
 estudianteRoutes.get("/inscripciones", asyncHandler(getInscripciones));
+estudianteRoutes.get("/inscripciones/completas", asyncHandler(getMisInscripcionesCompletas));
 estudianteRoutes.post("/inscripciones", asyncHandler(postAutoinscripcion));
 estudianteRoutes.patch(
   "/inscripciones/:id/cancelar",
@@ -29,7 +31,15 @@ estudianteRoutes.post(
   "/eventos/:id/inscripcion",
   asyncHandler(postInscripcionEvento),
 );
+estudianteRoutes.post(
+  "/eventos/:id/participacion",
+  asyncHandler(postInscripcionEvento),
+);
 estudianteRoutes.delete(
   "/eventos/:id/inscripcion",
+  asyncHandler(deleteInscripcionEvento),
+);
+estudianteRoutes.delete(
+  "/eventos/:id/participacion",
   asyncHandler(deleteInscripcionEvento),
 );

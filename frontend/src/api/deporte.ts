@@ -197,6 +197,7 @@ export async function obtenerDeportesAdmin(): Promise<
 export async function crearDeporteAdmin(payload: {
   nombre: string;
   descripcion?: string;
+  imagen?: string;
   cupo_maximo: number;
   categorias_permitidas?: string[];
 }): Promise<void> {
@@ -307,4 +308,126 @@ export async function crearAlertaAdmin(payload: {
 
 export async function eliminarAlertaAdmin(id: string): Promise<void> {
   await api.delete(`/admin/alertas/${id}`);
+}
+
+export async function obtenerDashboardAdmin(): Promise<unknown> {
+  const { data } = await api.get("/admin/dashboard");
+  return data.dashboard;
+}
+
+export async function eliminarDeporteAdmin(id: string): Promise<void> {
+  await api.delete(`/admin/deportes/${id}`);
+}
+
+export async function crearDocenteAdmin(payload: {
+  nombre: string;
+  correo: string;
+  documento?: string | null;
+  especialidad?: string | null;
+}): Promise<{ docente: DocentePisu; passwordTemporal: string }> {
+  const { data } = await api.post("/admin/docentes", payload);
+  return data;
+}
+
+export async function actualizarDocenteAdmin(
+  id: string,
+  payload: Partial<{
+    nombre: string;
+    correo: string;
+    documento: string | null;
+    especialidad: string | null;
+    estado: boolean;
+  }>,
+): Promise<void> {
+  await api.patch(`/admin/docentes/${id}`, payload);
+}
+
+export async function cargarDocentesCsvAdmin(csv: string): Promise<{
+  creados: number;
+  errores: Array<{ fila: number; motivo: string }>;
+}> {
+  const { data } = await api.post("/admin/docentes/csv", { csv });
+  return data.resumen;
+}
+
+export async function listarEstudiantesAdmin(q = ""): Promise<
+  Array<{
+    id: string;
+    nombre: string;
+    correo: string;
+    documento?: string | null;
+    categoria: string | null;
+    estado: boolean;
+  }>
+> {
+  const { data } = await api.get("/admin/estudiantes", { params: q ? { q } : undefined });
+  return data.estudiantes;
+}
+
+export async function actualizarEstudianteAdmin(
+  id: string,
+  payload: { categoria?: string; estado?: boolean; nombre?: string },
+): Promise<void> {
+  await api.patch(`/admin/estudiantes/${id}`, payload);
+}
+
+export async function buscarEstudiantesAdmin(q: string): Promise<
+  Array<{
+    id: string;
+    nombre: string;
+    correo: string;
+    documento?: string | null;
+    categoria: string | null;
+    estado: boolean;
+    inscripciones?: Array<{ estado: string; deporte?: { id: string; nombre: string } }>;
+  }>
+> {
+  const { data } = await api.get("/admin/estudiantes/buscar", { params: { q } });
+  return data.estudiantes;
+}
+
+export async function inscribirEstudianteManualAdmin(payload: {
+  estudiante_id: string;
+  deporte_id: string;
+}): Promise<void> {
+  await api.post("/admin/inscripciones", payload);
+}
+
+export async function retirarInscripcionManualAdmin(id: string): Promise<void> {
+  await api.patch(`/admin/inscripciones/${id}/cancelar`);
+}
+
+export async function obtenerInscritosDeporte(
+  deporteId: string,
+  params: { q?: string; categoria?: string; orden?: string; page?: number; pageSize?: number },
+) {
+  const { data } = await api.get(`/deportes/${deporteId}/inscritos`, { params });
+  return data as {
+    filas: Array<{
+      id: string; estudiante_id: string; nombre: string; documento: string | null; correo: string | null;
+      categoria: string | null; fecha_inscripcion: string; asistencias_total: number; asistencias_presentes: number;
+      porcentaje_asistencia: number | null; inasistencias: number;
+    }>;
+    total: number; page: number; pageSize: number; reducido?: boolean;
+  };
+}
+
+export async function obtenerEstudiantesGeneral(params: { deporteId?: string; categoria?: string; sinInscripcion?: boolean; q?: string }) {
+  const { data } = await api.get("/admin/estudiantes", { params });
+  return data.estudiantes as Array<{ id: string; nombre: string; correo: string; documento?: string | null; categoria: string | null; estado: boolean; inscripciones?: Array<{ deporte_id: string; deporte?: { id: string; nombre: string } }> }>;
+}
+
+export async function obtenerInscripcionesEstudiante(id: string) {
+  const { data } = await api.get(`/admin/estudiantes/${id}/inscripciones`);
+  return data.inscripciones as Array<{ inscripcion_id: string; fecha_inscripcion: string; deporte: { id: string; nombre: string } | null; horarios: Array<{ dia_semana: number; hora_inicio: string; hora_fin: string; lugar: string; docente: { nombre: string } | null }>; asistencia: { total: number; presentes: number; porcentaje: number | null; inasistencias: number } }>;
+}
+
+export async function obtenerMisInscripcionesCompletas() {
+  const { data } = await api.get("/estudiante/inscripciones/completas");
+  return data.inscripciones as Array<{ inscripcion_id: string; fecha_inscripcion: string; deporte: { id: string; nombre: string } | null; horarios: Array<{ dia_semana: number; hora_inicio: string; hora_fin: string; lugar: string; docente: { nombre: string } | null }>; asistencia: { total: number; presentes: number; porcentaje: number | null; inasistencias: number } }>;
+}
+
+export async function obtenerVerificacion() {
+  const { data } = await api.get('/admin/verificacion');
+  return data.verificacion;
 }

@@ -1,5 +1,4 @@
 import bcrypt from "bcryptjs";
-import { Op } from "sequelize";
 import { Usuario } from "../auth/models/Usuario.js";
 import type { CategoriaPisu } from "./constantes.js";
 import { Deporte } from "./models/Deporte.js";
@@ -198,9 +197,6 @@ export async function sembrarDeportesPisu(): Promise<void> {
           categoria: est.categoria,
         },
       });
-      if (perfilEst[1]) {
-        // nuevo
-      }
       await InscripcionDeporte.findOrCreate({
         where: {
           estudiante_id: perfilEst[0].id,

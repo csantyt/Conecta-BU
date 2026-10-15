@@ -16,7 +16,7 @@ import {
 
 type DashboardAdminOrientacionProps = {
   citas: Cita[];
-  onAviso: (valor: string) => void;
+  onAviso: (valor: string, accion?: string) => void;
   onError: (valor: string) => void;
   onRecargar: () => Promise<void>;
 };

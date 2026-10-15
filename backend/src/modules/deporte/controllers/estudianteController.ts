@@ -3,6 +3,7 @@ import {
   listarAsistenciasEstudiante,
   listarHorariosDeInscripciones,
   listarInscripcionesEstudiante,
+  obtenerMiHorario,
 } from "../services/estudianteService.js";
 import {
   CupoEventoAgotadoError,
@@ -20,6 +21,7 @@ import {
   CupoAgotadoError,
   DatosInvalidosError,
   OperacionNoPermitidaError,
+  PlazoVencidoError,
   RecursoNoEncontradoError,
   YaInscritoError,
   autoinscribirseADeporte,
@@ -60,6 +62,19 @@ export async function getHorariosEstudiante(
   res.status(200).json({ horarios });
 }
 
+export async function getMiHorario(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const perfil = req.usuarioPisu;
+  if (!perfil) {
+    res.status(401).json({ message: "No autenticado." });
+    return;
+  }
+  const resultado = await obtenerMiHorario(perfil);
+  res.status(200).json(resultado);
+}
+
 export async function getAsistenciasEstudiante(
   req: Request,
   res: Response,
@@ -89,7 +104,7 @@ function responderErrorEvento(res: Response, error: unknown): boolean {
     return true;
   }
   if (error instanceof EventoCerradoError) {
-    res.status(400).json({ message: error.message });
+    res.status(409).json({ message: error.message });
     return true;
   }
   if (
@@ -170,7 +185,8 @@ function responderErrorInscripcion(res: Response, error: unknown): boolean {
     error instanceof CategoriaNoPermitidaError ||
     error instanceof CupoAgotadoError ||
     error instanceof CruceHorarioError ||
-    error instanceof YaInscritoError
+    error instanceof YaInscritoError ||
+    error instanceof PlazoVencidoError
   ) {
     res.status(409).json({ message: error.message });
     return true;
@@ -188,8 +204,13 @@ export async function postAutoinscripcion(
     return;
   }
 
-  const parsed = autoinscripcionSchema.safeParse(req.body);
-  if (!parsed.success) {
+  const idParam = (req.params["id"] as string | undefined) ?? undefined;
+  const rawBody = (req.body ?? {}) as Record<string, unknown>;
+  const deporteIdBody =
+    typeof rawBody["deporte_id"] === "string" ? (rawBody["deporte_id"] as string) : undefined;
+  const deporteId = idParam || deporteIdBody;
+
+  if (!deporteId || !uuidSchema.safeParse(deporteId).success) {
     res.status(400).json({ message: "deporte_id inválido." });
     return;
   }
@@ -197,7 +218,7 @@ export async function postAutoinscripcion(
   try {
     const inscripcion = await autoinscribirseADeporte({
       perfil,
-      deporteId: parsed.data.deporte_id,
+      deporteId,
     });
     res.status(201).json({
       message: "Inscripción realizada correctamente.",
