@@ -16,14 +16,32 @@ import { mensajeError } from "../features/deporte/utils";
 import type { Usuario } from "../types/auth";
 import type { DeportePisu, PerfilPisu } from "../types/deporte";
 
-type DeportePageProps = { usuario: Usuario; onVolver: () => void };
+type DeportePageProps = { usuario: Usuario; onVolver: () => void; vistaInicial?: string; onVistaChange?: (vista: string) => void };
 
-export default function DeportePage({ usuario, onVolver: _onVolver }: DeportePageProps) {
+export default function DeportePage({ usuario, onVolver: _onVolver, vistaInicial = "catalogo", onVistaChange }: DeportePageProps) {
+  const [view, setView] = useState<string>(vistaInicial ?? "catalogo");
   const [deportes, setDeportes] = useState<DeportePisu[]>([]);
   const [perfil, setPerfil] = useState<PerfilPisu | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [cargando, setCargando] = useState(true);
-  const [view, setView] = useState("catalogo");
+
+  useEffect(() => {
+    onVistaChange?.(view);
+  }, [view, onVistaChange]);
+
+  useEffect(() => {
+    setView(vistaInicial);
+  }, [vistaInicial]);
+
+  // Sync view with App.tsx router when hash/URL changes
+  useEffect(() => {
+    const path = window.location.pathname;
+    if (path.startsWith("/mis-deportes") || path.startsWith("/mi-horario")) setView("actividad");
+    else if (path.startsWith("/asistencia")) setView("asistencia");
+    else if (path.startsWith("/admin")) setView("admin");
+    else if (path.startsWith("/usuarios")) setView("usuarios");
+    else setView("catalogo");
+  }, []);
   useEffect(() => {
     setError(null);
     setAccionConflicto(undefined);
