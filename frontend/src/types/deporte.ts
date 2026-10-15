@@ -14,11 +14,8 @@ export type DeportePisu = {
   id: string;
   nombre: string;
   descripcion: string | null;
-<<<<<<< HEAD
   imagen?: string | null;
-=======
   imagen_url?: string | null;
->>>>>>> origin/main
   cupo_maximo: number;
   cupo_disponible: number;
   categorias_permitidas: string[];
