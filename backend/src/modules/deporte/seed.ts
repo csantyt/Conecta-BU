@@ -3,6 +3,7 @@ import { Usuario } from "../auth/models/Usuario.js";
 import type { CategoriaPisu } from "./constantes.js";
 import { Deporte } from "./models/Deporte.js";
 import { Comunicado } from "./models/Comunicado.js";
+import { EventoDeporte } from "./models/EventoDeporte.js";
 import { HorarioDeporte } from "./models/HorarioDeporte.js";
 import { InscripcionDeporte } from "./models/InscripcionDeporte.js";
 import { UsuarioPisu } from "./models/UsuarioPisu.js";
@@ -221,4 +222,40 @@ export async function sembrarDeportesPisu(): Promise<void> {
       audiencia: "Docentes",
     },
   });
+
+  // Crear eventos deportivos de prueba
+  const ahoraEventos = new Date();
+  const eventosIniciales = [
+    {
+      nombre: "Torneo Relámpago de Ajedrez",
+      descripcion: "Evento futuro de prueba.",
+      fecha: new Date(ahoraEventos.getTime() + 7 * 24 * 60 * 60 * 1000),
+      lugar: "Sala de Juegos",
+      cupo_maximo: 20,
+      estado: true,
+    },
+    {
+      nombre: "Festival Deportivo",
+      descripcion: "Evento futuro para estudiantes.",
+      fecha: new Date(ahoraEventos.getTime() + 14 * 24 * 60 * 60 * 1000),
+      lugar: "Cancha Principal",
+      cupo_maximo: 50,
+      estado: true,
+    },
+    {
+      nombre: "Evento Pasado",
+      descripcion: "No debe aparecer en el catálogo.",
+      fecha: new Date(ahoraEventos.getTime() - 7 * 24 * 60 * 60 * 1000),
+      lugar: "Auditorio",
+      cupo_maximo: 30,
+      estado: true,
+    },
+  ];
+
+  for (const ev of eventosIniciales) {
+    await EventoDeporte.findOrCreate({
+      where: { nombre: ev.nombre },
+      defaults: ev,
+    });
+  }
 }

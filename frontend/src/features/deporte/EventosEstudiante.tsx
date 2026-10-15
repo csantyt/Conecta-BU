@@ -6,7 +6,7 @@ import {
 } from "../../api/deporte";
 import type { EventoPisu, PerfilPisu } from "../../types/deporte";
 import { mensajeError } from "./utils";
-import { Toast } from "../deportes/ui";
+import { Toast } from "../deporte/ui";
 
 type EventosEstudianteProps = {
   perfil: PerfilPisu | null;

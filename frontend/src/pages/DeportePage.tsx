@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { obtenerCatalogoDeportes, obtenerMisAsistenciasPisu } from "../api/deporte";
 import CatalogoDeportes from "../features/deporte/CatalogoDeportes";
-import DeporteShell from "../features/deportes/DeporteShell";
-import { Toast } from "../features/deportes/ui";
+import DeporteShell from "../features/deporte/DeporteShell";
+import { Toast } from "../features/deporte/ui";
 import EventosAlertasPisu from "../features/deporte/EventosAlertasPisu";
 import EventosEstudiante from "../features/deporte/EventosEstudiante";
 import MiHorarioEstudiante from "../features/deporte/MiHorarioEstudiante";
@@ -11,7 +11,6 @@ import GestionGrupoDocente from "../features/deporte/GestionGrupoDocente";
 import { GestionDeportes, GestionHorarios, GestionEventos, GestionAlertas } from "../features/deporte/PanelAdminPisu";
 import GestionDocentes from "../features/deporte/GestionDocentes";
 import GestionEstudiantes from "../features/deporte/GestionEstudiantes";
-import GestionInscritosDeporte from "../features/deporte/GestionInscritosDeporte";
 import PanelInformacionAdmin from "../features/deporte/PanelInformacionAdmin";
 import VerificarContenido from "../features/deporte/VerificarContenido";
 import { mensajeError } from "../features/deporte/utils";
@@ -125,7 +124,6 @@ export default function DeportePage({ usuario, onVolver: _onVolver, vistaInicial
     if (view === "eventos") return <GestionEventos onAviso={mostrarAviso} onError={mostrarError} />;
     if (view === "docentes" || view === "administradores") return <GestionDocentes onAviso={mostrarAviso} onError={mostrarError} />;
     if (view === "estudiantes") return <GestionEstudiantes onAviso={mostrarAviso} onError={mostrarError} />;
-    if (view === "inscritos") return <GestionInscritosDeporte onAviso={mostrarAviso} onError={mostrarError} />;
     if (view === "comunicados") return <GestionAlertas onAviso={mostrarAviso} onError={mostrarError} />;
     if (view === "mis-grupos") return <GestionGrupoDocente onError={mostrarError} />;
     // Student views
