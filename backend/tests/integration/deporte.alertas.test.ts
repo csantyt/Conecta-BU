@@ -78,7 +78,6 @@ describe("API Deporte — alertas automáticas por inasistencias", () => {
       const respuesta = await marcarAusente(`2026-01-0${dia}`);
       expect(respuesta.status).toBe(201);
     }
-    await marcarAusente(`2026-01-0${UMBRAL_INASISTENCIAS_ALERTA}`);
 
     const alertas = await Alerta.findAll({ where: { estudiante_id: estudiante.pisuId } });
     expect(alertas).toHaveLength(1);

@@ -1,5 +1,4 @@
-import { useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useState } from "react";
 import { leerToken, leerUsuario, limpiarSesion } from "./auth/session";
 import LogoInstitucional from "./components/LogoInstitucional";
 import ChatbotOrientacion from "./components/ChatbotOrientacion";
@@ -11,54 +10,15 @@ import LoginPage from "./pages/LoginPage";
 import { etiquetaRol, type Usuario } from "./types/auth";
 
 function App() {
-  const location = useLocation();
-  const navigate = useNavigate();
   const [usuario, setUsuario] = useState<Usuario | null>(leerUsuario);
   const [moduloActivo, setModuloActivo] = useState<ModuloId | null>(null);
-  const [vistaDeporte, setVistaDeporte] = useState<"catalogo" | "actividad" | "asistencia" | "usuarios" | "admin" | "eventos">("catalogo");
-
-  useEffect(() => {
-    const path = location.pathname;
-    if (path === "/" || path === "/modulos") setModuloActivo(null);
-    else if (path.startsWith("/desarrollo-humano")) setModuloActivo("desarrollo-humano");
-    else if (
-      path.startsWith("/deporte") ||
-      path.startsWith("/catalogo") ||
-      path.startsWith("/eventos") ||
-      path.startsWith("/mis-deportes") ||
-      path.startsWith("/mi-horario") ||
-      path.startsWith("/asistencia")
-    ) {
-      setModuloActivo("deporte");
-      if (path.startsWith("/mis-deportes") || path.startsWith("/mi-horario")) setVistaDeporte("actividad");
-      else if (path.startsWith("/asistencia")) setVistaDeporte("asistencia");
-      else if (path.startsWith("/eventos")) setVistaDeporte("eventos");
-      else setVistaDeporte("catalogo");
-    }
-  }, [location.pathname]);
 
   const autenticado = Boolean(leerToken() && usuario);
-
-  function abrirModulo(modulo: ModuloId | null) {
-    setModuloActivo(modulo);
-    if (modulo === "deporte") navigate("/deporte");
-    else if (modulo === "desarrollo-humano") navigate("/desarrollo-humano");
-    else navigate("/");
-  }
-
-  function cerrarVistaDeporte(vista: string) {
-    const v = vista as "catalogo" | "actividad" | "asistencia" | "usuarios" | "admin";
-    setVistaDeporte(v);
-    const path =
-      v === "actividad" ? "/mis-deportes" : v === "asistencia" ? "/asistencia" : v === "admin" ? "/admin" : v === "usuarios" ? "/usuarios" : "/catalogo";
-    navigate(path);
-  }
 
   function cerrarSesion() {
     limpiarSesion();
     setUsuario(null);
     setModuloActivo(null);
-    navigate("/login");
   }
 
   if (!autenticado || !usuario) {
@@ -75,7 +35,7 @@ function App() {
         <div className="relative mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:gap-6 sm:py-4">
           <button
             type="button"
-            onClick={() => abrirModulo(null)}
+            onClick={() => setModuloActivo(null)}
             className="flex items-center gap-3 text-left"
           >
             <LogoInstitucional variante="oscuro" className="h-10 w-auto sm:h-14" />
@@ -93,7 +53,7 @@ function App() {
             {moduloActivo ? (
               <button
                 type="button"
-                onClick={() => abrirModulo(null)}
+                onClick={() => setModuloActivo(null)}
                 className="hidden text-white transition hover:text-uni-cian md:inline"
               >
                 <span className="text-uni-cian">→</span> Módulos
@@ -121,17 +81,12 @@ function App() {
       {moduloActivo === "desarrollo-humano" ? (
         <DesarrolloHumanoPage
           usuario={usuario}
-          onVolver={() => abrirModulo(null)}
+          onVolver={() => setModuloActivo(null)}
         />
       ) : moduloActivo === "deporte" ? (
-        <DeportePage
-          usuario={usuario}
-          onVolver={() => abrirModulo(null)}
-          vistaInicial={vistaDeporte}
-          onVistaChange={cerrarVistaDeporte}
-        />
+        <DeportePage usuario={usuario} onVolver={() => setModuloActivo(null)} />
       ) : (
-        <HomePage usuario={usuario} onAbrirModulo={abrirModulo} />
+        <HomePage usuario={usuario} onAbrirModulo={setModuloActivo} />
       )}
       <ChatbotOrientacion />
     </div>

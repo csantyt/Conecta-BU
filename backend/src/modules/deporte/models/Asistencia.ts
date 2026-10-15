@@ -15,11 +15,8 @@ export class Asistencia extends Model<
 > {
   declare id: CreationOptional<string>;
   declare horario_id: ForeignKey<string>;
-  declare estudiante_id: ForeignKey<string>;
-  declare docente_id: ForeignKey<string>;
   declare fecha: string;
-  declare presente: CreationOptional<boolean>;
-  declare estado: CreationOptional<string | null>;
+  declare docente_id: ForeignKey<string>;
   declare fecha_registro: CreationOptional<Date>;
 }
 
@@ -34,26 +31,13 @@ Asistencia.init(
       type: DataTypes.UUID,
       allowNull: false,
     },
-    estudiante_id: {
-      type: DataTypes.UUID,
+    fecha: {
+      type: DataTypes.DATEONLY,
       allowNull: false,
     },
     docente_id: {
       type: DataTypes.UUID,
       allowNull: false,
-    },
-    fecha: {
-      type: DataTypes.DATEONLY,
-      allowNull: false,
-    },
-    presente: {
-      type: DataTypes.BOOLEAN,
-      allowNull: false,
-      defaultValue: false,
-    },
-    estado: {
-      type: DataTypes.STRING(32),
-      allowNull: true,
     },
     fecha_registro: {
       type: DataTypes.DATE,
@@ -66,5 +50,12 @@ Asistencia.init(
     schema: SCHEMAS.deporte,
     tableName: "asistencias",
     timestamps: false,
+    indexes: [
+      {
+        unique: true,
+        fields: ["horario_id", "fecha"],
+        name: "asistencias_unica_por_sesion",
+      },
+    ],
   },
 );

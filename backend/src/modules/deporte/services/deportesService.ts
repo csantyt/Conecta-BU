@@ -93,7 +93,7 @@ export async function listarDeportesActivos(
     const deporteJson = deporte.toJSON() as Record<string, unknown>;
     return {
       ...deporteJson,
-      imagenUrl: deporteJson["imagen_url"] ?? deporte.imagen_url ?? null,
+      imagenUrl: null, //,
       cupo_disponible: Math.max(0, deporte.cupo_maximo - usados),
       cuposDisponibles: Math.max(0, deporte.cupo_maximo - usados),
       inscrito: inscritoEn.has(deporte.id),

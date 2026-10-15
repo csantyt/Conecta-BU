@@ -2,6 +2,7 @@ import { Op, UniqueConstraintError } from "sequelize";
 import { UMBRAL_INASISTENCIAS_ALERTA } from "../constantes.js";
 import { Alerta } from "../models/Alerta.js";
 import { Asistencia } from "../models/Asistencia.js";
+import { AsistenciaDetalle } from "../models/AsistenciaDetalle.js";
 import { Deporte } from "../models/Deporte.js";
 import { HorarioDeporte } from "../models/HorarioDeporte.js";
 
@@ -20,7 +21,7 @@ export function claveAlertaInasistencias(params: {
 /**
  * Cada vez que un estudiante alcanza un múltiplo del umbral de inasistencias en un
  * deporte (3, 6, 9…) se crea una alerta personal. La columna `clave` es única, así
- * que repetir el cálculo (p. ej. al editar asistencia) no duplica avisos.
+ * que repetir el cálculo (p. ej. al editar AsistenciaDetalle) no duplica avisos.
  */
 export async function generarAlertasInasistencia(params: {
   deporteId: string;
@@ -44,12 +45,19 @@ export async function generarAlertasInasistencia(params: {
 
   const creadas: Alerta[] = [];
   for (const estudianteId of new Set(params.estudianteIds)) {
-    const ausencias = await Asistencia.count({
+    const ausencias = await AsistenciaDetalle.count({
       where: {
         estudiante_id: estudianteId,
         presente: false,
-        horario_id: { [Op.in]: horarioIds },
       },
+      include: [
+        {
+          model: Asistencia,
+          as: "asistencia",
+          required: true,
+          where: { horario_id: { [Op.in]: horarioIds } },
+        },
+      ],
     });
     const nivel = nivelDeInasistencias(ausencias);
     if (nivel < 1) {
@@ -70,7 +78,7 @@ export async function generarAlertasInasistencia(params: {
       creadas.push(
         await Alerta.create({
           titulo: `Inasistencias en ${deporte.nombre}`,
-          mensaje: `Llevas ${ausencias} inasistencias en ${deporte.nombre}. La asistencia regular es requisito del programa PISU; si tienes una dificultad, habla con tu docente o con Bienestar.`,
+          mensaje: `Llevas ${ausencias} inasistencias en ${deporte.nombre}. La AsistenciaDetalle regular es requisito del programa PISU; si tienes una dificultad, habla con tu docente o con Bienestar.`,
           audiencia: "Estudiantes",
           estudiante_id: estudianteId,
           clave,

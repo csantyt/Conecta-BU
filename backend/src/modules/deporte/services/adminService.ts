@@ -3,7 +3,7 @@ import { Usuario } from "../../auth/models/Usuario.js";
 import type { AudienciaAlertaPisu, CategoriaPisu, RolPisu } from "../constantes.js";
 import { AUDIENCIAS_ALERTA_PISU, CATEGORIAS_PISU, ROLES_PISU } from "../constantes.js";
 import { Alerta } from "../models/Alerta.js";
-import { Asistencia } from "../models/Asistencia.js";
+import { AsistenciaDetalle } from "../models/AsistenciaDetalle.js";
 import { Deporte } from "../models/Deporte.js";
 import { EventoDeporte } from "../models/EventoDeporte.js";
 import { HorarioDeporte } from "../models/HorarioDeporte.js";
@@ -172,7 +172,7 @@ export async function resumenAdministracion() {
     UsuarioPisu.count(),
     Deporte.count({ where: { estado: true } }),
     InscripcionDeporte.count({ where: { estado: "Activa" } }),
-    Asistencia.count(),
+    AsistenciaDetalle.count(),
     Alerta.count(),
     HorarioDeporte.count({ where: { estado: true } }),
     EventoDeporte.count({ where: { estado: true } }),

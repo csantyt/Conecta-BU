@@ -1,4 +1,8 @@
+<<<<<<< HEAD
+﻿import "dotenv/config";
+=======
 import "dotenv/config";
+>>>>>>> 663248a4848ed69e41e2955a46aec5e172d2cd5f
 import { randomUUID } from "node:crypto";
 import jwt from "jsonwebtoken";
 import { Sequelize } from "sequelize";
@@ -24,4 +28,8 @@ await sequelize.close();
 
 console.log("\nPega esto en la consola del navegador (F12 > Console) y recarga:\n");
 console.log(`localStorage.setItem("token", ${JSON.stringify(token)});`);
+<<<<<<< HEAD
 console.log(`localStorage.setItem("usuario", ${JSON.stringify(JSON.stringify(u))});`);
+=======
+console.log(`localStorage.setItem("usuario", ${JSON.stringify(JSON.stringify(u))});`);
+>>>>>>> 663248a4848ed69e41e2955a46aec5e172d2cd5f

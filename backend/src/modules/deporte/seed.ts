@@ -1,7 +1,8 @@
-import { randomBytes, scryptSync } from "node:crypto";
+import bcrypt from "bcryptjs";
+import { Usuario } from "../auth/models/Usuario.js";
 import type { CategoriaPisu } from "./constantes.js";
 import { Deporte } from "./models/Deporte.js";
-import { EventoDeporte } from "./models/EventoDeporte.js";
+import { Comunicado } from "./models/Comunicado.js";
 import { HorarioDeporte } from "./models/HorarioDeporte.js";
 import { InscripcionDeporte } from "./models/InscripcionDeporte.js";
 import { UsuarioPisu } from "./models/UsuarioPisu.js";
@@ -30,30 +31,7 @@ const DEPORTES_INICIALES: Array<{
     cupo_maximo: 14,
     categorias_permitidas: ["Pregrado", "Postgrado", "Egresado"],
   },
-  {
-    nombre: "Atletismo",
-    descripcion: "Entrenamiento de pista y campo para todos los niveles.",
-    cupo_maximo: 30,
-    categorias_permitidas: ["Pregrado", "Postgrado", "Egresado"],
-  },
-  {
-    nombre: "Ajedrez Relámpago",
-    descripcion: "Deporte de 1 cupo para pruebas de concurrencia.",
-    cupo_maximo: 1,
-    categorias_permitidas: ["Pregrado", "Postgrado", "Egresado"],
-  },
-  {
-    nombre: "Natación",
-    descripcion: "Curso de natación solo para pregrado.",
-    cupo_maximo: 12,
-    categorias_permitidas: ["Pregrado"],
-  },
 ];
-
-function hashear(password: string): string {
-  const salt = randomBytes(16).toString("hex");
-  return `scrypt:${salt}:${scryptSync(password, salt, 64).toString("hex")}`;
-}
 
 export async function sembrarDeportesPisu(): Promise<void> {
   const existentes = await Deporte.findAll({ attributes: ["nombre"] });
@@ -66,114 +44,181 @@ export async function sembrarDeportesPisu(): Promise<void> {
     await Deporte.create(item);
   }
 
-  if ((await UsuarioPisu.count({ where: { rol: "Administrador" } })) === 0) {
-    await UsuarioPisu.create({
-      nombre: "Administrador Deporte",
-      correo: "admin.deporte@uniautonoma.edu.co",
-      password_hash: hashear("Admin123*"),
-      rol: "Administrador",
-      estado: true,
+  if (process.env["NODE_ENV"] === "production") {
+    return;
+  }
+
+  const passwordPlano = process.env["SEED_DOCENTE_PASSWORD"] ?? "docente123";
+  const passwordHash = await bcrypt.hash(passwordPlano, 10);
+
+  const cuentaKevin = await Usuario.findOrCreate({
+    where: { email: "kevin.ruiz.m@uniautonoma.edu.co" },
+    defaults: {
+      email: "kevin.ruiz.m@uniautonoma.edu.co",
+      nombre_completo: "Kevin Ruiz M",
+      rol: "DOCENTE",
+    },
+  });
+  await cuentaKevin[0].update({ rol: "DOCENTE", nombre_completo: "Kevin Ruiz M" });
+
+  const perfilKevin = await UsuarioPisu.findOrCreate({
+    where: { correo: "kevin.ruiz.m@uniautonoma.edu.co" },
+    defaults: {
+      auth_usuario_id: cuentaKevin[0].id,
+      nombre: "Kevin Ruiz M",
+      correo: "kevin.ruiz.m@uniautonoma.edu.co",
+      rol: "Docente",
+      categoria: null,
+      password_hash: passwordHash,
+    },
+  });
+  await perfilKevin[0].update({
+    auth_usuario_id: cuentaKevin[0].id,
+    nombre: "Kevin Ruiz M",
+    rol: "Docente",
+    password_hash: passwordHash,
+    estado: true,
+  });
+
+  const cuentaOtro = await Usuario.findOrCreate({
+    where: { email: "docente2.deporte@uniautonoma.edu.co" },
+    defaults: {
+      email: "docente2.deporte@uniautonoma.edu.co",
+      nombre_completo: "Docente PISU Adicional",
+      rol: "DOCENTE",
+    },
+  });
+  const perfilOtro = await UsuarioPisu.findOrCreate({
+    where: { correo: "docente2.deporte@uniautonoma.edu.co" },
+    defaults: {
+      auth_usuario_id: cuentaOtro[0].id,
+      nombre: "Docente PISU Adicional",
+      correo: "docente2.deporte@uniautonoma.edu.co",
+      rol: "Docente",
+      categoria: null,
+      password_hash: passwordHash,
+    },
+  });
+  await perfilOtro[0].update({ rol: "Docente", password_hash: passwordHash, estado: true });
+
+  const ahora = new Date(
+    new Date().toLocaleString("en-US", { timeZone: "America/Bogota" }),
+  );
+  const diaHoy = ahora.getDay();
+  const fechaHoy = `${ahora.getFullYear()}-${String(ahora.getMonth() + 1).padStart(2, "0")}-${String(
+    ahora.getDate(),
+  ).padStart(2, "0")}`;
+
+  const futbol = await Deporte.findOne({ where: { nombre: "Fútbol" } });
+  const baloncesto = await Deporte.findOne({ where: { nombre: "Baloncesto" } });
+
+  if (futbol) {
+    await HorarioDeporte.findOrCreate({
+      where: {
+        deporte_id: futbol.id,
+        docente_id: perfilKevin[0].id,
+        dia_semana: diaHoy,
+        hora_inicio: "08:00:00",
+        hora_fin: "10:00:00",
+      },
+      defaults: {
+        deporte_id: futbol.id,
+        docente_id: perfilKevin[0].id,
+        dia_semana: diaHoy,
+        hora_inicio: "08:00:00",
+        hora_fin: "10:00:00",
+        lugar: "Cancha principal",
+        estado: true,
+      },
     });
   }
 
-  const docentesExistentes = await UsuarioPisu.count({ where: { rol: "Docente" } });
-  if (docentesExistentes === 0) {
-    await Promise.all(
-      ["Ana Martínez", "Carlos Pérez", "Laura Gómez", "Miguel Torres"].map((nombre, index) =>
-        UsuarioPisu.create({
-          nombre,
-          correo: `docente${index + 1}@uniautonoma.edu.co`,
-          password_hash: hashear("Docente123*"),
-          rol: "Docente",
-          estado: true,
-        }),
-      ),
-    );
+  if (baloncesto) {
+    await HorarioDeporte.findOrCreate({
+      where: {
+        deporte_id: baloncesto.id,
+        docente_id: perfilKevin[0].id,
+        dia_semana: diaHoy,
+        hora_inicio: "10:30:00",
+        hora_fin: "12:00:00",
+      },
+      defaults: {
+        deporte_id: baloncesto.id,
+        docente_id: perfilKevin[0].id,
+        dia_semana: diaHoy,
+        hora_inicio: "10:30:00",
+        hora_fin: "12:00:00",
+        lugar: "Coliseo",
+        estado: true,
+      },
+    });
   }
 
-  const categorias: CategoriaPisu[] = ["Pregrado", "Postgrado", "Egresado"];
-  if ((await UsuarioPisu.count({ where: { rol: "Estudiante" } })) < 10) {
-    const estudiantes: UsuarioPisu[] = [];
-    for (let i = 0; i < 10; i += 1) {
-      const correo = `estudiante${i + 1}@uniautonoma.edu.co`;
-      let estudiante = await UsuarioPisu.findOne({ where: { correo } });
-      if (!estudiante) {
-        estudiante = await UsuarioPisu.create({
-          nombre: `Estudiante ${i + 1}`,
-          correo,
-          password_hash: hashear("Estudiante123*"),
+  const deporteBase = futbol ?? baloncesto;
+  if (deporteBase) {
+    await HorarioDeporte.findOrCreate({
+      where: {
+        deporte_id: deporteBase.id,
+        docente_id: perfilOtro[0].id,
+        dia_semana: diaHoy,
+        hora_inicio: "07:00:00",
+        hora_fin: "09:00:00",
+      },
+      defaults: {
+        deporte_id: deporteBase.id,
+        docente_id: perfilOtro[0].id,
+        dia_semana: diaHoy,
+        hora_inicio: "07:00:00",
+        hora_fin: "09:00:00",
+        lugar: "Cancha auxiliar",
+        estado: true,
+      },
+    });
+
+    const estudiantes: { nombre: string; correo: string; categoria: CategoriaPisu }[] = [
+      {
+        nombre: "Estudiante PISU Uno",
+        correo: "estudiante1.pisu@uniautonoma.edu.co",
+        categoria: "Pregrado",
+      },
+      {
+        nombre: "Estudiante PISU Dos",
+        correo: "estudiante2.pisu@uniautonoma.edu.co",
+        categoria: "Postgrado",
+      },
+    ];
+    for (const est of estudiantes) {
+      const perfilEst = await UsuarioPisu.findOrCreate({
+        where: { correo: est.correo },
+        defaults: {
+          nombre: est.nombre,
+          correo: est.correo,
           rol: "Estudiante",
-          categoria: categorias[i % categorias.length],
-          estado: true,
-        });
-      }
-      estudiantes.push(estudiante);
-    }
-
-    const docentes = await UsuarioPisu.findAll({
-      where: { rol: "Docente" },
-      order: [["nombre", "ASC"]],
-      limit: 4,
-    });
-    const deportes = await Deporte.findAll({ order: [["nombre", "ASC"]] });
-    const futbol = deportes.find((d) => d.nombre === "Fútbol");
-    if (futbol && docentes[0]) {
-      const horarioExistente = await HorarioDeporte.findOne({
-        where: { deporte_id: futbol.id, docente_id: docentes[0].id },
+          categoria: est.categoria,
+        },
       });
-      if (!horarioExistente) {
-        await HorarioDeporte.create({
-          deporte_id: futbol.id,
-          docente_id: docentes[0].id,
-          dia_semana: 1,
-          hora_inicio: "08:00:00",
-          hora_fin: "10:00:00",
-          lugar: "Cancha principal",
-          estado: true,
-        });
-      }
-      for (let i = 0; i < 3 && estudiantes[i]; i += 1) {
-        const existe = await InscripcionDeporte.findOne({
-          where: { estudiante_id: estudiantes[i]!.id, deporte_id: futbol.id, estado: "Activa" },
-        });
-        if (!existe) {
-          await InscripcionDeporte.create({
-            estudiante_id: estudiantes[i]!.id,
-            deporte_id: futbol.id,
-            estado: "Activa",
-          });
-        }
-      }
+      await InscripcionDeporte.findOrCreate({
+        where: {
+          estudiante_id: perfilEst[0].id,
+          deporte_id: deporteBase.id,
+          estado: "Activa",
+        },
+        defaults: {
+          estudiante_id: perfilEst[0].id,
+          deporte_id: deporteBase.id,
+          estado: "Activa",
+        },
+      });
     }
   }
 
-  if ((await EventoDeporte.count()) === 0) {
-    const ahora = new Date();
-    await EventoDeporte.bulkCreate([
-      {
-        nombre: "Torneo Relámpago de Ajedrez",
-        descripcion: "Evento futuro de prueba.",
-        fecha: new Date(ahora.getTime() + 7 * 24 * 60 * 60 * 1000),
-        lugar: "Sala de Juegos",
-        cupo_maximo: 20,
-        estado: true,
-      },
-      {
-        nombre: "Festival Deportivo",
-        descripcion: "Evento futuro para estudiantes.",
-        fecha: new Date(ahora.getTime() + 14 * 24 * 60 * 60 * 1000),
-        lugar: "Cancha Principal",
-        cupo_maximo: 50,
-        estado: true,
-      },
-      {
-        nombre: "Evento Pasado",
-        descripcion: "No debe aparecer en el catálogo.",
-        fecha: new Date(ahora.getTime() - 7 * 24 * 60 * 60 * 1000),
-        lugar: "Auditorio",
-        cupo_maximo: 30,
-        estado: true,
-      },
-    ]);
-  }
+  await Comunicado.findOrCreate({
+    where: { titulo: "Bienvenido docente" },
+    defaults: {
+      titulo: "Bienvenido docente",
+      mensaje:
+        "Recuerda registrar la asistencia dentro de la ventana permitida. Si no hay clases hoy, revisa tu horario en administración.",
+      audiencia: "Docentes",
+    },
+  });
 }
