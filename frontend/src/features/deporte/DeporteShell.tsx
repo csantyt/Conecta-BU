@@ -60,9 +60,9 @@ const ESTUDIANTE_MENU: MenuGroup[] = [
     title: "GENERAL",
     items: [
       { key: "catalogo", label: "Catálogo", icon: "deportes" },
-      { key: "eventos", label: "Eventos", icon: "eventos" },
+      { key: "eventos-estudiante", label: "Eventos", icon: "eventos" },
       { key: "mis-deportes", label: "Mis deportes", icon: "inscritos" },
-      { key: "horario", label: "Mi horario", icon: "horarios" },
+      { key: "mi-horario", label: "Mi horario", icon: "horarios" },
     ],
   },
 ];

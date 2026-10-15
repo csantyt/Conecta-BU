@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
-import { obtenerCatalogoDeportes } from "../api/deporte";
+import { obtenerCatalogoDeportes, obtenerMisAsistenciasPisu } from "../api/deporte";
 import CatalogoDeportes from "../features/deporte/CatalogoDeportes";
-import EstudianteCompaneros from "../features/deporte/EstudianteCompaneros";
 import DeporteShell from "../features/deportes/DeporteShell";
 import { Toast } from "../features/deportes/ui";
 import EventosAlertasPisu from "../features/deporte/EventosAlertasPisu";
+import EventosEstudiante from "../features/deporte/EventosEstudiante";
+import MiHorarioEstudiante from "../features/deporte/MiHorarioEstudiante";
+import MisDeportesEventos from "../features/deporte/MisDeportesEventos";
 import GestionGrupoDocente from "../features/deporte/GestionGrupoDocente";
 import { GestionDeportes, GestionHorarios, GestionEventos, GestionAlertas } from "../features/deporte/PanelAdminPisu";
 import GestionDocentes from "../features/deporte/GestionDocentes";
@@ -14,7 +16,7 @@ import PanelInformacionAdmin from "../features/deporte/PanelInformacionAdmin";
 import VerificarContenido from "../features/deporte/VerificarContenido";
 import { mensajeError } from "../features/deporte/utils";
 import type { Usuario } from "../types/auth";
-import type { DeportePisu, PerfilPisu } from "../types/deporte";
+import type { DeportePisu, PerfilPisu, AsistenciaEstudiantePisu } from "../types/deporte";
 
 type DeportePageProps = { usuario: Usuario; onVolver: () => void; vistaInicial?: string; onVistaChange?: (vista: string) => void };
 
@@ -22,37 +24,46 @@ export default function DeportePage({ usuario, onVolver: _onVolver, vistaInicial
   const [view, setView] = useState<string>(vistaInicial ?? "catalogo");
   const [deportes, setDeportes] = useState<DeportePisu[]>([]);
   const [perfil, setPerfil] = useState<PerfilPisu | null>(null);
+  const [asistencias, setAsistencias] = useState<AsistenciaEstudiantePisu[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [cargando, setCargando] = useState(true);
 
+  // Sync view with hash (used by DeporteShell sidebar)
+  useEffect(() => {
+    function syncFromHash() {
+      const hash = window.location.hash.replace(/^#/, "").replace(/^\/deportes\/[^/]*\//, "");
+      if (hash) setView(hash);
+    }
+    syncFromHash();
+    window.addEventListener("hashchange", syncFromHash);
+    return () => window.removeEventListener("hashchange", syncFromHash);
+  }, []);
+
+  // Notify App.tsx of view changes (for browser back/forward)
   useEffect(() => {
     onVistaChange?.(view);
+    // Update hash without triggering hashchange loop
+    const currentHash = window.location.hash.replace(/^#/, "").replace(/^\/deportes\/[^/]*\//, "");
+    if (currentHash !== view) {
+      window.location.hash = `/deportes/${view}`;
+    }
   }, [view, onVistaChange]);
 
-  useEffect(() => {
-    setView(vistaInicial);
-  }, [vistaInicial]);
-
-  // Sync view with App.tsx router when hash/URL changes
-  useEffect(() => {
-    const path = window.location.pathname;
-    if (path.startsWith("/mis-deportes") || path.startsWith("/mi-horario")) setView("actividad");
-    else if (path.startsWith("/asistencia")) setView("asistencia");
-    else if (path.startsWith("/admin")) setView("admin");
-    else if (path.startsWith("/usuarios")) setView("usuarios");
-    else setView("catalogo");
-  }, []);
+  // Clear errors on view change
   useEffect(() => {
     setError(null);
     setAccionConflicto(undefined);
   }, [view]);
+
   const [initialized, setInitialized] = useState(false);
   const [toast, setToast] = useState<{ mensaje: string; accion?: string } | null>(null);
   const [accionConflicto, setAccionConflicto] = useState<string | undefined>(undefined);
+
   const mostrarAviso = useCallback((mensaje: string, accion?: string) => {
     setToast({ mensaje, accion });
     window.setTimeout(() => setToast(null), 4000);
   }, []);
+
   const mostrarError = useCallback((mensaje: string) => {
     const match = mensaje.match(/\(Ver: (\w+)\)\s*$/);
     const limpio = mensaje.replace(/\s*\(Ver: \w+\)\s*$/, "");
@@ -64,6 +75,7 @@ export default function DeportePage({ usuario, onVolver: _onVolver, vistaInicial
     }, 8000);
   }, []);
 
+  // Auto-redirect based on role after profile loads
   useEffect(() => {
     if (initialized || !perfil) return;
     if (perfil.rol === "Administrador") setView("panel");
@@ -75,9 +87,13 @@ export default function DeportePage({ usuario, onVolver: _onVolver, vistaInicial
   const recargar = useCallback(async () => {
     setCargando(true);
     try {
-      const data = await obtenerCatalogoDeportes();
+      const [data, historial] = await Promise.all([
+        obtenerCatalogoDeportes(),
+        obtenerMisAsistenciasPisu().catch(() => ({ asistencias: [] as AsistenciaEstudiantePisu[] })),
+      ]);
       setDeportes(data.deportes);
       setPerfil(data.perfil);
+      setAsistencias(historial.asistencias);
     } catch (err) {
       setError(mensajeError(err));
     } finally {
@@ -101,6 +117,7 @@ export default function DeportePage({ usuario, onVolver: _onVolver, vistaInicial
         </div>
       );
     }
+    // Admin views
     if (view === "panel") return <PanelInformacionAdmin deportes={deportes} usuario={usuario} onError={mostrarError} onNavegar={(v) => setView(v)} />;
     if (view === "verificar") return <VerificarContenido onError={mostrarError} />;
     if (view === "deportes") return <GestionDeportes deportesCatalogo={deportes} onAviso={mostrarAviso} onError={mostrarError} onRecargar={recargar} />;
@@ -111,7 +128,10 @@ export default function DeportePage({ usuario, onVolver: _onVolver, vistaInicial
     if (view === "inscritos") return <GestionInscritosDeporte onAviso={mostrarAviso} onError={mostrarError} />;
     if (view === "comunicados") return <GestionAlertas onAviso={mostrarAviso} onError={mostrarError} />;
     if (view === "mis-grupos") return <GestionGrupoDocente onError={mostrarError} />;
-    if (view === "companeros") return <EstudianteCompaneros onError={mostrarError} />;
+    // Student views
+    if (view === "eventos-estudiante") return <EventosEstudiante perfil={perfil} onAviso={mostrarAviso} onError={mostrarError} />;
+    if (view === "mis-deportes") return <MisDeportesEventos asistencias={asistencias} onError={mostrarError} />;
+    if (view === "mi-horario") return <MiHorarioEstudiante asistencias={asistencias} />;
     if (view === "catalogo") {
       return (
         <>
