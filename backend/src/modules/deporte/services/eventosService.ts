@@ -61,7 +61,7 @@ export async function listarEventosActivos(
   perfil?: UsuarioPisuSesion,
 ): Promise<EventoConCupo[]> {
   const eventos = await EventoDeporte.findAll({
-    where: { estado: true },
+    where: { estado: true, fecha: { [Op.gt]: new Date() } },
     order: [["fecha", "ASC"]],
   });
   const ids = eventos.map((item) => item.id);

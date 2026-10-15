@@ -3,8 +3,11 @@ import type { CategoriaPisu } from "./constantes.js";
 import { CATEGORIAS_PISU } from "./constantes.js";
 import { Deporte } from "./models/Deporte.js";
 import { EventoDeporte } from "./models/EventoDeporte.js";
+<<<<<<< HEAD
 import { HorarioDeporte } from "./models/HorarioDeporte.js";
 import { InscripcionDeporte } from "./models/InscripcionDeporte.js";
+=======
+>>>>>>> origin/main
 import { UsuarioPisu } from "./models/UsuarioPisu.js";
 
 const DEPORTES_INICIALES: Array<{
@@ -33,11 +36,31 @@ const DEPORTES_INICIALES: Array<{
     categorias_permitidas: ["Pregrado", "Postgrado", "Egresado"],
   },
   {
+<<<<<<< HEAD
     nombre: "Atletismo",
     descripcion: "Entrenamiento de pista y campo para todos los niveles.",
     cupo_maximo: 30,
     categorias_permitidas: ["Pregrado", "Postgrado", "Egresado"],
   },
+=======
+    nombre: "Ajedrez Relámpago",
+    descripcion: "Deporte de 1 cupo para pruebas de concurrencia.",
+    cupo_maximo: 1,
+    categorias_permitidas: ["Pregrado", "Postgrado", "Egresado"],
+  },
+  {
+    nombre: "Natación",
+    descripcion: "Curso de natación solo para pregrado.",
+    cupo_maximo: 12,
+    categorias_permitidas: ["Pregrado"],
+  },
+];
+
+const ESTUDIANTES_SEED: Array<{ nombre: string; correo: string; categoria: "Pregrado" | "Postgrado" | "Egresado" }> = [
+  { nombre: "Estudiante Pregrado", correo: "pregrado@uniautonoma.edu.co", categoria: "Pregrado" },
+  { nombre: "Estudiante Postgrado", correo: "postgrado@uniautonoma.edu.co", categoria: "Postgrado" },
+  { nombre: "Estudiante Egresado", correo: "egresado@uniautonoma.edu.co", categoria: "Egresado" },
+>>>>>>> origin/main
 ];
 
 function hashear(password: string): string {
@@ -56,16 +79,32 @@ export async function sembrarDeportesPisu(): Promise<void> {
     await Deporte.create(item);
   }
 
+<<<<<<< HEAD
   if ((await UsuarioPisu.count({ where: { rol: "Administrador" } })) === 0) {
     await UsuarioPisu.create({
       nombre: "Administrador Deporte",
       correo: "admin.deporte@uniautonoma.edu.co",
       password_hash: hashear("Admin123*"),
       rol: "Administrador",
+=======
+  const correos = new Set(
+    (await UsuarioPisu.findAll({ attributes: ["correo"] })).map((item) => item.correo.toLowerCase()),
+  );
+  for (const estudiante of ESTUDIANTES_SEED) {
+    if (correos.has(estudiante.correo.toLowerCase())) {
+      continue;
+    }
+    await UsuarioPisu.create({
+      nombre: estudiante.nombre,
+      correo: estudiante.correo,
+      rol: "Estudiante",
+      categoria: estudiante.categoria,
+>>>>>>> origin/main
       estado: true,
     });
   }
 
+<<<<<<< HEAD
   const docentesExistentes = await UsuarioPisu.count({ where: { rol: "Docente" } });
   if (docentesExistentes === 0) {
     await Promise.all(
@@ -145,6 +184,36 @@ export async function sembrarDeportesPisu(): Promise<void> {
       { nombre: 'Torneo intersemestral', descripcion: 'Competencia entre equipos.', fecha: new Date('2026-11-15T09:00:00-05:00'), lugar: 'Cancha principal', tipo: 'torneo', cupo_maximo: 12, estado: true },
       { nombre: 'Masterclass de entrenamiento', descripcion: 'Clase abierta con invitado.', fecha: new Date('2026-11-20T15:00:00-05:00'), lugar: 'Auditorio', tipo: 'masterclass', cupo_maximo: 40, estado: true },
       { nombre: 'D�a recreativo PISU', descripcion: 'Actividades deportivas y recreaci�n.', fecha: new Date('2026-12-01T08:00:00-05:00'), lugar: 'Cancha principal', tipo: 'otro', cupo_maximo: 80, estado: true },
+=======
+  const eventosExistentes = await EventoDeporte.count();
+  if (eventosExistentes === 0) {
+    const ahora = new Date();
+    await EventoDeporte.bulkCreate([
+      {
+        nombre: "Torneo Relámpago de Ajedrez",
+        descripcion: "Evento futuro de prueba.",
+        fecha: new Date(ahora.getTime() + 7 * 24 * 60 * 60 * 1000),
+        lugar: "Sala de Juegos",
+        cupo_maximo: 20,
+        estado: true,
+      },
+      {
+        nombre: "Festival Deportivo",
+        descripcion: "Evento futuro para estudiantes.",
+        fecha: new Date(ahora.getTime() + 14 * 24 * 60 * 60 * 1000),
+        lugar: "Cancha Principal",
+        cupo_maximo: 50,
+        estado: true,
+      },
+      {
+        nombre: "Evento Pasado",
+        descripcion: "No debe aparecer en el catálogo.",
+        fecha: new Date(ahora.getTime() - 7 * 24 * 60 * 60 * 1000),
+        lugar: "Auditorio",
+        cupo_maximo: 30,
+        estado: true,
+      },
+>>>>>>> origin/main
     ]);
   }
 }

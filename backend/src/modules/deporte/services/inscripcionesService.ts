@@ -5,6 +5,7 @@ import { Deporte } from "../models/Deporte.js";
 import { EventoDeporte } from "../models/EventoDeporte.js";
 import { HorarioDeporte } from "../models/HorarioDeporte.js";
 import { InscripcionDeporte } from "../models/InscripcionDeporte.js";
+import { InscripcionEvento } from "../models/InscripcionEvento.js";
 import { hayTraslape } from "../utils/horarios.js";
 
 export class RecursoNoEncontradoError extends Error {}
@@ -14,6 +15,7 @@ export class CupoAgotadoError extends Error {}
 export class CruceHorarioError extends Error {}
 export class YaInscritoError extends Error {}
 export class OperacionNoPermitidaError extends Error {}
+export class PlazoVencidoError extends Error {}
 
 export { hayTraslape };
 
@@ -52,11 +54,39 @@ async function validarCruceHorario(params: {
   });
 
   const idsOtras = otras.map((item) => item.deporte_id);
-  const horariosPrevios =
+  const [horariosPrevios, deportesPrevios] = await Promise.all([
     idsOtras.length === 0
-      ? []
-      : await HorarioDeporte.findAll({
+      ? Promise.resolve([])
+      : HorarioDeporte.findAll({
           where: { deporte_id: { [Op.in]: idsOtras }, estado: true },
+          transaction: params.transaction,
+        }),
+    idsOtras.length === 0
+      ? Promise.resolve([])
+      : Deporte.findAll({
+          where: { id: { [Op.in]: idsOtras } },
+          transaction: params.transaction,
+        }),
+  ]);
+
+  const nombreDeporte = new Map(
+    deportesPrevios.map((deporte) => [deporte.id, deporte.nombre]),
+  );
+
+  const eventosInscritos = await InscripcionEvento.findAll({
+    where: {
+      estudiante_id: params.estudianteId,
+      estado: "Activa",
+    },
+    transaction: params.transaction,
+  });
+
+  const eventosIdsInscritos = eventosInscritos.map((item) => item.evento_id);
+  const eventos =
+    eventosIdsInscritos.length === 0
+      ? []
+      : await EventoDeporte.findAll({
+          where: { id: { [Op.in]: eventosIdsInscritos }, estado: true },
           transaction: params.transaction,
         });
 
@@ -72,33 +102,24 @@ async function validarCruceHorario(params: {
         )
       ) {
         throw new CruceHorarioError(
-          "El horario se cruza con otra clase en la que ya estás inscrito (RN-001).",
+          `Se cruza con ${nombreDeporte.get(previo.deporte_id) ?? "otro deporte"} (${previo.dia_semana} ${previo.hora_inicio}-${previo.hora_fin})`,
         );
       }
     }
-  }
 
-  const ahora = new Date();
-  const eventos = await EventoDeporte.findAll({
-    where: { estado: true, fecha: { [Op.gte]: ahora } },
-    transaction: params.transaction,
-  });
-
-  const bloques = [...params.horariosNuevos, ...horariosPrevios];
-  for (const evento of eventos) {
-    const bloqueEvento = horaDesdeFecha(new Date(evento.fecha));
-    for (const clase of bloques) {
+    for (const evento of eventos) {
+      const bloqueEvento = horaDesdeFecha(new Date(evento.fecha));
       if (
-        clase.dia_semana === bloqueEvento.dia &&
+        nuevo.dia_semana === bloqueEvento.dia &&
         hayTraslape(
-          String(clase.hora_inicio),
-          String(clase.hora_fin),
+          String(nuevo.hora_inicio),
+          String(nuevo.hora_fin),
           bloqueEvento.inicio,
           bloqueEvento.fin,
         )
       ) {
         throw new CruceHorarioError(
-          `El horario se cruza con el evento activo "${evento.nombre}" (RN-001).`,
+          `Se cruza con ${evento.nombre} (${bloqueEvento.dia} ${bloqueEvento.inicio}-${bloqueEvento.fin})`,
         );
       }
     }
@@ -138,7 +159,7 @@ export async function autoinscribirseADeporte(params: {
     const categorias = deporte.categorias_permitidas ?? [];
     if (!categorias.includes(categoria)) {
       throw new CategoriaNoPermitidaError(
-        `Tu categoría (${categoria}) no está permitida en este deporte (RN-002).`,
+        `Este deporte no está disponible para tu categoría (${categoria})`,
       );
     }
 
@@ -153,7 +174,7 @@ export async function autoinscribirseADeporte(params: {
     });
 
     if (yaActiva) {
-      throw new YaInscritoError("Ya tienes una inscripción activa en este deporte.");
+      throw new YaInscritoError("Ya estás inscrito en este deporte");
     }
 
     const ocupadas = await InscripcionDeporte.count({
@@ -162,9 +183,7 @@ export async function autoinscribirseADeporte(params: {
     });
 
     if (ocupadas >= deporte.cupo_maximo) {
-      throw new CupoAgotadoError(
-        "No hay cupos disponibles para este deporte (RN-003).",
-      );
+      throw new CupoAgotadoError("No hay cupos disponibles");
     }
 
     const horariosNuevos = await HorarioDeporte.findAll({
@@ -190,7 +209,7 @@ export async function autoinscribirseADeporte(params: {
       );
     } catch (error) {
       if (error instanceof UniqueConstraintError) {
-        throw new YaInscritoError("Ya tienes una inscripción activa en este deporte.");
+        throw new YaInscritoError("Ya estás inscrito en este deporte");
       }
       throw error;
     }
@@ -201,12 +220,33 @@ export async function cancelarInscripcionDeporte(params: {
   perfil: UsuarioPisuSesion;
   inscripcionId: string;
 }): Promise<void> {
-  const inscripcion = await InscripcionDeporte.findByPk(params.inscripcionId);
-  if (!inscripcion || inscripcion.estudiante_id !== params.perfil.id) {
-    throw new RecursoNoEncontradoError("La inscripción no existe.");
-  }
-  if (inscripcion.estado !== "Activa") {
-    throw new DatosInvalidosError("La inscripción ya está cancelada.");
-  }
-  await inscripcion.update({ estado: "Cancelada" });
+  await sequelize.transaction(async (transaction) => {
+    const inscripcion = await InscripcionDeporte.findByPk(params.inscripcionId, {
+      transaction,
+      lock: transaction.LOCK.UPDATE,
+    });
+    if (!inscripcion || inscripcion.estudiante_id !== params.perfil.id) {
+      throw new RecursoNoEncontradoError("La inscripción no existe.");
+    }
+    if (inscripcion.estado !== "Activa") {
+      throw new DatosInvalidosError("La inscripción ya está cancelada.");
+    }
+
+    const inicioStr = process.env["SEMESTRE_INICIO"];
+    const finStr = process.env["SEMESTRE_FIN"];
+    if (inicioStr && finStr) {
+      const inicio = new Date(inicioStr);
+      const fin = new Date(finStr);
+      if (!Number.isNaN(inicio.getTime()) && !Number.isNaN(fin.getTime())) {
+        const puntoMedio = new Date(
+          inicio.getTime() + (fin.getTime() - inicio.getTime()) / 2,
+        );
+        if (new Date() > puntoMedio) {
+          throw new PlazoVencidoError("El plazo para cancelar ya venció");
+        }
+      }
+    }
+
+    await inscripcion.update({ estado: "Cancelada" }, { transaction });
+  });
 }

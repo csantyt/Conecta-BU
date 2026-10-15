@@ -2,6 +2,7 @@ export type HorarioPisu = {
   id: string;
   deporte_id: string;
   docente_id?: string;
+  docente?: { id: string; nombre: string };
   dia_semana: number;
   hora_inicio: string;
   hora_fin: string;
@@ -13,7 +14,11 @@ export type DeportePisu = {
   id: string;
   nombre: string;
   descripcion: string | null;
+<<<<<<< HEAD
   imagen?: string | null;
+=======
+  imagen_url?: string | null;
+>>>>>>> origin/main
   cupo_maximo: number;
   cupo_disponible: number;
   categorias_permitidas: string[];

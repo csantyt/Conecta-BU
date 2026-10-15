@@ -19,6 +19,7 @@ export class Asistencia extends Model<
   declare docente_id: ForeignKey<string>;
   declare fecha: string;
   declare presente: CreationOptional<boolean>;
+  declare estado: CreationOptional<string | null>;
   declare fecha_registro: CreationOptional<Date>;
 }
 
@@ -49,6 +50,10 @@ Asistencia.init(
       type: DataTypes.BOOLEAN,
       allowNull: false,
       defaultValue: false,
+    },
+    estado: {
+      type: DataTypes.STRING(32),
+      allowNull: true,
     },
     fecha_registro: {
       type: DataTypes.DATE,

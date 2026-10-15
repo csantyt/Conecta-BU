@@ -87,7 +87,7 @@ describe("API Deporte — inscripción a eventos deportivos", () => {
   });
 
   it("no admite inscripciones a eventos que ya ocurrieron", async () => {
-    expect((await inscribir(estudianteA, eventoPasado.id)).status).toBe(400);
+    expect((await inscribir(estudianteA, eventoPasado.id)).status).toBe(409);
   });
 
   it("prohíbe que un docente se inscriba (RBAC)", async () => {

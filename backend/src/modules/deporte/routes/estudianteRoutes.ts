@@ -31,7 +31,15 @@ estudianteRoutes.post(
   "/eventos/:id/inscripcion",
   asyncHandler(postInscripcionEvento),
 );
+estudianteRoutes.post(
+  "/eventos/:id/participacion",
+  asyncHandler(postInscripcionEvento),
+);
 estudianteRoutes.delete(
   "/eventos/:id/inscripcion",
+  asyncHandler(deleteInscripcionEvento),
+);
+estudianteRoutes.delete(
+  "/eventos/:id/participacion",
   asyncHandler(deleteInscripcionEvento),
 );
