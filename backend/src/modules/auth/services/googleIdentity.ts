@@ -1,6 +1,7 @@
 import { OAuth2Client } from "google-auth-library";
 import {
   esCorreoInstitucional,
+  normalizarCorreoInstitucional,
   obtenerDominioInstitucional,
 } from "../roles.js";
 
@@ -51,10 +52,12 @@ export async function verificarIdTokenGoogle(
     throw new TokenGoogleInvalidoError();
   }
 
-  const email = payload?.email?.toLowerCase();
-  const nombreCompleto = payload?.name ?? email ?? "";
+  const emailBruto = payload?.email;
+  const nombreCompleto = payload?.name ?? emailBruto ?? "";
 
-  if (!email || payload?.email_verified !== true) {
+  // Exigimos el correo verificado por Google (regla 10.1.7) antes de mirar el
+  // dominio, para no confundir un token sin verificar con un dominio ajeno.
+  if (!emailBruto || payload?.email_verified !== true) {
     throw new TokenGoogleInvalidoError(
       "No fue posible obtener un correo verificado desde Google.",
     );
@@ -62,9 +65,11 @@ export async function verificarIdTokenGoogle(
 
   // Solo validamos el correo. No exigimos claim `hd` (a veces falta en tokens
   // de Workspace y bloqueaba cuentas institucionales válidas).
-  if (!esCorreoInstitucional(email)) {
+  if (!esCorreoInstitucional(emailBruto)) {
     throw new DominioNoPermitidoError();
   }
+
+  const email = normalizarCorreoInstitucional(emailBruto) as string;
 
   return {
     email,

@@ -1,6 +1,6 @@
 import type { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
-import { esCorreoInstitucional } from "../modules/auth/roles.js";
+import { normalizarCorreoInstitucional } from "../modules/auth/roles.js";
 import type { RolUsuario } from "../modules/auth/roles.js";
 
 export interface AuthUser {
@@ -61,9 +61,10 @@ export function authMiddleware(
       return;
     }
 
-    const email = String(payload["email"]).toLowerCase();
+    // Solo se admiten tokens de correos institucionales verificados.
+    const email = normalizarCorreoInstitucional(String(payload["email"]));
 
-    if (!esCorreoInstitucional(email)) {
+    if (!email) {
       res.status(403).json({
         message: "El token no corresponde a un correo institucional.",
       });

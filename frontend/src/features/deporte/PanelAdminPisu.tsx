@@ -264,6 +264,10 @@ export function GestionHorarios({
       onError("Asigna un deporte y un docente.");
       return;
     }
+    if (horaInicio >= horaFin) {
+      onError("La hora de fin debe ser posterior a la de inicio.");
+      return;
+    }
     setGuardando(true);
     try {
       await crearHorarioAdmin({
@@ -472,6 +476,15 @@ export function GestionEventos({
 
   async function onCrear(event: FormEvent) {
     event.preventDefault();
+    const fechaEvento = new Date(fecha);
+    if (!fecha.trim() || Number.isNaN(fechaEvento.getTime())) {
+      onError("La fecha del evento no es válida.");
+      return;
+    }
+    if (fechaEvento.getTime() < Date.now()) {
+      onError("La fecha del evento no puede ser pasada.");
+      return;
+    }
     setGuardando(true);
     try {
       await crearEventoAdmin({
@@ -565,11 +578,23 @@ export function GestionEventos({
           >
             <p className="font-semibold">{evento.nombre}</p>
             <p className="mt-1 text-sm text-slate-600">
-              {new Date(evento.fecha).toLocaleString("es-CO")} · {evento.lugar}
+              {new Date(evento.fecha).toLocaleDateString("es-CO")}
+              {evento.hora_inicio
+                ? ` · ${evento.hora_inicio.slice(0, 5)}–${(evento.hora_fin ?? "").slice(0, 5)}`
+                : ""}{" "}
+              · {evento.lugar}
+            </p>
+            <p className="mt-1 text-xs text-slate-500">
+              {evento.deporte ? `${evento.deporte.nombre} · ` : ""}
+              Creado por {evento.creador?.nombre ?? "Administrador"}
             </p>
             <p className="mt-1 text-xs text-slate-500">
               Inscritos {evento.inscritos ?? 0}/{evento.cupo_maximo} ·{" "}
-              {evento.estado ? "Activo" : "Inactivo"}
+              {evento.estado_evento === "cancelado"
+                ? `Cancelado${evento.motivo_cancelacion ? ` (${evento.motivo_cancelacion})` : ""}`
+                : evento.estado
+                  ? "Activo"
+                  : "Inactivo"}
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
               <button

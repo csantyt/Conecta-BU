@@ -11,6 +11,7 @@ import {
   RecursoAdminNoEncontradoError,
   UsuarioPisuNoEncontradoError,
   actualizarDeporte,
+  actualizarDeportesDeDocente,
   actualizarDocente,
   actualizarEstudiantePisu,
   actualizarEventoAdmin,
@@ -29,7 +30,7 @@ import {
   eliminarDeporteAdmin,
   inscribirEstudianteManual,
   listarDeportesAdmin,
-  listarDocentesPisu,
+  listarDocentesConDeportes,
   listarAlertasAdmin,
   listarEstudiantesPisu,
   listarEventosAdmin,
@@ -43,13 +44,14 @@ import {
   EventoNoEncontradoError,
   listarInscritosEvento,
 } from "../services/eventosService.js";
-import { listarEstudiantesGeneral } from "../services/inscritosService.js";
+import { listarEstudiantesGeneral, listarInscripcionesAgrupadas } from "../services/inscritosService.js";
 import {
   actualizarDeporteSchema,
   actualizarDocenteSchema,
   actualizarEstudiantePisuSchema,
   actualizarEventoPisuSchema,
   actualizarHorarioPisuSchema,
+  asignarDeportesDocenteSchema,
   asignarRolPisuSchema,
   crearAlertaPisuSchema,
   crearAdministradorPisuSchema,
@@ -113,7 +115,7 @@ export async function getUsuariosAdmin(_req: Request, res: Response): Promise<vo
 
 export async function getDocentesAdmin(req: Request, res: Response): Promise<void> {
   const q = typeof req.query["q"] === "string" ? req.query["q"] : "";
-  const docentes = await listarDocentesPisu(q);
+  const docentes = await listarDocentesConDeportes(q);
   res.status(200).json({ docentes });
 }
 
@@ -125,6 +127,14 @@ export async function getEstudiantesAdmin(req: Request, res: Response): Promise<
   if (typeof req.query["q"] === "string") params.q = req.query["q"];
   const estudiantes = await listarEstudiantesGeneral(params);
   res.status(200).json({ estudiantes });
+}
+
+export async function getInscritosAgrupadosAdmin(req: Request, res: Response): Promise<void> {
+  const params: { q?: string; categoria?: string } = {};
+  if (typeof req.query["q"] === "string") params.q = req.query["q"];
+  if (typeof req.query["categoria"] === "string") params.categoria = req.query["categoria"];
+  const grupos = await listarInscripcionesAgrupadas(params);
+  res.status(200).json({ grupos });
 }
 
 export async function getBuscarEstudiantesAdmin(req: Request, res: Response): Promise<void> {
@@ -172,11 +182,45 @@ export async function postDocenteAdmin(req: Request, res: Response): Promise<voi
     return;
   }
   try {
-    const resultado = await crearDocente(parsed.data);
+    const docente = await crearDocente(parsed.data);
     res.status(201).json({
-      message: "Docente creado. Comparte la contraseña temporal de forma segura.",
-      docente: resultado.docente,
-      passwordTemporal: resultado.passwordTemporal,
+      message:
+        "Docente creado. Al entrar con su correo institucional verá su panel; ahora asígnale sus deportes.",
+      docente,
+    });
+  } catch (error) {
+    if (!responderErrorAdmin(res, error)) {
+      throw error;
+    }
+  }
+}
+
+/**
+ * PUT /docentes/:id/deportes
+ * Reemplaza la lista de deportes asignados directamente al docente.
+ * Permite que su panel muestre el deporte aunque aún no tenga horarios.
+ */
+export async function putDeportesDocenteAdmin(req: Request, res: Response): Promise<void> {
+  const id = idDeRuta(req, "id");
+  if (!id) {
+    res.status(400).json({ message: "Identificador de docente inválido." });
+    return;
+  }
+  const parsed = asignarDeportesDocenteSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({
+      message: "Datos inválidos: 'deporteIds' debe ser una lista de deportes válidos.",
+    });
+    return;
+  }
+  try {
+    const deportes = await actualizarDeportesDeDocente({
+      docenteId: id,
+      deporteIds: parsed.data.deporteIds,
+    });
+    res.status(200).json({
+      message: "Deportes asignados al docente.",
+      deportes,
     });
   } catch (error) {
     if (!responderErrorAdmin(res, error)) {

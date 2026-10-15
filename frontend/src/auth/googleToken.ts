@@ -1,13 +1,44 @@
 const dominioInstitucional = (
   import.meta.env.VITE_GOOGLE_HOSTED_DOMAIN || "uniautonoma.edu.co"
-).replace(/^@/, "").toLowerCase();
+)
+  .trim()
+  .replace(/^@/, "")
+  .toLowerCase();
 
 export function dominioGoogleInstitucional(): string {
   return dominioInstitucional;
 }
 
+/**
+ * Normaliza un correo institucional (misma regla que el backend, sección 10.1):
+ * sin espacios, en minúsculas, exactamente un `@` y dominio EXACTAMENTE igual
+ * al institucional. La validación definitiva la hace el servidor; esto solo
+ * evita llamadas inútiles desde el cliente.
+ */
+export function normalizarCorreoInstitucional(
+  email: string | null | undefined,
+): string | null {
+  if (typeof email !== "string") {
+    return null;
+  }
+  const limpio = email.trim().toLowerCase();
+  if (!limpio || /\s/.test(limpio)) {
+    return null;
+  }
+  const arroba = limpio.indexOf("@");
+  if (arroba <= 0 || arroba !== limpio.lastIndexOf("@")) {
+    return null;
+  }
+  const local = limpio.slice(0, arroba);
+  const dominio = limpio.slice(arroba + 1);
+  if (!local || !dominio || dominio !== dominioInstitucional) {
+    return null;
+  }
+  return limpio;
+}
+
 export function esCorreoInstitucionalCliente(email: string): boolean {
-  return email.toLowerCase().endsWith(`@${dominioInstitucional}`);
+  return normalizarCorreoInstitucional(email) !== null;
 }
 
 function decodificarPayloadJwt(idToken: string): Record<string, unknown> | null {
@@ -33,7 +64,7 @@ function decodificarPayloadJwt(idToken: string): Record<string, unknown> | null 
 export function leerEmailDesdeIdToken(idToken: string): string | null {
   const data = decodificarPayloadJwt(idToken);
   const email = data?.["email"];
-  return typeof email === "string" ? email.toLowerCase() : null;
+  return typeof email === "string" ? email.trim().toLowerCase() : null;
 }
 
 /**

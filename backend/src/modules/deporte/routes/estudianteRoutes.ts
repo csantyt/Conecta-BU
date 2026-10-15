@@ -5,7 +5,9 @@ import {
   getAsistenciasEstudiante,
   getHorariosEstudiante,
   getInscripciones,
+  getMisEventosEstudiante,
   getPerfilEstudiante,
+  patchPerfilEstudiante,
   patchCancelarInscripcion,
   postAutoinscripcion,
   postInscripcionEvento,
@@ -18,6 +20,7 @@ export const estudianteRoutes = Router();
 
 estudianteRoutes.use(authMiddleware, soloEstudiantePisu);
 estudianteRoutes.get("/perfil", asyncHandler(getPerfilEstudiante));
+estudianteRoutes.patch("/perfil", asyncHandler(patchPerfilEstudiante));
 estudianteRoutes.get("/inscripciones", asyncHandler(getInscripciones));
 estudianteRoutes.get("/inscripciones/completas", asyncHandler(getMisInscripcionesCompletas));
 estudianteRoutes.post("/inscripciones", asyncHandler(postAutoinscripcion));
@@ -27,6 +30,7 @@ estudianteRoutes.patch(
 );
 estudianteRoutes.get("/horarios", asyncHandler(getHorariosEstudiante));
 estudianteRoutes.get("/asistencias", asyncHandler(getAsistenciasEstudiante));
+estudianteRoutes.get("/eventos/mios", asyncHandler(getMisEventosEstudiante));
 estudianteRoutes.post(
   "/eventos/:id/inscripcion",
   asyncHandler(postInscripcionEvento),

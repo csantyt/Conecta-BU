@@ -6,6 +6,7 @@ import desarrolloHumanoRoutes from "./modules/desarrollo-humano/routes/desarroll
 import {
   adminRoutes,
   deportesRoutes,
+  docenteEventosRoutes,
   docenteRoutes,
   estudianteRoutes,
   eventosAliasRoutes,
@@ -22,6 +23,7 @@ app.use("/api/v1/desarrollo-humano", desarrolloHumanoRoutes);
 app.use("/api/v1/ia", iaRoutes);
 app.use("/api/ia", iaRoutes);
 
+app.use("/api/v1/deportes/docente/eventos", docenteEventosRoutes);
 app.use("/api/v1/deportes", deportesRoutes);
 app.use("/api/v1/eventos", eventosAliasRoutes);
 app.use("/api/v1/docente", docenteRoutes);

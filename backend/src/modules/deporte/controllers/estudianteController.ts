@@ -3,17 +3,22 @@ import {
   listarAsistenciasEstudiante,
   listarHorariosDeInscripciones,
   listarInscripcionesEstudiante,
+  completarPerfilEstudiante,
   obtenerMiHorario,
 } from "../services/estudianteService.js";
 import {
   CupoEventoAgotadoError,
+  CategoriaEventoNoPermitidaError,
+  CruceHorarioEventoError,
   EventoCerradoError,
   EventoNoEncontradoError,
   NoInscritoEventoError,
   OperacionEventoNoPermitidaError,
+  PlazoEventoVencidoError,
   YaInscritoEventoError,
   cancelarInscripcionAEvento,
   inscribirseAEvento,
+  listarMisEventosEstudiante,
 } from "../services/eventosService.js";
 import {
   CategoriaNoPermitidaError,
@@ -27,7 +32,7 @@ import {
   autoinscribirseADeporte,
   cancelarInscripcionDeporte,
 } from "../services/inscripcionesService.js";
-import { autoinscripcionSchema, uuidSchema } from "../validators.js";
+import { autoinscripcionSchema, completarPerfilEstudianteSchema, uuidSchema } from "../validators.js";
 
 export async function getPerfilEstudiante(
   req: Request,
@@ -47,6 +52,56 @@ export async function getInscripciones(
   }
   const inscripciones = await listarInscripcionesEstudiante(perfil);
   res.status(200).json({ inscripciones });
+}
+
+/** Eventos en los que el estudiante está inscrito (incluye los cancelados). */
+export async function getMisEventosEstudiante(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const perfil = req.usuarioPisu;
+  if (!perfil) {
+    res.status(401).json({ message: "No autenticado." });
+    return;
+  }
+  const eventos = await listarMisEventosEstudiante(perfil);
+  res.status(200).json({ eventos });
+}
+
+/**
+ * Completa el perfil del estudiante con datos que la universidad no expone por
+ * Google (sección 10.1: no inventar datos personales). Por ahora la categoría.
+ */
+export async function patchPerfilEstudiante(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const perfil = req.usuarioPisu;
+  if (!perfil) {
+    res.status(401).json({ message: "No autenticado." });
+    return;
+  }
+  const parsed = completarPerfilEstudianteSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({
+      message: "Categoría inválida. Elige Pregrado, Postgrado o Egresado.",
+    });
+    return;
+  }
+  const ficha = await completarPerfilEstudiante(perfil, {
+    categoria: parsed.data.categoria,
+  });
+  res.status(200).json({
+    perfil: {
+      id: ficha.id,
+      auth_usuario_id: ficha.auth_usuario_id ?? null,
+      nombre: ficha.nombre,
+      correo: ficha.correo,
+      rol: ficha.rol,
+      categoria: ficha.categoria ?? null,
+      estado: ficha.estado,
+    },
+  });
 }
 
 export async function getHorariosEstudiante(
@@ -113,6 +168,22 @@ function responderErrorEvento(res: Response, error: unknown): boolean {
     error instanceof NoInscritoEventoError
   ) {
     res.status(409).json({ message: error.message });
+    return true;
+  }
+  if (
+    error instanceof PlazoEventoVencidoError ||
+    error instanceof CategoriaEventoNoPermitidaError ||
+    error instanceof CruceHorarioEventoError
+  ) {
+    res.status(409).json({
+      message: error.message,
+      codigo:
+        error instanceof PlazoEventoVencidoError
+          ? "PLAZO_VENCIDO"
+          : error instanceof CategoriaEventoNoPermitidaError
+            ? "CATEGORIA_NO_PERMITIDA"
+            : "CRUCE_HORARIO",
+    });
     return true;
   }
   return false;

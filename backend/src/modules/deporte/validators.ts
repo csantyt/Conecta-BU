@@ -1,9 +1,18 @@
 import { z } from "zod";
+import { TIPOS_EVENTO_PISU } from "./constantes.js";
 
 export const uuidSchema = z.string().uuid();
 
 export const autoinscripcionSchema = z.object({
   deporte_id: z.string().uuid(),
+});
+
+/**
+ * Datos que el estudiante completa en su propio perfil. Hoy solo la categoría
+ * académica, que no puede inferirse del correo institucional.
+ */
+export const completarPerfilEstudianteSchema = z.object({
+  categoria: z.enum(["Pregrado", "Postgrado", "Egresado"]),
 });
 
 const registroAsistenciaSchema = z
@@ -64,6 +73,10 @@ export const actualizarDocenteSchema = crearDocenteSchema.partial().extend({
   estado: z.boolean().optional(),
 });
 
+export const asignarDeportesDocenteSchema = z.object({
+  deporteIds: z.array(z.string().uuid()).default([]),
+});
+
 export const crearEstudiantePisuSchema = z.object({
   nombre: z.string().min(2).max(180),
   correo: z.string().email().max(255),
@@ -117,6 +130,34 @@ export const crearEventoPisuSchema = z.object({
 
 export const actualizarEventoPisuSchema = crearEventoPisuSchema.partial().extend({
   estado: z.boolean().optional(),
+});
+
+/**
+ * Evento creado por un docente. Los nombres de los campos siguen la convención
+ * snake_case del resto del módulo (`deporte_id`, `cupo_maximo`).
+ * Las horas van en formato "HH:MM" (24 h) y las fechas en "YYYY-MM-DD" o ISO.
+ */
+export const crearEventoDocenteSchema = z.object({
+  nombre: z.string().min(2).max(180),
+  descripcion: z.string().nullable().optional(),
+  tipo: z.enum(TIPOS_EVENTO_PISU),
+  deporte_id: z.string().uuid(),
+  fecha: z.string().min(8),
+  hora_inicio: z.string().regex(/^\d{2}:\d{2}$/),
+  hora_fin: z.string().regex(/^\d{2}:\d{2}$/),
+  lugar: z.string().min(2).max(180),
+  cupo_maximo: z.number().int().min(1),
+  fecha_limite_inscripcion: z.string().min(8).nullable().optional(),
+  categorias_permitidas: z
+    .array(z.enum(["Pregrado", "Postgrado", "Egresado"]))
+    .min(1)
+    .optional(),
+});
+
+export const actualizarEventoDocenteSchema = crearEventoDocenteSchema.partial();
+
+export const cancelarEventoDocenteSchema = z.object({
+  motivo: z.string().min(3).max(500),
 });
 
 export const crearHorarioPisuSchema = z.object({

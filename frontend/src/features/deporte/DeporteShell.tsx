@@ -1,71 +1,11 @@
-import { useEffect, useState } from "react";
-import { obtenerAlertasAdmin } from "../../api/deporte";
+import { useEffect, useRef, useState } from "react";
+import { obtenerAlertasAdmin, obtenerAlertasPisu } from "../../api/deporte";
 import { etiquetaRol } from "../../types/auth";
+import { etiquetaDeVista, menuPorRol } from "./menus";
+import { homeDeRol, type RolPisu } from "./rutas";
+import { ErrorBoundary } from "./ui";
 
 type Usuario = { nombre_completo?: string; email: string; rol: string };
-
-type MenuItem = { key: string; label: string; icon: string; badge?: number };
-type MenuGroup = { title: string; items: MenuItem[] };
-
-const ADMIN_MENU: MenuGroup[] = [
-  {
-    title: "GENERAL",
-    items: [
-      { key: "panel", label: "Panel", icon: "panel" },
-      { key: "verificar", label: "Verificar contenido", icon: "verificar" },
-    ],
-  },
-  {
-    title: "GESTIÓN DEPORTIVA",
-    items: [
-      { key: "deportes", label: "Deportes", icon: "deportes" },
-      { key: "horarios", label: "Horarios", icon: "horarios" },
-      { key: "eventos", label: "Eventos", icon: "eventos" },
-      { key: "inscritos", label: "Inscritos por deporte", icon: "inscritos" },
-    ],
-  },
-  {
-    title: "PERSONAS",
-    items: [
-      { key: "docentes", label: "Docentes", icon: "personas" },
-      { key: "estudiantes", label: "Estudiantes", icon: "personas" },
-      { key: "administradores", label: "Administradores", icon: "personas" },
-    ],
-  },
-  {
-    title: "COMUNICACIÓN",
-    items: [{ key: "comunicados", label: "Comunicados", icon: "comunicados" }],
-  },
-];
-
-const DOCENTE_MENU: MenuGroup[] = [
-  {
-    title: "GENERAL",
-    items: [
-      { key: "clases-hoy", label: "Mis clases de hoy", icon: "horarios" },
-      { key: "grupos", label: "Mis grupos", icon: "inscritos" },
-    ],
-  },
-  {
-    title: "CONSULTA",
-    items: [
-      { key: "historial", label: "Historial", icon: "eventos" },
-      { key: "estadisticas", label: "Estadísticas", icon: "panel" },
-    ],
-  },
-];
-
-const ESTUDIANTE_MENU: MenuGroup[] = [
-  {
-    title: "GENERAL",
-    items: [
-      { key: "catalogo", label: "Catálogo", icon: "deportes" },
-      { key: "eventos", label: "Eventos", icon: "eventos" },
-      { key: "mis-deportes", label: "Mis deportes", icon: "inscritos" },
-      { key: "horario", label: "Mi horario", icon: "horarios" },
-    ],
-  },
-];
 
 function iconoSvg(icono: string) {
   const path = icono === "panel"
@@ -95,59 +35,60 @@ type Props = {
   rolPisu: string;
   view: string;
   setView: (v: string) => void;
+  onVolver?: () => void;
   children: React.ReactNode;
 };
 
-export function useHashRoute(defaultView: string) {
-  const [view, setView] = useState(defaultView);
-  useEffect(() => {
-    function sync() {
-      const h = window.location.hash.replace(/^#/, "").replace(/^\/deportes\/[^/]*\//, "");
-      if (h) setView(h);
-    }
-    sync();
-    window.addEventListener("hashchange", sync);
-    return () => window.removeEventListener("hashchange", sync);
-  }, []);
-  return [view, (v: string) => { window.location.hash = `/deportes/${v}`; setView(v); }] as const;
-}
-
-export default function DeporteShell({ usuario, rolPisu, view, setView, children }: Props) {
+export default function DeporteShell({ usuario, rolPisu, view, setView, onVolver, children }: Props) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [comunicados, setComunicados] = useState(0);
-  const menus = rolPisu === "Administrador" ? ADMIN_MENU : rolPisu === "Docente" ? DOCENTE_MENU : ESTUDIANTE_MENU;
+  const mainRef = useRef<HTMLElement | null>(null);
+  const menus = menuPorRol(rolPisu);
+  const base = view.split(":")[0];
 
   useEffect(() => {
-    if (rolPisu !== "Administrador") return;
-    void obtenerAlertasAdmin()
-      .then((lista) => setComunicados((lista as unknown[]).length))
+    if (rolPisu !== "Administrador" && rolPisu !== "Docente") return;
+    const carga =
+      rolPisu === "Administrador" ? obtenerAlertasAdmin() : obtenerAlertasPisu();
+    void carga
+      .then((lista) => setComunicados(lista.length))
       .catch(() => setComunicados(0));
-  }, [rolPisu]);
+  }, [rolPisu, view]);
+
+  // Al cambiar de pantalla: cerrar el drawer móvil y volver arriba.
+  useEffect(() => {
+    setDrawerOpen(false);
+    mainRef.current?.scrollTo({ top: 0 });
+  }, [view]);
 
   function renderNav(activeClass: string, inactiveClass: string, onClick: (key: string) => void) {
     return menus.map((group) => (
       <div key={group.title} className="space-y-1">
         <p className="px-3 pt-3 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">{group.title}</p>
         {group.items.map((m) => {
-          const item = rolPisu === "Administrador" && m.key === "comunicados" ? { ...m, badge: comunicados } : m;
+          const badge = m.key === "comunicados" ? comunicados : 0;
           return (
             <button
               key={m.key}
               type="button"
               onClick={() => onClick(m.key)}
-              className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm ${view === m.key ? activeClass : inactiveClass}`}
+              className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm ${base === m.key ? activeClass : inactiveClass}`}
             >
               <span className="inline-flex h-6 w-6 items-center justify-center rounded-md bg-white/10 text-uni-cian">
                 {iconoSvg(m.icon)}
               </span>
               <span className="flex-1">{m.label}</span>
-              {m.key === "comunicados" && item.badge ? <span className="rounded-full bg-orange-400 px-2 py-0.5 text-[10px] font-bold text-slate-950">{item.badge}</span> : null}
+              {m.key === "comunicados" && badge ? <span className="rounded-full bg-orange-400 px-2 py-0.5 text-[10px] font-bold text-slate-950">{badge}</span> : null}
             </button>
           );
         })}
       </div>
     ));
   }
+
+  const rol = (rolPisu === "Administrador" || rolPisu === "Docente"
+    ? rolPisu
+    : "Estudiante") as RolPisu;
 
   return (
     <div className="min-h-screen bg-uni-noche text-slate-100 flex">
@@ -159,7 +100,7 @@ export default function DeporteShell({ usuario, rolPisu, view, setView, children
         <div className="border-t border-white/10 p-4">
           <p className="text-xs font-bold text-white truncate">{usuario.nombre_completo || usuario.email}</p>
           <p className="text-[10px] uppercase tracking-wider text-uni-cian">{etiquetaRol(usuario.rol)}</p>
-          <button type="button" className="mt-3 text-xs text-uni-mandarina" onClick={() => { localStorage.clear(); window.location.reload(); }}>Salir</button>
+          <button type="button" className="mt-3 text-xs text-uni-mandarina" onClick={() => { localStorage.clear(); window.location.hash = ""; window.location.reload(); }}>Salir</button>
         </div>
       </aside>
 
@@ -180,10 +121,20 @@ export default function DeporteShell({ usuario, rolPisu, view, setView, children
             <button type="button" className="md:hidden text-slate-300" onClick={() => setDrawerOpen(true)} aria-label="Abrir menú">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
             </button>
-            <h2 className="text-sm font-bold uppercase tracking-wider">{view}</h2>
+            <h2 className="text-sm font-bold uppercase tracking-wider">{etiquetaDeVista(rolPisu, view)}</h2>
           </div>
           <div className="flex items-center gap-3">
-            <button type="button" className="text-slate-300" onClick={() => (window.location.hash = "")} aria-label="Volver al portal">
+            <button
+              type="button"
+              className="text-slate-300 hover:text-white"
+              onClick={() => {
+                if (onVolver) onVolver();
+                else setView(homeDeRol(rol));
+                window.location.hash = "";
+              }}
+              aria-label="Volver al portal"
+              title="Volver al portal"
+            >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 18l-6-6 6-6"/></svg>
             </button>
             <span className="text-slate-400" aria-label="Comunicados">
@@ -191,8 +142,10 @@ export default function DeporteShell({ usuario, rolPisu, view, setView, children
             </span>
           </div>
         </header>
-        <main className="flex-1 overflow-auto p-4 md:p-8 pb-24 max-w-6xl mx-auto w-full">
-          {children}
+        <main ref={mainRef} className="flex-1 overflow-auto p-4 md:p-8 pb-24 max-w-6xl mx-auto w-full">
+          <ErrorBoundary resetKey={view} onInicio={() => setView(homeDeRol(rol))}>
+            {children}
+          </ErrorBoundary>
         </main>
       </div>
     </div>

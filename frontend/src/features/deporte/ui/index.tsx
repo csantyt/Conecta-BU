@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { Component, type ErrorInfo, type ReactNode } from "react";
 
 export const cardClass = "rounded-2xl border border-white/10 bg-white/[0.04] p-5";
 
@@ -139,8 +139,7 @@ export function Toast({ message, action, onAction }: { message: string; action?:
   );
 }
 
-export function SportIcon({ nombre }: { nombre: string }) {
-  const clave = nombre.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+export function SportIcon({ nombre }: { nombre: string }) {  const clave = nombre.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
   if (clave.includes("futbol") || clave.includes("soccer")) {
     return (
       <svg viewBox="0 0 64 64" className="h-10 w-10" aria-hidden>
@@ -177,5 +176,89 @@ export function SportIcon({ nombre }: { nombre: string }) {
     <svg viewBox="0 0 64 64" className="h-10 w-10" aria-hidden>
       <path d="M32 4 L40 28 H60 L44 42 L50 62 L32 50 L14 62 L20 42 L4 28 H24 Z" fill="currentColor" />
     </svg>
+  );
+}
+
+/**
+ * Aísla los errores de render de una pantalla para que el shell (sidebar y barra
+ * superior) siga funcionando. Muestra un ErrorState con "Reintentar" e "Ir al
+ * inicio" en lugar de una pantalla blanca total.
+ */
+type ErrorBoundaryProps = {
+  children: ReactNode;
+  /** Clave que cambia al navegar: al cambiar, el boundary se reinicia. */
+  resetKey: string;
+  onInicio?: () => void;
+};
+
+type ErrorBoundaryState = { error: string | null };
+
+export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  state: ErrorBoundaryState = { error: null };
+
+  static getDerivedStateFromError(error: unknown): ErrorBoundaryState {
+    return { error: error instanceof Error ? error.message : "Error inesperado al mostrar la pantalla." };
+  }
+
+  componentDidCatch(error: Error, info: ErrorInfo): void {
+    // Se registra en consola para diagnóstico, sin romper la interfaz.
+    console.error("ErrorBoundary Deporte:", error, info.componentStack);
+  }
+
+  componentDidUpdate(prev: ErrorBoundaryProps): void {
+    if (prev.resetKey !== this.props.resetKey && this.state.error) {
+      this.setState({ error: null });
+    }
+  }
+
+  render(): ReactNode {
+    if (this.state.error) {
+      return (
+        <div className="rounded-2xl border border-rose-400/30 bg-rose-500/10 p-6 text-center">
+          <p className="text-sm text-rose-200">
+            Ocurrió un error al mostrar esta pantalla.
+          </p>
+          <p className="mt-1 text-xs text-rose-200/70">{this.state.error}</p>
+          <div className="mt-4 flex justify-center gap-3">
+            <button
+              type="button"
+              className="rounded-full border border-rose-400/40 px-4 py-1.5 text-xs font-semibold text-rose-100"
+              onClick={() => this.setState({ error: null })}
+            >
+              Reintentar
+            </button>
+            {this.props.onInicio ? (
+              <button
+                type="button"
+                className="rounded-full border border-white/20 px-4 py-1.5 text-xs font-semibold text-slate-200"
+                onClick={this.props.onInicio}
+              >
+                Ir al inicio
+              </button>
+            ) : null}
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+/** Pantalla "no encontrada" reutilizable (ruta comodín por rol). */
+export function NoEncontrada({ onInicio }: { onInicio: () => void }) {
+  return (
+    <div className="rounded-2xl border border-dashed border-white/15 bg-white/[0.02] p-10 text-center">
+      <p className="text-lg font-semibold">Página no encontrada</p>
+      <p className="mt-1 text-sm text-slate-400">
+        La sección que buscas no existe o no está disponible para tu rol.
+      </p>
+      <button
+        type="button"
+        className="mt-4 rounded-full banda-uni px-4 py-2 text-sm font-semibold text-uni-noche"
+        onClick={onInicio}
+      >
+        Ir al inicio
+      </button>
+    </div>
   );
 }

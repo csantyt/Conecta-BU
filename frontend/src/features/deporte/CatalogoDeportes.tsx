@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
 import { autoinscribirseDeporte, cancelarInscripcionPisu } from "../../api/deporte";
 import type { DeportePisu, PerfilPisu } from "../../types/deporte";
-import { SportIcon } from "../deportes/ui";
+import CompletarPerfilPisu from "./CompletarPerfilPisu";
+import { SportIcon } from "./ui";
 import { DIAS, etiquetaHorario, mensajeError } from "./utils";
 
 type CatalogoDeportesProps = {
@@ -38,7 +39,10 @@ export default function CatalogoDeportes({
     });
   }, [deportes, nombre, dia]);
 
-  const puedeInscribirse = perfil?.rol === "Estudiante";
+  // El servidor es la autoridad: sin categoría académica no se puede inscribir
+  // (sección 10.1, no se inventan datos personales).
+  const faltaCategoria = perfil?.rol === "Estudiante" && !perfil.categoria;
+  const puedeInscribirse = perfil?.rol === "Estudiante" && Boolean(perfil.categoria);
 
   async function confirmarInscripcion() {
     if (!pendiente) {
@@ -76,6 +80,16 @@ export default function CatalogoDeportes({
 
   return (
     <section>
+      {perfil?.rol === "Estudiante" ? (
+        <div className="mb-5">
+          <CompletarPerfilPisu
+            perfil={perfil}
+            onAviso={onAviso}
+            onError={onError}
+            onRecargar={onRecargar}
+          />
+        </div>
+      ) : null}
       <div className="mb-5 grid gap-3 sm:grid-cols-[1fr_12rem]">
         <label className="block">
           <span className="mb-1 block text-xs uppercase tracking-wide text-slate-400">
@@ -227,11 +241,13 @@ export default function CatalogoDeportes({
                     <button
                       type="button"
                       title={
-                        !puedeInscribirse
-                          ? "Solo estudiantes pueden inscribirse."
-                          : deporte.cupo_disponible <= 0
-                            ? "No hay cupos disponibles."
-                            : "Inscribirme"
+                        faltaCategoria
+                          ? "Completa tu categoría en tu perfil para inscribirte."
+                          : !puedeInscribirse
+                            ? "Solo estudiantes pueden inscribirse."
+                            : deporte.cupo_disponible <= 0
+                              ? "No hay cupos disponibles."
+                              : "Inscribirme"
                       }
                       disabled={
                         enviandoId === deporte.id ||
@@ -243,9 +259,11 @@ export default function CatalogoDeportes({
                     >
                       {deporte.cupo_disponible <= 0
                         ? "Sin cupo"
-                        : puedeInscribirse
-                          ? "Inscribirme"
-                          : "Solo estudiantes"}
+                        : faltaCategoria
+                          ? "Completa tu perfil"
+                          : puedeInscribirse
+                            ? "Inscribirme"
+                            : "Solo estudiantes"}
                     </button>
                   )}
                 </div>

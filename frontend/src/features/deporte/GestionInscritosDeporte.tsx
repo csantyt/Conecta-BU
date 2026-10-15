@@ -3,11 +3,13 @@ import {
   inscribirEstudianteManualAdmin,
   obtenerDeportesAdmin,
   obtenerEstudiantesGeneral,
+  obtenerInscritosAgrupados,
   obtenerInscritosDeporte,
   retirarInscripcionManualAdmin,
 } from "../../api/deporte";
+import type { GrupoInscritosDeporte } from "../../types/deporte";
 import { mensajeError } from "./utils";
-import { formatearFecha } from "../deportes/utils/formato";
+import { formatearFecha } from "./utils/formato";
 
 type Deporte = { id: string; nombre: string };
 
@@ -30,6 +32,27 @@ export default function GestionInscritosDeporte({
 
   const [manualId, setManualId] = useState("");
   const [estudiantes, setEstudiantes] = useState<Array<{ id: string; nombre: string; documento?: string | null }>>([]);
+
+  const [vista, setVista] = useState<"agrupado" | "individual">("agrupado");
+  const [grupos, setGrupos] = useState<GrupoInscritosDeporte[]>([]);
+  const [cargandoGrupos, setCargandoGrupos] = useState(false);
+
+  async function recargarGrupos() {
+    setCargandoGrupos(true);
+    try {
+      const data = await obtenerInscritosAgrupados({ q: q || undefined, categoria: categoria || undefined });
+      setGrupos(data);
+    } catch (err) {
+      onError(mensajeError(err));
+    } finally {
+      setCargandoGrupos(false);
+    }
+  }
+
+  useEffect(() => {
+    if (vista !== "agrupado") return;
+    void recargarGrupos();
+  }, [vista, q, categoria]);
 
   async function recargar() {
     if (!deporteId) return;
@@ -125,8 +148,106 @@ export default function GestionInscritosDeporte({
       )
     : {};
 
+  if (vista === "agrupado") {
+    return (
+      <section className="space-y-4">
+        <div className="flex flex-wrap gap-2">
+          <button
+            className="rounded-full px-4 py-2 text-xs font-semibold banda-uni sombra-uni text-uni-noche"
+            onClick={() => setVista("agrupado")}
+          >
+            Por deporte
+          </button>
+          <button
+            className="rounded-full px-4 py-2 text-xs font-semibold border border-white/15 text-slate-300"
+            onClick={() => setVista("individual")}
+          >
+            Registro individual
+          </button>
+        </div>
+
+        <div className="flex flex-wrap gap-3 items-center">
+          <input className="rounded-xl border border-white/15 bg-slate-950 px-3 py-2 text-sm text-white" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar nombre/documento" />
+          <select className="rounded-xl border border-white/15 bg-slate-950 px-3 py-2 text-sm text-white" value={categoria} onChange={(e) => setCategoria(e.target.value)}>
+            <option value="">Todas las categorías</option>
+            <option value="Pregrado">Pregrado</option>
+            <option value="Postgrado">Postgrado</option>
+            <option value="Egresado">Egresado</option>
+          </select>
+        </div>
+
+        {cargandoGrupos ? (
+          <p className="text-sm text-slate-400">Cargando inscritos por deporte...</p>
+        ) : grupos.length === 0 ? (
+          <p className="text-sm text-slate-400">No hay deportes activos.</p>
+        ) : (
+          <div className="space-y-4">
+            {grupos.map((grupo) => (
+              <article key={grupo.deporte.id} className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <h3 className="text-base font-semibold text-white">{grupo.deporte.nombre}</h3>
+                  <span className="rounded-full bg-white/10 px-3 py-1 text-xs text-slate-200">
+                    {grupo.total} inscritos · cupo {grupo.deporte.cupo_maximo}
+                  </span>
+                </div>
+
+                {grupo.total === 0 ? (
+                  <p className="mt-3 text-sm text-slate-400">Sin estudiantes inscritos.</p>
+                ) : (
+                  <div className="mt-3 overflow-x-auto rounded-xl border border-white/10">
+                    <table className="min-w-full text-left text-sm">
+                      <thead className="bg-white/[0.04] text-xs uppercase tracking-wide text-slate-400">
+                        <tr>
+                          <th className="px-4 py-3">Nombre</th>
+                          <th className="px-4 py-3">Documento</th>
+                          <th className="px-4 py-3">Correo</th>
+                          <th className="px-4 py-3">Categoría</th>
+                          <th className="px-4 py-3">Fecha</th>
+                          <th className="px-4 py-3">Asistencia</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {grupo.inscritos.map((f, idx) => (
+                          <tr key={`${f.correo ?? f.nombre}-${idx}`} className="border-t border-white/5">
+                            <td className="px-4 py-3">{f.nombre}</td>
+                            <td className="px-4 py-3 text-slate-300">{f.documento ?? "—"}</td>
+                            <td className="px-4 py-3 text-slate-400">{f.correo ?? "—"}</td>
+                            <td className="px-4 py-3">{f.categoria ?? "—"}</td>
+                            <td className="px-4 py-3 text-slate-400">{formatearFecha(f.fecha_inscripcion)}</td>
+                            <td className="px-4 py-3">
+                              {f.porcentaje_asistencia === null ? "Sin datos" : `${f.porcentaje_asistencia}%`} ({f.inasistencias} inasist.)
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
+    );
+  }
+
   return (
     <section className="space-y-4">
+      <div className="flex flex-wrap gap-2">
+        <button
+          className="rounded-full px-4 py-2 text-xs font-semibold border border-white/15 text-slate-300"
+          onClick={() => setVista("agrupado")}
+        >
+          Por deporte
+        </button>
+        <button
+          className="rounded-full px-4 py-2 text-xs font-semibold banda-uni sombra-uni text-uni-noche"
+          onClick={() => setVista("individual")}
+        >
+          Registro individual
+        </button>
+      </div>
+
       <div className="flex flex-wrap gap-3 items-center">
         <select className="rounded-xl border border-white/15 bg-slate-950 px-3 py-2 text-sm text-white" value={deporteId} onChange={(e) => { setDeporteId(e.target.value); setPage(1); }}>
           {deportes.map((d) => <option key={d.id} value={d.id}>{d.nombre}</option>)}

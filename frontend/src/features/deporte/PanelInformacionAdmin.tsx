@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { obtenerAlertasAdmin, obtenerDashboardAdmin, obtenerDeportesAdmin, obtenerEventosAdmin, obtenerHorariosAdmin, obtenerResumenPisu } from "../../api/deporte";
+import { obtenerAlertasAdmin, obtenerDashboardAdmin, obtenerDeportesAdmin, obtenerEventosAdmin, obtenerHorariosAdmin, obtenerResumenPisu, obtenerVerificacion } from "../../api/deporte";
 import type { AlertaPisu, DeportePisu, EventoPisu, HorarioAdminPisu, ResumenPisu } from "../../types/deporte";
 import { mensajeError } from "./utils";
 
@@ -7,7 +7,7 @@ type DashboardAdminData = {
   docentesActivos: number;
   estudiantesPorCategoria: { Pregrado: number; Postgrado: number; Egresado: number };
   totalEstudiantes: number;
-  deportes: Array<{ id: string; nombre: string; cupo_maximo: number; inscritos: number; ocupacion: number }>;
+  deportes: Array<{ id: string; nombre: string; cupo_maximo: number; inscritos: number; ocupacion: number; estado: boolean }>;
   deporteMasOcupado: { nombre: string; ocupacion: number } | null;
   deporteMenosOcupado: { nombre: string; ocupacion: number } | null;
   inscripciones30Dias?: Array<{ fecha: string; total: number }>;
@@ -27,6 +27,7 @@ export default function PanelInformacionAdmin({ usuario, onError, onNavegar }: P
   const [eventos, setEventos] = useState<EventoPisu[]>([]);
   const [horarios, setHorarios] = useState<HorarioAdminPisu[]>([]);
   const [deportesAdmin, setDeportesAdmin] = useState<DeportePisu[]>([]);
+  const [verificacion, setVerificacion] = useState<Awaited<ReturnType<typeof obtenerVerificacion>> | null>(null);
   const [cargando, setCargando] = useState(true);
 
   useEffect(() => {
@@ -38,23 +39,27 @@ export default function PanelInformacionAdmin({ usuario, onError, onNavegar }: P
       obtenerEventosAdmin(),
       obtenerHorariosAdmin(),
       obtenerDeportesAdmin(),
-    ]).then(([r, d, a, ev, h, dep]) => {
+      obtenerVerificacion(),
+    ]).then(([r, d, a, ev, h, dep, ver]) => {
       setResumen(r as ResumenPisu);
       setDashboard(d as DashboardAdminData);
       setAlertas(a as AlertaPisu[]);
       setEventos(ev as EventoPisu[]);
       setHorarios(h as HorarioAdminPisu[]);
       setDeportesAdmin(dep as DeportePisu[]);
+      setVerificacion(ver);
     }).catch((err) => onError(mensajeError(err))).finally(() => setCargando(false));
   }, [onError]);
 
+  const deportesActivos = (dashboard?.deportes ?? []).filter((d) => d.estado);
   const horariosPorDeporte = (id: string) => horarios.filter((h) => h.deporte?.id === id || h.deporte_id === id);
   const deportesSinHorario = deportesAdmin.filter((d) => d.estado && horariosPorDeporte(d.id).length === 0);
-  const deportesAlta = (dashboard?.deportes ?? []).filter((d) => d.ocupacion >= 90);
-  const deportesSinInscritos = (dashboard?.deportes ?? []).filter((d) => d.inscritos === 0);
+  const deportesAlta = deportesActivos.filter((d) => d.ocupacion >= 90);
+  const deportesSinInscritos = deportesActivos.filter((d) => d.inscritos === 0);
   const ahora = new Date();
   const en7 = new Date(ahora.getTime() + 7 * 86400000);
   const eventosProximos = (eventos ?? []).filter((e) => e.estado && new Date(e.fecha) >= ahora && new Date(e.fecha) <= en7);
+  const inscripciones7dias = verificacion?.indicadores.inscripciones7dias ?? 0;
   const alertasAtencion = [
     ...deportesSinHorario.map((d) => ({ texto: `Deporte ${d.nombre} sin horarios asignados`, accion: "horarios" })),
     ...deportesAlta.map((d) => ({ texto: `Deporte ${d.nombre} con ocupación ${d.ocupacion}%`, accion: "deportes" })),
@@ -62,12 +67,12 @@ export default function PanelInformacionAdmin({ usuario, onError, onNavegar }: P
     ...eventosProximos.map((e) => ({ texto: `Evento próximo: ${e.nombre}`, accion: "eventos" })),
   ];
 
-  const totalCupos = (dashboard?.deportes ?? []).reduce((a, d) => a + d.cupo_maximo, 0);
-  const totalInscritos = (dashboard?.deportes ?? []).reduce((a, d) => a + d.inscritos, 0);
+  const totalCupos = deportesActivos.reduce((a, d) => a + d.cupo_maximo, 0);
+  const totalInscritos = deportesActivos.reduce((a, d) => a + d.inscritos, 0);
   const ocupacionGlobal = totalCupos > 0 ? Math.round((totalInscritos / totalCupos) * 100) : 0;
 
-  const disponibles = [...(dashboard?.deportes ?? [])].sort((a, b) => a.ocupacion - b.ocupacion).slice(0, 3);
-  const masOcupados = [...(dashboard?.deportes ?? [])].sort((a, b) => b.ocupacion - a.ocupacion).slice(0, 3);
+  const disponibles = [...deportesActivos].sort((a, b) => a.ocupacion - b.ocupacion).slice(0, 3);
+  const masOcupados = [...deportesActivos].sort((a, b) => b.ocupacion - a.ocupacion).slice(0, 3);
 
   return (
     <section className="space-y-6">
@@ -100,13 +105,13 @@ export default function PanelInformacionAdmin({ usuario, onError, onNavegar }: P
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {[
-          ["Deportes activos", dashboard?.deportes.length ?? 0],
+          ["Deportes activos", deportesActivos.length],
           ["Eventos próximos 7d", eventosProximos.length],
           ["Docentes activos", dashboard?.docentesActivos ?? 0],
           ["Estudiantes registrados", dashboard?.totalEstudiantes ?? 0],
           ["Ocupación global (%)", `${ocupacionGlobal}%`],
           ["Inscritos vs sin inscripción", `${resumen?.inscripciones_activas ?? 0} / ${Math.max(0, (dashboard?.totalEstudiantes ?? 0))}`],
-          ["Inscripciones últimos 7d", resumen ? (resumen.inscripciones_activas ?? 0) : 0],
+          ["Inscripciones últimos 7d", inscripciones7dias],
         ].map(([label, val]) => (
           <article key={String(label)} className="rounded-3xl border border-white/10 bg-gradient-to-br from-white/10 to-white/[0.02] p-5">
             <p className="text-xs uppercase tracking-wide text-slate-400">{label}</p>
@@ -119,7 +124,7 @@ export default function PanelInformacionAdmin({ usuario, onError, onNavegar }: P
         <article className="rounded-3xl border border-white/10 bg-white/[0.03] p-5">
           <h3 className="text-sm font-semibold">Ocupación por deporte</h3>
           <div className="mt-4 space-y-3">
-            {(dashboard?.deportes ?? []).length === 0 ? <p className="text-xs text-slate-400">Sin datos.</p> : (dashboard?.deportes ?? []).map((d) => (
+            {deportesActivos.length === 0 ? <p className="text-xs text-slate-400">Sin datos.</p> : deportesActivos.map((d) => (
               <div key={d.id}>
                 <div className="mb-1 flex items-center justify-between text-xs text-slate-300"><span>{d.nombre}</span><span>{d.inscritos}/{d.cupo_maximo}</span></div>
                 <div className="h-3 rounded-full bg-white/10"><div className="h-3 rounded-full bg-sky-400" style={{ width: `${Math.min(100, d.ocupacion)}%` }} /></div>
