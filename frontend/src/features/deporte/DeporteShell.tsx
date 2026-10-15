@@ -7,6 +7,69 @@ import { ErrorBoundary } from "./ui";
 
 type Usuario = { nombre_completo?: string; email: string; rol: string };
 
+type MenuItem = { key: string; label: string; icon: string; badge?: number };
+type MenuGroup = { title: string; items: MenuItem[] };
+
+const ADMIN_MENU: MenuGroup[] = [
+  {
+    title: "GENERAL",
+    items: [
+      { key: "panel", label: "Panel", icon: "panel" },
+      { key: "verificar", label: "Verificar contenido", icon: "verificar" },
+    ],
+  },
+  {
+    title: "GESTIÓN DEPORTIVA",
+    items: [
+      { key: "deportes", label: "Deportes", icon: "deportes" },
+      { key: "horarios", label: "Horarios", icon: "horarios" },
+      { key: "eventos", label: "Eventos", icon: "eventos" },
+      { key: "inscritos", label: "Inscritos por deporte", icon: "inscritos" },
+    ],
+  },
+  {
+    title: "PERSONAS",
+    items: [
+      { key: "docentes", label: "Docentes", icon: "personas" },
+      { key: "estudiantes", label: "Estudiantes", icon: "personas" },
+      { key: "administradores", label: "Administradores", icon: "personas" },
+    ],
+  },
+  {
+    title: "COMUNICACIÓN",
+    items: [{ key: "comunicados", label: "Comunicados", icon: "comunicados" }],
+  },
+];
+
+const DOCENTE_MENU: MenuGroup[] = [
+  {
+    title: "GENERAL",
+    items: [
+      { key: "clases-hoy", label: "Mis clases de hoy", icon: "horarios" },
+      { key: "grupos", label: "Mis grupos", icon: "inscritos" },
+    ],
+  },
+  {
+    title: "CONSULTA",
+    items: [
+      { key: "historial", label: "Historial", icon: "eventos" },
+      { key: "estadisticas", label: "Estadísticas", icon: "panel" },
+    ],
+  },
+];
+
+const ESTUDIANTE_MENU: MenuGroup[] = [
+  {
+    title: "GENERAL",
+    items: [
+      { key: "catalogo", label: "Catálogo", icon: "deportes" },
+      { key: "eventos-estudiante", label: "Eventos", icon: "eventos" },
+      { key: "mis-deportes", label: "Mis deportes", icon: "inscritos" },
+      { key: "mi-horario", label: "Mi horario", icon: "horarios" },
+    ],
+  },
+];
+
 function iconoSvg(icono: string) {
   const path = icono === "panel"
     ? "M4 6h16M4 12h16M4 18h16"

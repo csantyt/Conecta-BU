@@ -13,7 +13,6 @@ export { default as GestionDocentes } from "./GestionDocentes";
 export { default as GestionEstudiantes } from "./GestionEstudiantes";
 export { default as EstudianteCompaneros } from "./EstudianteCompaneros";
 export { default as GestionGrupoDocente } from "./GestionGrupoDocente";
-export { default as GestionInscritosDeporte } from "./GestionInscritosDeporte";
 export { default as InicioAdmin } from "./InicioAdmin";
 export { default as PanelAdminPisu } from "./PanelAdminPisu";
 export { default as PanelUsuariosPisu } from "./PanelUsuariosPisu";

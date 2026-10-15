@@ -30,8 +30,7 @@ import {
   listarEstudiantesDeDeporte,
   listarHistorialAsistencias,
   listarMisClases,
-  listarMisDeportes,
-  obtenerSesionLista,
+  listarMisClasesHoy,
   registrarAsistenciaLista,
 } from "../services/docenteService.js";
 import { construirReporteExcel, nombreArchivoReporte } from "../utils/reporteExcel.js";
@@ -81,9 +80,9 @@ function responderErrorDocente(res: Response, error: unknown): boolean {
     return true;
   }
   if (
-    error instanceof FueraDeVentanaAsistenciaError ||
-    error instanceof EdicionFueraDePlazoError ||
-    error instanceof VentanaAsistenciaCerradaError
+    error instanceof VentanaAsistenciaCerradaError ||
+    error instanceof EstudianteNoInscritoError ||
+    error instanceof AsistenciaDuplicadaError
   ) {
     // 422: la petición es correcta pero no se puede procesar en este momento.
     res.status(422).json({ message: error.message });
@@ -155,7 +154,26 @@ export async function getMisClases(req: Request, res: Response): Promise<void> {
   res.status(200).json({ clases });
 }
 
-export async function getEstudiantesDeClase(req: Request, res: Response): Promise<void> {
+export async function getMisClasesHoy(req: Request, res: Response): Promise<void> {
+  const perfil = req.usuarioPisu;
+  if (!perfil) {
+    res.status(401).json({ message: "No autenticado." });
+    return;
+  }
+  try {
+    const resultado = await listarMisClasesHoy(perfil);
+    res.status(200).json(resultado);
+  } catch (error) {
+    if (!responderErrorDocente(res, error)) {
+      throw error;
+    }
+  }
+}
+
+export async function getEstudiantesDeClase(
+  req: Request,
+  res: Response,
+): Promise<void> {
   const perfil = req.usuarioPisu;
   if (!perfil) {
     res.status(401).json({ message: "No autenticado." });

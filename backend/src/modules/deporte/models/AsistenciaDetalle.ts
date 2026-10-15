@@ -8,49 +8,55 @@ import {
 } from "sequelize";
 import { sequelize } from "../../../config/database.js";
 import { SCHEMAS } from "../../../config/schemas.js";
-import type { EstadoInscripcionPisu } from "../constantes.js";
 
-export class InscripcionDeporte extends Model<
-  InferAttributes<InscripcionDeporte>,
-  InferCreationAttributes<InscripcionDeporte>
+export class AsistenciaDetalle extends Model<
+  InferAttributes<AsistenciaDetalle>,
+  InferCreationAttributes<AsistenciaDetalle>
 > {
   declare id: CreationOptional<string>;
+  declare asistencia_id: ForeignKey<string>;
   declare estudiante_id: ForeignKey<string>;
-  declare deporte_id: ForeignKey<string>;
-  declare fecha_inscripcion: CreationOptional<Date>;
-  declare estado: CreationOptional<EstadoInscripcionPisu>;
+  declare presente: CreationOptional<boolean>;
+  declare fecha_registro: CreationOptional<Date>;
 }
 
-InscripcionDeporte.init(
+AsistenciaDetalle.init(
   {
     id: {
       type: DataTypes.UUID,
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
     },
+    asistencia_id: {
+      type: DataTypes.UUID,
+      allowNull: false,
+    },
     estudiante_id: {
       type: DataTypes.UUID,
       allowNull: false,
     },
-    deporte_id: {
-      type: DataTypes.UUID,
+    presente: {
+      type: DataTypes.BOOLEAN,
       allowNull: false,
+      defaultValue: false,
     },
-    fecha_inscripcion: {
+    fecha_registro: {
       type: DataTypes.DATE,
       allowNull: false,
       defaultValue: DataTypes.NOW,
-    },
-    estado: {
-      type: DataTypes.STRING(32),
-      allowNull: false,
-      defaultValue: "Activa",
     },
   },
   {
     sequelize,
     schema: SCHEMAS.deporte,
-    tableName: "inscripciones",
+    tableName: "asistencia_detalles",
     timestamps: false,
+    indexes: [
+      {
+        unique: true,
+        fields: ["asistencia_id", "estudiante_id"],
+        name: "asistencia_detalles_unica_por_estudiante",
+      },
+    ],
   },
 );

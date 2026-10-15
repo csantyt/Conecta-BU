@@ -65,6 +65,9 @@ export async function alinearRolesUsuarios(): Promise<void> {
 }
 
 export async function alinearEsquemaDeportePisu(): Promise<void> {
+  await sequelize
+    .query("ALTER TABLE IF EXISTS deporte.asistencias RENAME TO asistencia_detalles;")
+    .catch(() => undefined);
   const archivo = path.join(
     path.dirname(fileURLToPath(import.meta.url)),
     "../../database/deporte_pisu.sql",

@@ -124,24 +124,32 @@ CREATE UNIQUE INDEX IF NOT EXISTS inscripciones_activa_unica
   WHERE estado = 'Activa';
 
 -- -----------------------------------------------------------------------------
--- asistencias
+-- asistencias (cabecera de asistencia)
 -- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS deporte.asistencias (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   horario_id UUID NOT NULL REFERENCES deporte.horarios (id) ON DELETE CASCADE,
-  estudiante_id UUID NOT NULL REFERENCES deporte.usuarios (id) ON DELETE RESTRICT,
-  docente_id UUID NOT NULL REFERENCES deporte.usuarios (id) ON DELETE RESTRICT,
   fecha DATE NOT NULL,
-  presente BOOLEAN NOT NULL DEFAULT FALSE,
+  docente_id UUID NOT NULL REFERENCES deporte.usuarios (id) ON DELETE RESTRICT,
   fecha_registro TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS asistencias_unica_por_sesion
-  ON deporte.asistencias (horario_id, estudiante_id, fecha);
-CREATE INDEX IF NOT EXISTS asistencias_estudiante_idx
-  ON deporte.asistencias (estudiante_id, fecha);
-CREATE INDEX IF NOT EXISTS asistencias_docente_idx
-  ON deporte.asistencias (docente_id, fecha);
+  ON deporte.asistencias (horario_id, fecha);
+
+-- -----------------------------------------------------------------------------
+-- asistencia_detalles
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS deporte.asistencia_detalles (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  asistencia_id UUID NOT NULL REFERENCES deporte.asistencias (id) ON DELETE CASCADE,
+  estudiante_id UUID NOT NULL REFERENCES deporte.usuarios (id) ON DELETE RESTRICT,
+  presente BOOLEAN NOT NULL DEFAULT FALSE,
+  fecha_registro TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS asistencia_detalles_unica_por_estudiante
+  ON deporte.asistencia_detalles (asistencia_id, estudiante_id);
 
 -- -----------------------------------------------------------------------------
 -- alertas
@@ -190,69 +198,18 @@ CREATE INDEX IF NOT EXISTS inscripciones_eventos_evento_idx
   ON deporte.inscripciones_eventos (evento_id);
 CREATE INDEX IF NOT EXISTS inscripciones_eventos_estudiante_idx
   ON deporte.inscripciones_eventos (estudiante_id);
-
--- Columnas añadidas para gestión administrativa
-ALTER TABLE deporte.deportes
-  ADD COLUMN IF NOT EXISTS imagen TEXT;
-
-ALTER TABLE deporte.eventos
-  ADD COLUMN IF NOT EXISTS tipo VARCHAR(80) NOT NULL DEFAULT 'General';
-
-ALTER TABLE deporte.usuarios
-  ADD COLUMN IF NOT EXISTS documento VARCHAR(60),
-  ADD COLUMN IF NOT EXISTS especialidad VARCHAR(120);
-
--- Un estudiante recién autenticado con Google puede existir con la categoría
--- pendiente, porque se le solicita en su perfil en lugar de inventarla. Por eso
--- se retira la restricción que exigía categoría en el alta. Los valores siguen
--- validados por el CHECK de la columna y la categoría es obligatoria para
--- inscribirse, lo cual se valida en la capa de servicio.
-ALTER TABLE deporte.usuarios
-  DROP CONSTRAINT IF EXISTS usuarios_categoria_estudiante_chk;
 CREATE UNIQUE INDEX IF NOT EXISTS inscripciones_eventos_activa_unica
   ON deporte.inscripciones_eventos (evento_id, estudiante_id)
   WHERE estado = 'Activa';
 
-ALTER TABLE deporte.deportes
-  ADD COLUMN IF NOT EXISTS imagen_url VARCHAR(500);
-
-ALTER TABLE deporte.asistencias
-  ADD COLUMN IF NOT EXISTS estado VARCHAR(32);
-
 -- -----------------------------------------------------------------------------
--- deportes_docentes (docente asignado DIRECTAMENTE a un deporte por el admin)
--- Permite que el panel del docente muestre el deporte aunque todavía no tenga
--- horarios publicados. La clase/asistencia sigue dependiendo de deporte.horarios.
+-- comunicados
 -- -----------------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS deporte.deportes_docentes (
+CREATE TABLE IF NOT EXISTS deporte.comunicados (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  deporte_id UUID NOT NULL REFERENCES deporte.deportes (id) ON DELETE CASCADE,
-  docente_id UUID NOT NULL REFERENCES deporte.usuarios (id) ON DELETE CASCADE,
-  fecha_asignacion TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  titulo VARCHAR(180) NOT NULL,
+  mensaje TEXT NOT NULL,
+  audiencia VARCHAR(32) NOT NULL
+    CHECK (audiencia IN ('Todos', 'Docentes', 'Estudiantes')),
+  fecha_creacion TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
-
-CREATE UNIQUE INDEX IF NOT EXISTS deportes_docentes_unico
-  ON deporte.deportes_docentes (deporte_id, docente_id);
-CREATE INDEX IF NOT EXISTS deportes_docentes_docente_idx
-  ON deporte.deportes_docentes (docente_id);
-
--- -----------------------------------------------------------------------------
--- eventos creados por docentes (torneos, masterclass, amistosos...)
--- Se extiende la tabla existente SIN perder los eventos previos: los eventos que
--- ya existían quedan con estado_evento 'publicado', sin deporte y sin creador.
--- -----------------------------------------------------------------------------
-ALTER TABLE deporte.eventos
-  ADD COLUMN IF NOT EXISTS hora_inicio VARCHAR(5),
-  ADD COLUMN IF NOT EXISTS hora_fin VARCHAR(5),
-  ADD COLUMN IF NOT EXISTS fecha_limite_inscripcion TIMESTAMPTZ,
-  ADD COLUMN IF NOT EXISTS categorias_permitidas JSONB,
-  ADD COLUMN IF NOT EXISTS estado_evento VARCHAR(32) NOT NULL DEFAULT 'publicado',
-  ADD COLUMN IF NOT EXISTS motivo_cancelacion TEXT,
-  ADD COLUMN IF NOT EXISTS deporte_id UUID REFERENCES deporte.deportes (id) ON DELETE SET NULL,
-  ADD COLUMN IF NOT EXISTS creado_por_id UUID REFERENCES deporte.usuarios (id) ON DELETE SET NULL;
-CREATE INDEX IF NOT EXISTS eventos_deporte_idx
-  ON deporte.eventos (deporte_id);
-CREATE INDEX IF NOT EXISTS eventos_creador_idx
-  ON deporte.eventos (creado_por_id);
-CREATE INDEX IF NOT EXISTS eventos_estado_evento_idx
-  ON deporte.eventos (estado_evento);

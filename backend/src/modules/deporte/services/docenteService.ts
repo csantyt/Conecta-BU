@@ -18,12 +18,13 @@ import { sequelize } from "../../../config/database.js";
 import type { UsuarioPisuSesion } from "../middlewares/tipos.js";
 import {
   Asistencia,
-  Deporte,
-  DeporteDocente,
+  AsistenciaDetalle,
   HorarioDeporte,
   InscripcionDeporte,
   UsuarioPisu,
 } from "../models/index.js";
+import { Comunicado } from "../models/Comunicado.js";
+import { Deporte } from "../models/Deporte.js";
 import { generarAlertasInasistencia } from "./alertasService.js";
 import {
   DIAS_SEMANA,
@@ -46,12 +47,7 @@ export class ClaseNoAsignadaError extends Error {}
 export class VentanaAsistenciaCerradaError extends Error {}
 export class EstudianteNoInscritoError extends Error {}
 export class DatosAsistenciaInvalidosError extends Error {}
-/** La asistencia se intentó guardar fuera de la ventana horaria (422). */
-export class FueraDeVentanaAsistenciaError extends Error {}
-/** Ya existe una asistencia para ese horario y fecha (409). */
 export class AsistenciaDuplicadaError extends Error {}
-/** Se intentó editar una asistencia después del plazo de 24 h (422). */
-export class EdicionFueraDePlazoError extends Error {}
 
 // ============================ Helpers ============================
 
@@ -148,6 +144,34 @@ function hoyISO(ahora: Date = new Date()): string {
 
 // ============================ Mis clases (compat) ============================
 
+function fechaBogotaHoy(): string {
+  const ahora = new Date(
+    new Date().toLocaleString("en-US", { timeZone: "America/Bogota" }),
+  );
+  return `${ahora.getFullYear()}-${String(ahora.getMonth() + 1).padStart(2, "0")}-${String(
+    ahora.getDate(),
+  ).padStart(2, "0")}`;
+}
+
+function diaSemanaBogota(fecha: Date): number {
+  const ahora = new Date(
+    fecha.toLocaleString("en-US", { timeZone: "America/Bogota" }),
+  );
+  return ahora.getDay();
+}
+
+function combinarFechaHora(fecha: string, hora: string): number {
+  const normalizada = hora.length === 5 ? `${hora}:00` : hora.slice(0, 8);
+  return new Date(`${fecha}T${normalizada}-05:00`).getTime();
+}
+
+function ignorarVentana(): boolean {
+  return (
+    process.env["ASISTENCIA_IGNORAR_HORARIO"] === "true" &&
+    process.env["NODE_ENV"] !== "production"
+  );
+}
+
 export async function listarMisClases(perfil: UsuarioPisuSesion) {
   return HorarioDeporte.findAll({
     where: { docente_id: perfil.id, estado: true },
@@ -157,6 +181,27 @@ export async function listarMisClases(perfil: UsuarioPisuSesion) {
       ["hora_inicio", "ASC"],
     ],
   });
+}
+
+export async function listarMisClasesHoy(perfil: UsuarioPisuSesion) {
+  const dia = diaSemanaBogota(new Date());
+  const clases = await HorarioDeporte.findAll({
+    where: { docente_id: perfil.id, dia_semana: dia, estado: true },
+    include: [{ association: "deporte" }],
+    order: [["hora_inicio", "ASC"]],
+  });
+
+  const comunicados = await Comunicado.findAll({
+    where: { audiencia: ["Todos", "Docentes"] },
+    order: [["fecha_creacion", "DESC"]],
+  });
+
+  const mensaje =
+    clases.length === 0
+      ? "No tienes clases programadas para hoy. Revisa tu horario asignado."
+      : null;
+
+  return { clases, comunicados, mensaje };
 }
 
 export async function asegurarClaseDelDocente(params: {
@@ -713,14 +758,15 @@ export async function registrarAsistenciaLista(params: {
   horarioId: string;
   fecha: string;
   registros: Array<{ estudianteId: string; presente: boolean }>;
-  ahora?: Date;
-}): Promise<Asistencia[]> {
+}): Promise<AsistenciaDetalle[]> {
   if (params.registros.length === 0) {
     throw new DatosAsistenciaInvalidosError("Debes enviar al menos un estudiante.");
   }
   const ahora = params.ahora ?? new Date();
 
-  const { guardadas, deporteId } = await sequelize.transaction(async (transaction) => {
+  const fecha = params.fecha || fechaBogotaHoy();
+
+  const resultado = await sequelize.transaction(async (transaction) => {
     const horario = await HorarioDeporte.findByPk(params.horarioId, {
       transaction,
       lock: transaction.LOCK.UPDATE,
@@ -735,18 +781,30 @@ export async function registrarAsistenciaLista(params: {
       );
     }
 
-    const ventana = evaluarVentanaAsistencia({
-      diaSemana: horario.dia_semana,
-      horaInicio: String(horario.hora_inicio),
-      horaFin: String(horario.hora_fin),
-      fecha: params.fecha,
-      ahora,
+    const existente = await Asistencia.findOne({
+      where: { horario_id: horario.id, fecha },
+      transaction,
+      lock: transaction.LOCK.UPDATE,
     });
-    if (!ventana.abierta) {
-      throw new FueraDeVentanaAsistenciaError(
-        ventana.motivo ?? "La ventana de asistencia está cerrada.",
+    if (existente) {
+      throw new AsistenciaDuplicadaError(
+        "Ya existe una asistencia registrada para esta clase y fecha (409).",
       );
     }
+
+    if (!ignorarVentana() && fecha === fechaBogotaHoy()) {
+      const ahoraMs = Date.now();
+      const inicioMs = combinarFechaHora(fecha, String(horario.hora_inicio));
+      const finMs = combinarFechaHora(fecha, String(horario.hora_fin));
+      const ventanaInicio = inicioMs - 15 * 60 * 1000;
+      if (ahoraMs < ventanaInicio || ahoraMs > finMs) {
+        throw new VentanaAsistenciaCerradaError(
+          "La asistencia solo puede registrarse desde 15 minutos antes del inicio hasta el final de la clase.",
+        );
+      }
+    }
+
+    const guardadas: AsistenciaDetalle[] = [];
 
     const yaExiste = await Asistencia.count({
       where: { horario_id: horario.id, fecha: params.fecha },
@@ -780,42 +838,43 @@ export async function registrarAsistenciaLista(params: {
           "Hay estudiantes que no están inscritos de forma activa en este deporte.",
         );
       }
+    }
 
-      try {
-        const creada = await Asistencia.create(
-          {
-            horario_id: horario.id,
-            estudiante_id: registro.estudianteId,
-            docente_id: params.perfil.id,
-            fecha: params.fecha,
-            presente: registro.presente,
-          },
-          { transaction },
+    let cabecera: Asistencia;
+    try {
+      cabecera = await Asistencia.create(
+        {
+          horario_id: horario.id,
+          fecha,
+          docente_id: params.perfil.id,
+        },
+        { transaction },
+      );
+    } catch (error) {
+      if (error instanceof UniqueConstraintError) {
+        throw new AsistenciaDuplicadaError(
+          "Ya existe una asistencia registrada para esta clase y fecha (409).",
         );
-        guardadas.push(creada);
-      } catch (error) {
-        if (error instanceof UniqueConstraintError) {
-          const otra = await Asistencia.findOne({
-            where: {
-              horario_id: horario.id,
-              estudiante_id: registro.estudianteId,
-              fecha: params.fecha,
-            },
-            transaction,
-          });
-          if (otra) {
-            await otra.update({ presente: registro.presente }, { transaction });
-            guardadas.push(otra);
-            continue;
-          }
-        }
-        throw error;
       }
+      throw error;
+    }
+
+    for (const registro of params.registros) {
+      const detalle = await AsistenciaDetalle.create(
+        {
+          asistencia_id: cabecera.id,
+          estudiante_id: registro.estudianteId,
+          presente: registro.presente,
+        },
+        { transaction },
+      );
+      guardadas.push(detalle);
     }
 
     return { guardadas, deporteId: horario.deporte_id };
   });
 
+  const deporteId = resultado.deporteId;
   await generarAlertasInasistencia({
     deporteId,
     estudianteIds: params.registros
@@ -823,7 +882,7 @@ export async function registrarAsistenciaLista(params: {
       .map((registro) => registro.estudianteId),
   });
 
-  return guardadas;
+  return resultado.guardadas;
 }
 
 /**
@@ -834,49 +893,47 @@ export async function editarAsistencia(params: {
   perfil: UsuarioPisuSesion;
   asistenciaId: string;
   presente: boolean;
-  ahora?: Date;
-}): Promise<Asistencia> {
-  const ahora = params.ahora ?? new Date();
-  const asistencia = await Asistencia.findByPk(params.asistenciaId);
-
-  if (!asistencia) {
+}): Promise<AsistenciaDetalle> {
+  const detalle = await AsistenciaDetalle.findByPk(params.asistenciaId, {
+    include: [{ model: Asistencia, as: "asistencia" }],
+  });
+  if (!detalle) {
     throw new RecursoDocenteNoEncontradoError("La asistencia no existe.");
   }
-  if (asistencia.docente_id !== params.perfil.id) {
+  const asistencia = (detalle as { asistencia?: Asistencia }).asistencia;
+  if (!asistencia || asistencia.docente_id !== params.perfil.id) {
     throw new ClaseNoAsignadaError(
       "No puedes editar una asistencia que no registraste (RN-004).",
     );
   }
 
   const horario = await HorarioDeporte.findByPk(asistencia.horario_id, {
-    attributes: ["deporte_id", "hora_fin"],
+    attributes: ["hora_fin"],
   });
-  if (!horario) {
-    throw new RecursoDocenteNoEncontradoError("La clase de esta asistencia no existe.");
-  }
-
-  if (
-    !dentroPlazoEdicion({
-      fecha: asistencia.fecha,
-      horaFin: String(horario.hora_fin),
-      ahora,
-    })
-  ) {
-    throw new EdicionFueraDePlazoError(
-      "Solo puedes corregir la asistencia dentro de las 24 horas posteriores a la clase (RF-016).",
+  const fechaFinMs = horario
+    ? combinarFechaHora(asistencia.fecha, String(horario.hora_fin))
+    : 0;
+  if (Date.now() - fechaFinMs > VENTANA_EDICION_MS) {
+    throw new VentanaAsistenciaCerradaError(
+      "Solo puedes editar la asistencia hasta 24 h después del fin de la clase.",
     );
   }
 
-  await asistencia.update({ presente: params.presente });
+  await detalle.update({ presente: params.presente });
 
-  if (!params.presente) {
-    await generarAlertasInasistencia({
-      deporteId: horario.deporte_id,
-      estudianteIds: [asistencia.estudiante_id],
+  if (!params.presente && horario) {
+    const h = await HorarioDeporte.findByPk(asistencia.horario_id, {
+      attributes: ["deporte_id"],
     });
+    if (h) {
+      await generarAlertasInasistencia({
+        deporteId: h.deporte_id,
+        estudianteIds: [detalle.estudiante_id],
+      });
+    }
   }
 
-  return asistencia;
+  return detalle;
 }
 
 export async function listarAsistenciasDocente(
@@ -890,378 +947,6 @@ export async function listarAsistenciasDocente(
   return Asistencia.findAll({
     where,
     order: [["fecha", "DESC"]],
+    include: [{ model: AsistenciaDetalle, as: "detalles" }],
   });
-}
-
-// ============================ Historial ============================
-
-export type DetalleAsistencia = {
-  asistencia_id: string;
-  estudiante_id: string;
-  nombre: string;
-  documento: string | null;
-  categoria: string | null;
-  presente: boolean;
-};
-
-export type SesionHistorial = {
-  horario_id: string;
-  fecha: string;
-  fecha_larga: string;
-  deporte: { id: string; nombre: string };
-  dia: string;
-  hora_inicio: string;
-  hora_fin: string;
-  lugar: string;
-  presentes: number;
-  ausentes: number;
-  total: number;
-  porcentaje: number;
-  puede_editar: boolean;
-  detalle: DetalleAsistencia[];
-};
-
-/**
- * Historial de sesiones del docente (opcionalmente filtrado por deporte).
- * Agrupa las asistencias por horario+fecha y calcula presentes/ausentes.
- */
-export async function listarHistorialAsistencias(
-  perfil: UsuarioPisuSesion,
-  deporteId?: string,
-  ahora: Date = new Date(),
-): Promise<SesionHistorial[]> {
-  const whereHorario: { docente_id: string; deporte_id?: string } = {
-    docente_id: perfil.id,
-  };
-  if (deporteId) {
-    whereHorario.deporte_id = deporteId;
-  }
-
-  const asistencias = await Asistencia.findAll({
-    include: [
-      {
-        model: HorarioDeporte,
-        as: "horario",
-        required: true,
-        where: whereHorario,
-        include: [{ model: Deporte, as: "deporte", attributes: ["id", "nombre"] }],
-      },
-      {
-        model: UsuarioPisu,
-        as: "estudiante",
-        attributes: ["id", "nombre", "documento", "categoria"],
-      },
-    ],
-    order: [
-      ["fecha", "DESC"],
-      ["id", "ASC"],
-    ],
-  });
-
-  const sesiones = new Map<string, SesionHistorial>();
-  for (const asistencia of asistencias) {
-    const horario = asistencia.get("horario") as
-      | (HorarioDeporte & { deporte?: Deporte })
-      | undefined;
-    if (!horario) continue;
-    const clave = `${asistencia.horario_id}|${asistencia.fecha}`;
-    let sesion = sesiones.get(clave);
-    if (!sesion) {
-      sesion = {
-        horario_id: asistencia.horario_id,
-        fecha: asistencia.fecha,
-        fecha_larga: fechaLarga(asistencia.fecha),
-        deporte: {
-          id: horario.deporte_id,
-          nombre: horario.deporte?.nombre ?? "Deporte",
-        },
-        dia: DIAS_SEMANA[horario.dia_semana] ?? "Día",
-        hora_inicio: String(horario.hora_inicio),
-        hora_fin: String(horario.hora_fin),
-        lugar: horario.lugar,
-        presentes: 0,
-        ausentes: 0,
-        total: 0,
-        porcentaje: 0,
-        puede_editar: dentroPlazoEdicion({
-          fecha: asistencia.fecha,
-          horaFin: String(horario.hora_fin),
-          ahora,
-        }),
-        detalle: [],
-      };
-      sesiones.set(clave, sesion);
-    }
-    const est = asistencia.get("estudiante") as UsuarioPisu | undefined;
-    sesion.detalle.push({
-      asistencia_id: asistencia.id,
-      estudiante_id: asistencia.estudiante_id,
-      nombre: est?.nombre ?? "Estudiante",
-      documento: est?.documento ?? null,
-      categoria: est?.categoria ?? null,
-      presente: asistencia.presente,
-    });
-    if (asistencia.presente) sesion.presentes += 1;
-    else sesion.ausentes += 1;
-    sesion.total += 1;
-  }
-
-  return [...sesiones.values()].map((s) => ({
-    ...s,
-    porcentaje: s.total > 0 ? Math.round((s.presentes / s.total) * 100) : 0,
-  }));
-}
-
-// ============================ Estudiantes por deporte ============================
-
-export type EstudianteDeporte = {
-  estudiante_id: string;
-  nombre: string;
-  documento: string | null;
-  correo: string | null;
-  categoria: string | null;
-  presentes: number;
-  faltas: number;
-  dictadas: number;
-  porcentaje: number;
-  estado: EstadoAsistencia;
-};
-
-export async function listarEstudiantesDeDeporte(
-  perfil: UsuarioPisuSesion,
-  deporteId: string,
-): Promise<{ deporte: { id: string; nombre: string; cupo_maximo: number }; dictadas: number; estudiantes: EstudianteDeporte[] }> {
-  const deporte = await asegurarDeporteDelDocente({ perfil, deporteId });
-
-  const inscripciones = await InscripcionDeporte.findAll({
-    where: { deporte_id: deporteId, estado: "Activa" },
-    include: [
-      {
-        model: UsuarioPisu,
-        as: "estudiante",
-        attributes: ["id", "nombre", "documento", "correo", "categoria"],
-      },
-    ],
-  });
-
-  const dictadas = await contarClasesDictadas(deporteId);
-  const presentesFilas = (await Asistencia.findAll({
-    attributes: ["estudiante_id", [fn("COUNT", col("Asistencia.id")), "presentes"]],
-    include: [
-      {
-        model: HorarioDeporte,
-        as: "horario",
-        attributes: [],
-        where: { deporte_id: deporteId },
-        required: true,
-      },
-    ],
-    where: { presente: true },
-    group: ["estudiante_id"],
-    raw: true,
-  })) as unknown as Array<{ estudiante_id: string; presentes: string }>;
-  const presentesMap = new Map(presentesFilas.map((f) => [f.estudiante_id, Number(f.presentes)]));
-
-  const estudiantes: EstudianteDeporte[] = inscripciones
-    .map((ins) => {
-      const est = ins.get("estudiante") as UsuarioPisu | undefined;
-      const presentes = presentesMap.get(ins.estudiante_id) ?? 0;
-      return {
-        estudiante_id: ins.estudiante_id,
-        nombre: est?.nombre ?? "Estudiante",
-        documento: est?.documento ?? null,
-        correo: est?.correo ?? null,
-        categoria: est?.categoria ?? null,
-        presentes,
-        faltas: Math.max(0, dictadas - presentes),
-        dictadas,
-        porcentaje: dictadas > 0 ? Math.round((presentes / dictadas) * 100) : 0,
-        estado: clasificarAsistencia({ presentes, dictadas }),
-      };
-    })
-    .sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
-
-  return {
-    deporte: { id: deporte.id, nombre: deporte.nombre, cupo_maximo: deporte.cupo_maximo },
-    dictadas,
-    estudiantes,
-  };
-}
-
-// ============================ Reporte final ============================
-
-export type SesionReporte = {
-  horario_id: string;
-  fecha: string;
-  dia: string;
-  hora_inicio: string;
-  hora_fin: string;
-  lugar: string;
-};
-
-export type ReporteDeporte = {
-  deporte: { id: string; nombre: string };
-  docente: string;
-  periodo: string;
-  horarios: Array<{ dia: string; hora_inicio: string; hora_fin: string; lugar: string }>;
-  generado: string;
-  tipo: "REPORTE FINAL" | "REPORTE PARCIAL";
-  semestre_finalizado: boolean;
-  minimo: number;
-  dictadas: number;
-  total_estudiantes: number;
-  aprobados: number;
-  reprobados: number;
-  promedio: number;
-  sesiones: SesionReporte[];
-  estudiantes: FilaReporte[];
-  /** matriz[estudianteId][`horarioId|fecha`] = presente */
-  matriz: Record<string, Record<string, boolean>>;
-};
-
-/**
- * Calcula el reporte de un deporte. Es la ÚNICA fuente de los números: la
- * pantalla y el Excel usan este mismo resultado para que siempre coincidan.
- */
-export async function calcularReporteDeporte(params: {
-  perfil: UsuarioPisuSesion;
-  deporteId: string;
-  ahora?: Date;
-}): Promise<ReporteDeporte> {
-  const ahora = params.ahora ?? new Date();
-  const deporte = await asegurarDeporteDelDocente({
-    perfil: params.perfil,
-    deporteId: params.deporteId,
-  });
-
-  const horarios = await HorarioDeporte.findAll({
-    where: { deporte_id: params.deporteId, docente_id: params.perfil.id },
-    order: [
-      ["dia_semana", "ASC"],
-      ["hora_inicio", "ASC"],
-    ],
-  });
-  const horarioIds = horarios.map((h) => h.id);
-
-  const asistencias = horarioIds.length
-    ? await Asistencia.findAll({
-        where: { horario_id: { [Op.in]: horarioIds } },
-        include: [
-          {
-            model: UsuarioPisu,
-            as: "estudiante",
-            attributes: ["id", "nombre", "documento", "correo", "categoria"],
-          },
-        ],
-      })
-    : [];
-
-  const horariosMap = new Map(horarios.map((h) => [h.id, h]));
-  const sesionesMap = new Map<string, SesionReporte>();
-  const presentesPorEstudiante = new Map<string, number>();
-  const matriz: Record<string, Record<string, boolean>> = {};
-  const datosEstudiante = new Map<
-    string,
-    { nombre: string; documento: string | null; correo: string | null; categoria: string | null }
-  >();
-
-  for (const asistencia of asistencias) {
-    const horario = horariosMap.get(asistencia.horario_id);
-    if (!horario) continue;
-    const claveSesion = `${asistencia.horario_id}|${asistencia.fecha}`;
-    if (!sesionesMap.has(claveSesion)) {
-      sesionesMap.set(claveSesion, {
-        horario_id: asistencia.horario_id,
-        fecha: asistencia.fecha,
-        dia: DIAS_SEMANA[horario.dia_semana] ?? "Día",
-        hora_inicio: String(horario.hora_inicio),
-        hora_fin: String(horario.hora_fin),
-        lugar: horario.lugar,
-      });
-    }
-    const est = asistencia.get("estudiante") as UsuarioPisu | undefined;
-    if (!datosEstudiante.has(asistencia.estudiante_id)) {
-      datosEstudiante.set(asistencia.estudiante_id, {
-        nombre: est?.nombre ?? "Estudiante",
-        documento: est?.documento ?? null,
-        correo: est?.correo ?? null,
-        categoria: est?.categoria ?? null,
-      });
-    }
-    if (asistencia.presente) {
-      presentesPorEstudiante.set(
-        asistencia.estudiante_id,
-        (presentesPorEstudiante.get(asistencia.estudiante_id) ?? 0) + 1,
-      );
-    }
-    matriz[asistencia.estudiante_id] = matriz[asistencia.estudiante_id] ?? {};
-    matriz[asistencia.estudiante_id]![claveSesion] = asistencia.presente;
-  }
-
-  const dictadas = sesionesMap.size;
-  // Incluye también a estudiantes sin asistencias (recién inscritos).
-  const inscripciones = await InscripcionDeporte.findAll({
-    where: { deporte_id: params.deporteId, estado: "Activa" },
-    include: [
-      {
-        model: UsuarioPisu,
-        as: "estudiante",
-        attributes: ["id", "nombre", "documento", "correo", "categoria"],
-      },
-    ],
-  });
-  for (const ins of inscripciones) {
-    if (datosEstudiante.has(ins.estudiante_id)) continue;
-    const est = ins.get("estudiante") as UsuarioPisu | undefined;
-    datosEstudiante.set(ins.estudiante_id, {
-      nombre: est?.nombre ?? "Estudiante",
-      documento: est?.documento ?? null,
-      correo: est?.correo ?? null,
-      categoria: est?.categoria ?? null,
-    });
-  }
-
-  const estudiantes: FilaReporte[] = [...datosEstudiante.entries()]
-    .map(([id, datos]) =>
-      calcularFilaReporte({
-        estudiante_id: id,
-        nombre: datos.nombre,
-        documento: datos.documento,
-        correo: datos.correo,
-        categoria: datos.categoria,
-        presentes: presentesPorEstudiante.get(id) ?? 0,
-        dictadas,
-      }),
-    )
-    .sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
-
-  const aprobados = estudiantes.filter((e) => e.aprobado).length;
-  const promedio =
-    estudiantes.length > 0
-      ? Math.round(estudiantes.reduce((acc, e) => acc + e.porcentaje, 0) / estudiantes.length)
-      : 0;
-
-  return {
-    deporte: { id: deporte.id, nombre: deporte.nombre },
-    docente: params.perfil.nombre,
-    periodo: `${process.env["SEMESTRE_INICIO"] ?? "—"} a ${process.env["SEMESTRE_FIN"] ?? "—"}`,
-    horarios: horarios.map((h) => ({
-      dia: DIAS_SEMANA[h.dia_semana] ?? "Día",
-      hora_inicio: String(h.hora_inicio),
-      hora_fin: String(h.hora_fin),
-      lugar: h.lugar,
-    })),
-    generado: ahora.toISOString(),
-    tipo: semestreFinalizado(ahora) ? "REPORTE FINAL" : "REPORTE PARCIAL",
-    semestre_finalizado: semestreFinalizado(ahora),
-    minimo: aprobacionMinima(),
-    dictadas,
-    total_estudiantes: estudiantes.length,
-    aprobados,
-    reprobados: estudiantes.length - aprobados,
-    promedio,
-    sesiones: [...sesionesMap.values()].sort((a, b) => a.fecha.localeCompare(b.fecha)),
-    estudiantes,
-    matriz,
-  };
 }

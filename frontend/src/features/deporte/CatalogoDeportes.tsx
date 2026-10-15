@@ -1,15 +1,13 @@
 import { useMemo, useState } from "react";
 import { autoinscribirseDeporte, cancelarInscripcionPisu } from "../../api/deporte";
 import type { DeportePisu, PerfilPisu } from "../../types/deporte";
-import CompletarPerfilPisu from "./CompletarPerfilPisu";
-import { SportIcon } from "./ui";
-import { DIAS, etiquetaHorario, mensajeError } from "./utils";
+import { DIAS, estiloDeporte, etiquetaHorario, mensajeError } from "./utils";
 
 type CatalogoDeportesProps = {
   deportes: DeportePisu[];
   perfil: PerfilPisu | null;
   cargando: boolean;
-  onAviso: (valor: string, accion?: string) => void;
+  onAviso: (valor: string) => void;
   onError: (valor: string) => void;
   onRecargar: () => Promise<void>;
 };
@@ -99,7 +97,7 @@ export default function CatalogoDeportes({
             value={nombre}
             onChange={(event) => setNombre(event.target.value)}
             placeholder="Fútbol, voleibol..."
-            className="w-full rounded-xl border border-white/15 bg-white/5 px-3 py-2.5 text-sm text-white outline-none ring-sky-400 placeholder:text-slate-400 focus:ring-2"
+            className="w-full rounded-xl border border-white/15 bg-white/5 px-3 py-2.5 text-sm text-white outline-none ring-sky-400 placeholder:text-slate-500 focus:ring-2"
           />
         </label>
         <label className="block">
@@ -132,6 +130,7 @@ export default function CatalogoDeportes({
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {filtrados.map((deporte) => {
+            const visual = estiloDeporte(deporte.nombre);
             const ocupados = Math.max(
               0,
               deporte.cupo_maximo - deporte.cupo_disponible,
@@ -139,62 +138,25 @@ export default function CatalogoDeportes({
             return (
               <article
                 key={deporte.id}
-                className="flex flex-col rounded-2xl border border-white/10 bg-white/[0.04] p-5 text-slate-100"
+                className="flex flex-col rounded-2xl border border-white/10 bg-white p-5 text-slate-900"
               >
                 <div className="flex items-start gap-3">
-                  <div
+                  <span
                     aria-hidden
-                    className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white/5 text-orange-300"
+                    className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl text-2xl ${visual.clase}`}
                   >
-                    {deporte.imagen_url || deporte.imagen ? (
-                      <img
-                        src={String(deporte.imagen_url ?? deporte.imagen)}
-                        alt=""
-                        className="absolute inset-0 h-full w-full object-cover"
-                        onError={(event) => {
-                          event.currentTarget.style.display = "none";
-                        }}
-                      />
-                    ) : null}
-                    <SportIcon nombre={deporte.nombre} />
-                  </div>
+                    {visual.emoji}
+                  </span>
                   <div className="min-w-0">
                     <h2 className="text-lg font-semibold">{deporte.nombre}</h2>
-                    <p className="mt-1 text-xs font-medium text-slate-400">
+                    <p className="mt-1 text-xs font-medium text-slate-500">
                       Cupos {deporte.cupo_disponible}/{deporte.cupo_maximo}
                       <span className="text-slate-400"> · {ocupados} inscritos</span>
                     </p>
-                    <div className="mt-2">
-                      <div className="h-2 overflow-hidden rounded-full bg-slate-100">
-                        <div
-                          className={`h-full ${
-                            deporte.cupo_disponible <= 0
-                              ? "bg-rose-500"
-                              : deporte.cupo_disponible <=
-                                  Math.max(1, Math.ceil(deporte.cupo_maximo * 0.2))
-                                ? "bg-amber-500"
-                                : "bg-emerald-500"
-                          }`}
-                          style={{
-                            width: `${Math.min(100, Math.round(((deporte.cupo_maximo - deporte.cupo_disponible) / deporte.cupo_maximo) * 100))}%`,
-                          }}
-                        />
-                      </div>
-                      <p className="mt-1 text-[11px] font-medium uppercase tracking-wide text-slate-500">
-                        {deporte.cupo_disponible <= 0
-                          ? "Lleno"
-                          : deporte.cupo_disponible <=
-                              Math.max(1, Math.ceil(deporte.cupo_maximo * 0.2))
-                            ? "Últimos cupos"
-                            : "Disponible"}
-                        {" · "}
-                        {deporte.cupo_disponible} cupos libres de {deporte.cupo_maximo}
-                      </p>
-                    </div>
                   </div>
                 </div>
 
-                <p className="mt-3 line-clamp-2 text-sm leading-6 text-slate-300">
+                <p className="mt-3 line-clamp-3 text-sm leading-6 text-slate-600">
                   {deporte.descripcion || "Disciplina del programa PISU."}
                 </p>
 
@@ -202,7 +164,7 @@ export default function CatalogoDeportes({
                   {deporte.categorias_permitidas.map((categoria) => (
                     <span
                       key={categoria}
-                      className="rounded-full bg-white/10 px-2.5 py-0.5 text-[11px] font-medium uppercase tracking-wide text-slate-200"
+                      className="rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-medium uppercase tracking-wide text-slate-700"
                     >
                       {categoria}
                     </span>
@@ -210,17 +172,11 @@ export default function CatalogoDeportes({
                 </div>
 
                 {deporte.horarios.length > 0 ? (
-                  <div className="mt-3 flex flex-wrap gap-1.5">
+                  <ul className="mt-3 space-y-1 text-xs text-slate-600">
                     {deporte.horarios.map((horario) => (
-                      <span
-                        key={horario.id}
-                        className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-700"
-                      >
-                        {etiquetaHorario(horario)}
-                        {horario.docente ? ` · ${horario.docente.nombre}` : ""}
-                      </span>
+                      <li key={horario.id}>{etiquetaHorario(horario)}</li>
                     ))}
-                  </div>
+                  </ul>
                 ) : (
                   <p className="mt-3 text-xs text-slate-400">
                     Aún no hay horarios publicados.
@@ -240,15 +196,6 @@ export default function CatalogoDeportes({
                   ) : (
                     <button
                       type="button"
-                      title={
-                        faltaCategoria
-                          ? "Completa tu categoría en tu perfil para inscribirte."
-                          : !puedeInscribirse
-                            ? "Solo estudiantes pueden inscribirse."
-                            : deporte.cupo_disponible <= 0
-                              ? "No hay cupos disponibles."
-                              : "Inscribirme"
-                      }
                       disabled={
                         enviandoId === deporte.id ||
                         deporte.cupo_disponible <= 0 ||
@@ -284,7 +231,7 @@ export default function CatalogoDeportes({
             <h3 id="confirmar-inscripcion" className="text-lg font-semibold">
               Confirmar inscripción
             </h3>
-            <p className="mt-2 text-sm leading-6 text-slate-300">
+            <p className="mt-2 text-sm leading-6 text-slate-600">
               ¿Deseas inscribirte en <strong>{pendiente.nombre}</strong>? Se
               validarán cupo, categoría y cruces de horario.
             </p>
