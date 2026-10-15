@@ -6,6 +6,7 @@ import MiActividadPisu from "../features/deporte/MiActividadPisu";
 import PanelAdminPisu from "../features/deporte/PanelAdminPisu";
 import PanelUsuariosPisu from "../features/deporte/PanelUsuariosPisu";
 import TomarAsistencia from "../features/deporte/TomarAsistencia";
+import DashboardDocente from "../features/deporte/DashboardDocente";
 import { mensajeError } from "../features/deporte/utils";
 import type { Usuario } from "../types/auth";
 import type { DeportePisu, PerfilPisu } from "../types/deporte";
@@ -15,7 +16,7 @@ type DeportePageProps = {
   onVolver: () => void;
 };
 
-type VistaPisu = "catalogo" | "actividad" | "asistencia" | "usuarios" | "admin";
+type VistaPisu = "catalogo" | "dashboard" | "actividad" | "asistencia" | "usuarios" | "admin";
 
 const tabActiva =
   "banda-uni sombra-uni text-uni-noche";
@@ -59,7 +60,7 @@ export default function DeportePage({ usuario, onVolver }: DeportePageProps) {
 
   useEffect(() => {
     if (perfil?.rol === "Docente" && usuario.rol !== "ADMINISTRADOR") {
-      setVista("asistencia");
+      setVista("dashboard");
     }
   }, [perfil?.rol, usuario.rol]);
 
@@ -125,6 +126,17 @@ export default function DeportePage({ usuario, onVolver }: DeportePageProps) {
           {verAsistencia ? (
             <button
               type="button"
+              onClick={() => setVista("dashboard")}
+              className={`shrink-0 rounded-full px-4 py-2 text-sm font-medium transition ${
+                vista === "dashboard" ? tabActiva : tabInactiva
+              }`}
+            >
+              Dashboard
+            </button>
+          ) : null}
+          {verAsistencia ? (
+            <button
+              type="button"
               onClick={() => setVista("asistencia")}
               className={`shrink-0 rounded-full px-4 py-2 text-sm font-medium transition ${
                 vista === "asistencia" ? tabActiva : tabInactiva
@@ -185,6 +197,10 @@ export default function DeportePage({ usuario, onVolver }: DeportePageProps) {
 
       {vista === "actividad" && verActividad ? (
         <MiActividadPisu onError={onError} />
+      ) : null}
+
+      {vista === "dashboard" && verAsistencia ? (
+        <DashboardDocente onAviso={onAviso} onError={onError} />
       ) : null}
 
       {vista === "asistencia" && verAsistencia ? (

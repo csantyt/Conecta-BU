@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import {
+  AsistenciaDuplicadaError,
   ClaseNoAsignadaError,
   DatosAsistenciaInvalidosError,
   EstudianteNoInscritoError,
@@ -9,6 +10,7 @@ import {
   listarAsistenciasDocente,
   listarEstudiantesDeClase,
   listarMisClases,
+  listarMisClasesHoy,
   registrarAsistenciaLista,
 } from "../services/docenteService.js";
 import {
@@ -37,7 +39,8 @@ function responderErrorDocente(res: Response, error: unknown): boolean {
   }
   if (
     error instanceof VentanaAsistenciaCerradaError ||
-    error instanceof EstudianteNoInscritoError
+    error instanceof EstudianteNoInscritoError ||
+    error instanceof AsistenciaDuplicadaError
   ) {
     res.status(409).json({ message: error.message });
     return true;
@@ -70,6 +73,22 @@ export async function getMisClases(req: Request, res: Response): Promise<void> {
   }
   const clases = await listarMisClases(perfil);
   res.status(200).json({ clases });
+}
+
+export async function getMisClasesHoy(req: Request, res: Response): Promise<void> {
+  const perfil = req.usuarioPisu;
+  if (!perfil) {
+    res.status(401).json({ message: "No autenticado." });
+    return;
+  }
+  try {
+    const resultado = await listarMisClasesHoy(perfil);
+    res.status(200).json(resultado);
+  } catch (error) {
+    if (!responderErrorDocente(res, error)) {
+      throw error;
+    }
+  }
 }
 
 export async function getEstudiantesDeClase(

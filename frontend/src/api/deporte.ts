@@ -4,6 +4,7 @@ import type {
   AsistenciaEstudiantePisu,
   AsistenciaPisu,
   ClaseDocente,
+  ComunicadoPisu,
   DeportePisu,
   DocentePisu,
   EstudianteDeClase,
@@ -82,6 +83,23 @@ export async function obtenerMisAsistenciasPisu(): Promise<{
 export async function obtenerMisClasesDocente(): Promise<ClaseDocente[]> {
   const { data } = await api.get<{ clases: ClaseDocente[] }>("/docente/mis-clases");
   return data.clases;
+}
+
+export async function obtenerMisClasesHoyDocente(): Promise<{
+  clases: ClaseDocente[];
+  comunicados: ComunicadoPisu[];
+  mensaje: string | null;
+}> {
+  const { data } = await api.get<{
+    clases: ClaseDocente[];
+    comunicados: ComunicadoPisu[];
+    mensaje?: string | null;
+  }>("/docente/mis-clases/hoy");
+  return {
+    clases: data.clases,
+    comunicados: data.comunicados,
+    mensaje: data.mensaje ?? null,
+  };
 }
 
 export async function obtenerEstudiantesDeClase(

@@ -19,7 +19,12 @@ async function resolverPerfilPisu(req: Request, res: Response): Promise<boolean>
   if (!perfil) {
     const cuentaAuth = await Usuario.findByPk(authUser.id);
     const esAdminConecta = authUser.rol === ROLES.ADMINISTRADOR;
-    const rolPisu = esAdminConecta ? "Administrador" : "Estudiante";
+    const esDocenteConecta = authUser.rol === ROLES.DOCENTE;
+    const rolPisu = esAdminConecta
+      ? "Administrador"
+      : esDocenteConecta
+        ? "Docente"
+        : "Estudiante";
     const nombre = cuentaAuth?.nombre_completo?.trim() || authUser.email;
 
     perfil = await UsuarioPisu.create({
