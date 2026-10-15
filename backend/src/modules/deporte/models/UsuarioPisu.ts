@@ -17,6 +17,8 @@ export class UsuarioPisu extends Model<
   declare auth_usuario_id: CreationOptional<string | null>;
   declare nombre: string;
   declare correo: string;
+  declare documento: CreationOptional<string | null>;
+  declare especialidad: CreationOptional<string | null>;
   declare password_hash: CreationOptional<string | null>;
   declare rol: RolPisu;
   declare categoria: CreationOptional<CategoriaPisu | null>;
@@ -42,6 +44,14 @@ UsuarioPisu.init(
     correo: {
       type: DataTypes.STRING(255),
       allowNull: false,
+    },
+    documento: {
+      type: DataTypes.STRING(60),
+      allowNull: true,
+    },
+    especialidad: {
+      type: DataTypes.STRING(120),
+      allowNull: true,
     },
     password_hash: {
       type: DataTypes.STRING(255),

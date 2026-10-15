@@ -10,7 +10,7 @@ import { mensajeError } from "./utils";
 
 type EventosAlertasPisuProps = {
   perfil: PerfilPisu | null;
-  onAviso: (valor: string) => void;
+  onAviso: (valor: string, accion?: string) => void;
   onError: (valor: string) => void;
 };
 

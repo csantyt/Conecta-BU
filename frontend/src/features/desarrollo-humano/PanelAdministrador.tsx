@@ -35,7 +35,7 @@ type PanelAdministradorProps = {
   servicios: Servicio[];
   citas: Cita[];
   eventos: EventoDH[];
-  onAviso: (valor: string) => void;
+  onAviso: (valor: string, accion?: string) => void;
   onError: (valor: string) => void;
   onRecargar: () => Promise<void>;
 };
@@ -115,7 +115,7 @@ function GestionHorarios({
   onRecargar,
 }: {
   servicios: Servicio[];
-  onAviso: (valor: string) => void;
+  onAviso: (valor: string, accion?: string) => void;
   onError: (valor: string) => void;
   onRecargar: () => Promise<void>;
 }) {
@@ -314,7 +314,7 @@ function CitasDelDia({
   onRecargar,
 }: {
   citas: Cita[];
-  onAviso: (valor: string) => void;
+  onAviso: (valor: string, accion?: string) => void;
   onError: (valor: string) => void;
   onRecargar: () => Promise<void>;
 }) {
@@ -409,7 +409,7 @@ function GestionEventos({
   onRecargar,
 }: {
   eventos: EventoDH[];
-  onAviso: (valor: string) => void;
+  onAviso: (valor: string, accion?: string) => void;
   onError: (valor: string) => void;
   onRecargar: () => Promise<void>;
 }) {

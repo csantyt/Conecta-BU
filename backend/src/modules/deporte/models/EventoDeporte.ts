@@ -15,6 +15,7 @@ export class EventoDeporte extends Model<
   declare id: CreationOptional<string>;
   declare nombre: string;
   declare descripcion: CreationOptional<string | null>;
+  declare tipo: CreationOptional<string>;
   declare fecha: Date;
   declare lugar: string;
   declare cupo_maximo: number;
@@ -36,6 +37,11 @@ EventoDeporte.init(
     descripcion: {
       type: DataTypes.TEXT,
       allowNull: true,
+    },
+    tipo: {
+      type: DataTypes.STRING(80),
+      allowNull: false,
+      defaultValue: "General",
     },
     fecha: {
       type: DataTypes.DATE,

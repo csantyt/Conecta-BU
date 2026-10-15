@@ -1,40 +1,64 @@
 import type { Request, Response } from "express";
 import {
+  ConflictoEventoError,
   ConflictoHorarioPisuError,
+  ConflictoLugarHorarioError,
   DatosRolPisuInvalidosError,
+  DeporteConInscritosError,
   DeporteDuplicadoError,
+  DocenteDuplicadoError,
+  InscripcionDuplicadaError,
   RecursoAdminNoEncontradoError,
   UsuarioPisuNoEncontradoError,
   actualizarDeporte,
+  actualizarDocente,
+  actualizarEstudiantePisu,
   actualizarEventoAdmin,
   actualizarHorarioAdmin,
   asignarRolPisu,
+  buscarEstudiantesConInscripciones,
+  cargarDocentesCsv,
+  crearAdministradorPisu,
   crearAlertaAdmin,
   crearDeporte,
+  crearDocente,
   crearEventoAdmin,
   crearHorarioAdmin,
+  dashboardAdministracion,
   eliminarAlertaAdmin,
-  listarAlertasAdmin,
+  eliminarDeporteAdmin,
+  inscribirEstudianteManual,
   listarDeportesAdmin,
   listarDocentesPisu,
+  listarAlertasAdmin,
+  listarEstudiantesPisu,
   listarEventosAdmin,
   listarHorariosAdmin,
   listarUsuariosPisu,
   resumenAdministracion,
+  retirarInscripcionManual,
+  verificacionAdmin,
 } from "../services/adminService.js";
 import {
   EventoNoEncontradoError,
   listarInscritosEvento,
 } from "../services/eventosService.js";
+import { listarEstudiantesGeneral } from "../services/inscritosService.js";
 import {
   actualizarDeporteSchema,
+  actualizarDocenteSchema,
+  actualizarEstudiantePisuSchema,
   actualizarEventoPisuSchema,
   actualizarHorarioPisuSchema,
   asignarRolPisuSchema,
   crearAlertaPisuSchema,
+  crearAdministradorPisuSchema,
   crearDeporteSchema,
+  crearDocenteSchema,
+  crearEstudiantePisuSchema,
   crearEventoPisuSchema,
   crearHorarioPisuSchema,
+  inscripcionManualSchema,
 } from "../validators.js";
 
 function idDeRuta(req: Request, nombre: string): string | null {
@@ -58,9 +82,20 @@ function responderErrorAdmin(res: Response, error: unknown): boolean {
   }
   if (
     error instanceof DeporteDuplicadoError ||
-    error instanceof ConflictoHorarioPisuError
+    error instanceof ConflictoHorarioPisuError ||
+    error instanceof ConflictoEventoError ||
+    error instanceof ConflictoLugarHorarioError ||
+    error instanceof DocenteDuplicadoError ||
+    error instanceof DeporteConInscritosError ||
+    error instanceof InscripcionDuplicadaError
   ) {
-    res.status(409).json({ message: error.message });
+    const detalles = error as unknown as Record<string, unknown>;
+    res.status(409).json({
+      message: error.message,
+      codigo: detalles.codigo ?? null,
+      conflicto: detalles.conflicto ?? null,
+      alternativas: detalles.alternativas ?? null,
+    });
     return true;
   }
   return false;
@@ -76,9 +111,201 @@ export async function getUsuariosAdmin(_req: Request, res: Response): Promise<vo
   res.status(200).json({ usuarios });
 }
 
-export async function getDocentesAdmin(_req: Request, res: Response): Promise<void> {
-  const docentes = await listarDocentesPisu();
+export async function getDocentesAdmin(req: Request, res: Response): Promise<void> {
+  const q = typeof req.query["q"] === "string" ? req.query["q"] : "";
+  const docentes = await listarDocentesPisu(q);
   res.status(200).json({ docentes });
+}
+
+export async function getEstudiantesAdmin(req: Request, res: Response): Promise<void> {
+  const params: { deporteId?: string; categoria?: string; sinInscripcion?: boolean; q?: string } = {};
+  if (typeof req.query["deporteId"] === "string") params.deporteId = req.query["deporteId"];
+  if (typeof req.query["categoria"] === "string") params.categoria = req.query["categoria"];
+  if (req.query["sinInscripcion"] === "true") params.sinInscripcion = true;
+  if (typeof req.query["q"] === "string") params.q = req.query["q"];
+  const estudiantes = await listarEstudiantesGeneral(params);
+  res.status(200).json({ estudiantes });
+}
+
+export async function getBuscarEstudiantesAdmin(req: Request, res: Response): Promise<void> {
+  const q = typeof req.query["q"] === "string" ? req.query["q"] : "";
+  if (q.trim().length < 2) {
+    res.status(200).json({ estudiantes: [] });
+    return;
+  }
+  const estudiantes = await buscarEstudiantesConInscripciones(q);
+  res.status(200).json({ estudiantes });
+}
+
+export async function getVerificacionAdmin(_req: Request, res: Response): Promise<void> {
+  const data = await verificacionAdmin();
+  res.status(200).json({ verificacion: data });
+}
+
+export async function getDashboardAdmin(_req: Request, res: Response): Promise<void> {
+  const dashboard = await dashboardAdministracion();
+  res.status(200).json({ dashboard });
+}
+
+export async function deleteDeporteAdmin(req: Request, res: Response): Promise<void> {
+  const id = idDeRuta(req, "id");
+  if (!id) {
+    res.status(400).json({ message: "Identificador de deporte inválido." });
+    return;
+  }
+  try {
+    await eliminarDeporteAdmin(id);
+    res.status(204).send();
+  } catch (error) {
+    if (!responderErrorAdmin(res, error)) {
+      throw error;
+    }
+  }
+}
+
+export async function postDocenteAdmin(req: Request, res: Response): Promise<void> {
+  const parsed = crearDocenteSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({
+      message: "Datos inválidos. Se requieren nombre y correo válidos.",
+    });
+    return;
+  }
+  try {
+    const resultado = await crearDocente(parsed.data);
+    res.status(201).json({
+      message: "Docente creado. Comparte la contraseña temporal de forma segura.",
+      docente: resultado.docente,
+      passwordTemporal: resultado.passwordTemporal,
+    });
+  } catch (error) {
+    if (!responderErrorAdmin(res, error)) {
+      throw error;
+    }
+  }
+}
+
+export async function patchDocenteAdmin(req: Request, res: Response): Promise<void> {
+  const id = idDeRuta(req, "id");
+  if (!id) {
+    res.status(400).json({ message: "Identificador de docente inválido." });
+    return;
+  }
+  const parsed = actualizarDocenteSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ message: "Datos inválidos para actualizar el docente." });
+    return;
+  }
+  try {
+    const docente = await actualizarDocente(id, parsed.data);
+    res.status(200).json({ message: "Docente actualizado.", docente });
+  } catch (error) {
+    if (!responderErrorAdmin(res, error)) {
+      throw error;
+    }
+  }
+}
+
+export async function postDocentesCsvAdmin(req: Request, res: Response): Promise<void> {
+  const csv =
+    typeof req.body?.["csv"] === "string"
+      ? req.body["csv"]
+      : typeof req.body === "string"
+        ? req.body
+        : "";
+  if (csv.trim().length === 0) {
+    res.status(400).json({ message: "Debes enviar el contenido CSV." });
+    return;
+  }
+  try {
+    const resumen = await cargarDocentesCsv(csv);
+    res.status(200).json({
+      message: `Carga masiva finalizada. Creados: ${resumen.creados}. Errores: ${resumen.errores.length}.`,
+      resumen,
+    });
+  } catch (error) {
+    if (!responderErrorAdmin(res, error)) {
+      throw error;
+    }
+  }
+}
+
+export async function patchEstudianteAdmin(req: Request, res: Response): Promise<void> {
+  const id = idDeRuta(req, "id");
+  if (!id) {
+    res.status(400).json({ message: "Identificador de estudiante inválido." });
+    return;
+  }
+  const parsed = actualizarEstudiantePisuSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ message: "Datos inválidos para actualizar el estudiante." });
+    return;
+  }
+  try {
+    const estudiante = await actualizarEstudiantePisu(id, parsed.data);
+    res.status(200).json({ message: "Estudiante actualizado.", estudiante });
+  } catch (error) {
+    if (!responderErrorAdmin(res, error)) {
+      throw error;
+    }
+  }
+}
+
+export async function postInscripcionManualAdmin(req: Request, res: Response): Promise<void> {
+  const parsed = inscripcionManualSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ message: "Datos inválidos para la inscripción." });
+    return;
+  }
+  try {
+    const inscripcion = await inscribirEstudianteManual(parsed.data);
+    res.status(201).json({ message: "Inscripción registrada.", inscripcion });
+  } catch (error) {
+    if (!responderErrorAdmin(res, error)) {
+      throw error;
+    }
+  }
+}
+
+export async function patchCancelarInscripcionManualAdmin(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const id = idDeRuta(req, "id");
+  if (!id) {
+    res.status(400).json({ message: "Identificador de inscripción inválido." });
+    return;
+  }
+  try {
+    await retirarInscripcionManual(id);
+    res.status(200).json({ message: "Inscripción retirada." });
+  } catch (error) {
+    if (!responderErrorAdmin(res, error)) {
+      throw error;
+    }
+  }
+}
+
+export async function postAdministradorPisuAdmin(req: Request, res: Response): Promise<void> {
+  const parsed = crearAdministradorPisuSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({
+      message: "Datos inválidos. Se requieren nombre y correo válidos.",
+    });
+    return;
+  }
+  try {
+    const resultado = await crearAdministradorPisu(parsed.data);
+    res.status(201).json({
+      message: "Administrador creado. Comparte la contraseña temporal de forma segura.",
+      administrador: resultado.docente,
+      passwordTemporal: resultado.passwordTemporal,
+    });
+  } catch (error) {
+    if (!responderErrorAdmin(res, error)) {
+      throw error;
+    }
+  }
 }
 
 export async function getDeportesAdmin(_req: Request, res: Response): Promise<void> {
@@ -173,6 +400,7 @@ export async function postDeporteAdmin(req: Request, res: Response): Promise<voi
     const deporte = await crearDeporte({
       nombre: parsed.data.nombre,
       descripcion: parsed.data.descripcion ?? null,
+      imagen: parsed.data.imagen ?? null,
       cupo_maximo: parsed.data.cupo_maximo,
       ...(parsed.data.categorias_permitidas
         ? { categorias_permitidas: parsed.data.categorias_permitidas }

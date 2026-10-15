@@ -1,44 +1,58 @@
 import { useCallback, useEffect, useState } from "react";
 import { obtenerCatalogoDeportes } from "../api/deporte";
 import CatalogoDeportes from "../features/deporte/CatalogoDeportes";
+import EstudianteCompaneros from "../features/deporte/EstudianteCompaneros";
+import DeporteShell from "../features/deportes/DeporteShell";
+import { Toast } from "../features/deportes/ui";
 import EventosAlertasPisu from "../features/deporte/EventosAlertasPisu";
-import MiActividadPisu from "../features/deporte/MiActividadPisu";
-import PanelAdminPisu from "../features/deporte/PanelAdminPisu";
-import PanelUsuariosPisu from "../features/deporte/PanelUsuariosPisu";
-import TomarAsistencia from "../features/deporte/TomarAsistencia";
+import GestionGrupoDocente from "../features/deporte/GestionGrupoDocente";
+import { GestionDeportes, GestionHorarios, GestionEventos, GestionAlertas } from "../features/deporte/PanelAdminPisu";
+import GestionDocentes from "../features/deporte/GestionDocentes";
+import GestionEstudiantes from "../features/deporte/GestionEstudiantes";
+import GestionInscritosDeporte from "../features/deporte/GestionInscritosDeporte";
+import PanelInformacionAdmin from "../features/deporte/PanelInformacionAdmin";
+import VerificarContenido from "../features/deporte/VerificarContenido";
 import { mensajeError } from "../features/deporte/utils";
 import type { Usuario } from "../types/auth";
 import type { DeportePisu, PerfilPisu } from "../types/deporte";
 
-type DeportePageProps = {
-  usuario: Usuario;
-  onVolver: () => void;
-};
+type DeportePageProps = { usuario: Usuario; onVolver: () => void };
 
-type VistaPisu = "catalogo" | "actividad" | "asistencia" | "usuarios" | "admin";
-
-const tabActiva =
-  "banda-uni sombra-uni text-uni-noche";
-const tabInactiva =
-  "border border-white/15 text-slate-300 hover:border-uni-mandarina/60 hover:bg-white/5 hover:text-white";
-
-export default function DeportePage({ usuario, onVolver }: DeportePageProps) {
+export default function DeportePage({ usuario, onVolver: _onVolver }: DeportePageProps) {
   const [deportes, setDeportes] = useState<DeportePisu[]>([]);
   const [perfil, setPerfil] = useState<PerfilPisu | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [aviso, setAviso] = useState<string | null>(null);
   const [cargando, setCargando] = useState(true);
-  const [vista, setVista] = useState<VistaPisu>("catalogo");
-
-  const onAviso = useCallback((valor: string) => {
+  const [view, setView] = useState("catalogo");
+  useEffect(() => {
     setError(null);
-    setAviso(valor);
+    setAccionConflicto(undefined);
+  }, [view]);
+  const [initialized, setInitialized] = useState(false);
+  const [toast, setToast] = useState<{ mensaje: string; accion?: string } | null>(null);
+  const [accionConflicto, setAccionConflicto] = useState<string | undefined>(undefined);
+  const mostrarAviso = useCallback((mensaje: string, accion?: string) => {
+    setToast({ mensaje, accion });
+    window.setTimeout(() => setToast(null), 4000);
+  }, []);
+  const mostrarError = useCallback((mensaje: string) => {
+    const match = mensaje.match(/\(Ver: (\w+)\)\s*$/);
+    const limpio = mensaje.replace(/\s*\(Ver: \w+\)\s*$/, "");
+    setError(limpio);
+    setAccionConflicto(match ? match[1] : undefined);
+    window.setTimeout(() => {
+      setError(null);
+      setAccionConflicto(undefined);
+    }, 8000);
   }, []);
 
-  const onError = useCallback((valor: string) => {
-    setAviso(null);
-    setError(valor);
-  }, []);
+  useEffect(() => {
+    if (initialized || !perfil) return;
+    if (perfil.rol === "Administrador") setView("panel");
+    else if (perfil.rol === "Docente") setView("mis-grupos");
+    else setView("catalogo");
+    setInitialized(true);
+  }, [perfil, initialized]);
 
   const recargar = useCallback(async () => {
     setCargando(true);
@@ -47,167 +61,54 @@ export default function DeportePage({ usuario, onVolver }: DeportePageProps) {
       setDeportes(data.deportes);
       setPerfil(data.perfil);
     } catch (err) {
-      onError(mensajeError(err));
+      setError(mensajeError(err));
     } finally {
       setCargando(false);
     }
-  }, [onError]);
+  }, []);
 
-  useEffect(() => {
-    void recargar();
-  }, [recargar]);
+  useEffect(() => { void recargar(); }, [recargar]);
 
-  useEffect(() => {
-    if (perfil?.rol === "Docente" && usuario.rol !== "ADMINISTRADOR") {
-      setVista("asistencia");
+  const rolPisu = perfil?.rol ?? "Estudiante";
+
+  const rendered = () => {
+    if (cargando && !perfil) return <p className="text-sm text-slate-400">Cargando...</p>;
+    if (error && !perfil) {
+      return (
+        <div className="rounded-2xl border border-rose-400/30 bg-rose-400/10 p-5">
+          <p className="text-sm text-rose-100">{error}</p>
+          <button type="button" className="mt-3 rounded-full border border-rose-400/40 px-4 py-1.5 text-xs" onClick={() => void recargar()}>
+            Reintentar
+          </button>
+        </div>
+      );
     }
-  }, [perfil?.rol, usuario.rol]);
-
-  const verActividad = perfil?.rol === "Estudiante";
-  const verAsistencia =
-    perfil?.rol === "Docente" || perfil?.rol === "Administrador";
-  const verUsuarios =
-    perfil?.rol === "Administrador" || usuario.rol === "ADMINISTRADOR";
-  const verAdmin = verUsuarios;
-  const hayPestanas = verActividad || verAsistencia || verUsuarios || verAdmin;
+    if (view === "panel") return <PanelInformacionAdmin deportes={deportes} usuario={usuario} onError={mostrarError} onNavegar={(v) => setView(v)} />;
+    if (view === "verificar") return <VerificarContenido onError={mostrarError} />;
+    if (view === "deportes") return <GestionDeportes deportesCatalogo={deportes} onAviso={mostrarAviso} onError={mostrarError} onRecargar={recargar} />;
+    if (view === "horarios") return <GestionHorarios deportes={deportes} onAviso={mostrarAviso} onError={mostrarError} onRecargar={recargar} />;
+    if (view === "eventos") return <GestionEventos onAviso={mostrarAviso} onError={mostrarError} />;
+    if (view === "docentes" || view === "administradores") return <GestionDocentes onAviso={mostrarAviso} onError={mostrarError} />;
+    if (view === "estudiantes") return <GestionEstudiantes onAviso={mostrarAviso} onError={mostrarError} />;
+    if (view === "inscritos") return <GestionInscritosDeporte onAviso={mostrarAviso} onError={mostrarError} />;
+    if (view === "comunicados") return <GestionAlertas onAviso={mostrarAviso} onError={mostrarError} />;
+    if (view === "mis-grupos") return <GestionGrupoDocente onError={mostrarError} />;
+    if (view === "companeros") return <EstudianteCompaneros onError={mostrarError} />;
+    if (view === "catalogo") {
+      return (
+        <>
+          <EventosAlertasPisu perfil={perfil} onAviso={mostrarAviso} onError={mostrarError} />
+          <CatalogoDeportes deportes={deportes} perfil={perfil} cargando={cargando} onAviso={mostrarAviso} onError={mostrarError} onRecargar={recargar} />
+        </>
+      );
+    }
+    return <p className="text-sm text-slate-300">Sección en construcción: {view}</p>;
+  };
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-6 pb-28 sm:px-6 sm:py-10">
-      <button
-        type="button"
-        onClick={onVolver}
-        className="mb-4 text-xs font-extrabold uppercase tracking-wider text-slate-300 transition hover:text-uni-cian sm:mb-6"
-      >
-        ← Volver a módulos
-      </button>
-
-      <section className="mb-6 rounded-3xl border border-white/10 bg-uni-noche/60 p-5 backdrop-blur sm:mb-8 sm:p-8">
-        <span className="inline-block -rotate-2 rounded bg-uni-cian px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-uni-noche">
-          Módulo activo
-        </span>
-        <h1 className="mt-4 text-3xl font-black uppercase tracking-tight sm:text-5xl">
-          Deporte <span className="text-uni-mandarina">· PISU</span>
-        </h1>
-        <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300">
-          Catálogo, inscripción, asistencia docente, eventos, alertas y
-          administración completa del módulo.
-        </p>
-        <p className="mt-2 text-xs text-slate-400">
-          {usuario.nombre_completo || usuario.email}
-          {perfil
-            ? ` · ${perfil.rol}${perfil.categoria ? ` · ${perfil.categoria}` : ""}`
-            : ""}
-        </p>
-      </section>
-
-      {hayPestanas ? (
-        <nav className="mb-5 flex gap-2 overflow-x-auto pb-1">
-          <button
-            type="button"
-            onClick={() => setVista("catalogo")}
-            className={`shrink-0 rounded-full px-4 py-2 text-sm font-medium transition ${
-              vista === "catalogo" ? tabActiva : tabInactiva
-            }`}
-          >
-            Catálogo
-          </button>
-          {verActividad ? (
-            <button
-              type="button"
-              onClick={() => setVista("actividad")}
-              className={`shrink-0 rounded-full px-4 py-2 text-sm font-medium transition ${
-                vista === "actividad" ? tabActiva : tabInactiva
-              }`}
-            >
-              Mi actividad
-            </button>
-          ) : null}
-          {verAsistencia ? (
-            <button
-              type="button"
-              onClick={() => setVista("asistencia")}
-              className={`shrink-0 rounded-full px-4 py-2 text-sm font-medium transition ${
-                vista === "asistencia" ? tabActiva : tabInactiva
-              }`}
-            >
-              Tomar asistencia
-            </button>
-          ) : null}
-          {verUsuarios ? (
-            <button
-              type="button"
-              onClick={() => setVista("usuarios")}
-              className={`shrink-0 rounded-full px-4 py-2 text-sm font-medium transition ${
-                vista === "usuarios" ? tabActiva : tabInactiva
-              }`}
-            >
-              Usuarios PISU
-            </button>
-          ) : null}
-          {verAdmin ? (
-            <button
-              type="button"
-              onClick={() => setVista("admin")}
-              className={`shrink-0 rounded-full px-4 py-2 text-sm font-medium transition ${
-                vista === "admin" ? tabActiva : tabInactiva
-              }`}
-            >
-              Administración
-            </button>
-          ) : null}
-        </nav>
-      ) : null}
-
-      {error ? (
-        <p className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          {error}
-        </p>
-      ) : null}
-      {aviso ? (
-        <p className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-          {aviso}
-        </p>
-      ) : null}
-
-      {vista === "catalogo" || !hayPestanas ? (
-        <>
-          <EventosAlertasPisu perfil={perfil} onAviso={onAviso} onError={onError} />
-          <CatalogoDeportes
-            deportes={deportes}
-            perfil={perfil}
-            cargando={cargando}
-            onAviso={onAviso}
-            onError={onError}
-            onRecargar={recargar}
-          />
-        </>
-      ) : null}
-
-      {vista === "actividad" && verActividad ? (
-        <MiActividadPisu onError={onError} />
-      ) : null}
-
-      {vista === "asistencia" && verAsistencia ? (
-        <TomarAsistencia onAviso={onAviso} onError={onError} />
-      ) : null}
-
-      {vista === "usuarios" && verUsuarios && perfil ? (
-        <PanelUsuariosPisu
-          perfil={perfil}
-          onAviso={onAviso}
-          onError={onError}
-          onRecargarSesion={recargar}
-        />
-      ) : null}
-
-      {vista === "admin" && verAdmin ? (
-        <PanelAdminPisu
-          deportes={deportes}
-          onAviso={onAviso}
-          onError={onError}
-          onRecargar={recargar}
-        />
-      ) : null}
-    </main>
+    <DeporteShell usuario={usuario} rolPisu={rolPisu} view={view} setView={setView}>
+      {rendered()}
+      {error ? <Toast message={error} action={accionConflicto} onAction={() => { if (accionConflicto) setView(accionConflicto); setError(null); setAccionConflicto(undefined); }} /> : (toast ? <Toast message={toast.mensaje} action={toast.accion} onAction={() => { if (toast.accion) setView(toast.accion); setToast(null); }} /> : null)}
+    </DeporteShell>
   );
 }

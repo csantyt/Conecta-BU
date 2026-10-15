@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
+import PanelInformacionAdmin from "./PanelInformacionAdmin";
 import {
   actualizarDeporteAdmin,
   actualizarEventoAdmin,
@@ -14,7 +15,6 @@ import {
   obtenerEventosAdmin,
   obtenerHorariosAdmin,
   obtenerInscritosEventoAdmin,
-  obtenerResumenPisu,
 } from "../../api/deporte";
 import type {
   AlertaPisu,
@@ -23,30 +23,15 @@ import type {
   EventoPisu,
   HorarioAdminPisu,
   InscritoEventoPisu,
-  ResumenPisu,
 } from "../../types/deporte";
 import { DIAS, etiquetaHorario, mensajeError } from "./utils";
 
 type PanelAdminPisuProps = {
   deportes: DeportePisu[];
-  onAviso: (valor: string) => void;
+  onAviso: (valor: string, accion?: string) => void;
   onError: (valor: string) => void;
   onRecargar: () => Promise<void>;
 };
-
-type Vista =
-  | "resumen"
-  | "deportes"
-  | "horarios"
-  | "eventos"
-  | "alertas";
-
-const tabClass = (activa: boolean) =>
-  `shrink-0 rounded-full px-4 py-2 text-sm font-medium transition ${
-    activa
-      ? "banda-uni sombra-uni text-uni-noche"
-      : "border border-white/15 text-slate-300 hover:border-sky-400/35 hover:bg-white/5 hover:text-white"
-  }`;
 
 const btnPrimario =
   "banda-uni sombra-uni rounded-full px-4 py-2 text-sm font-bold text-uni-noche transition hover:brightness-105 disabled:opacity-50";
@@ -57,122 +42,28 @@ const inputClass =
 
 export default function PanelAdminPisu({
   deportes,
-  onAviso,
+  onAviso: _onAviso,
   onError,
-  onRecargar,
+  onRecargar: _onRecargar,
 }: PanelAdminPisuProps) {
-  const [vista, setVista] = useState<Vista>("resumen");
-
   return (
-    <div>
-      <nav className="mb-5 flex gap-2 overflow-x-auto pb-1">
-        {(
-          [
-            ["resumen", "Resumen"],
-            ["deportes", "Deportes"],
-            ["horarios", "Horarios"],
-            ["eventos", "Eventos"],
-            ["alertas", "Alertas"],
-          ] as const
-        ).map(([id, etiqueta]) => (
-          <button
-            key={id}
-            type="button"
-            onClick={() => setVista(id)}
-            className={tabClass(vista === id)}
-          >
-            {etiqueta}
-          </button>
-        ))}
-      </nav>
-
-      {vista === "resumen" ? (
-        <ResumenAdmin onError={onError} />
-      ) : null}
-      {vista === "deportes" ? (
-        <GestionDeportes
-          deportesCatalogo={deportes}
-          onAviso={onAviso}
-          onError={onError}
-          onRecargar={onRecargar}
-        />
-      ) : null}
-      {vista === "horarios" ? (
-        <GestionHorarios
-          deportes={deportes}
-          onAviso={onAviso}
-          onError={onError}
-          onRecargar={onRecargar}
-        />
-      ) : null}
-      {vista === "eventos" ? (
-        <GestionEventos onAviso={onAviso} onError={onError} />
-      ) : null}
-      {vista === "alertas" ? (
-        <GestionAlertas onAviso={onAviso} onError={onError} />
-      ) : null}
-    </div>
+    <PanelInformacionAdmin
+      deportes={deportes}
+      usuario={{ email: "administrador@pisu" }}
+      onError={onError}
+      onNavegar={() => undefined}
+    />
   );
 }
 
-function ResumenAdmin({ onError }: { onError: (v: string) => void }) {
-  const [resumen, setResumen] = useState<ResumenPisu | null>(null);
-  const [cargando, setCargando] = useState(true);
-
-  useEffect(() => {
-    setCargando(true);
-    void obtenerResumenPisu()
-      .then(setResumen)
-      .catch((err) => onError(mensajeError(err)))
-      .finally(() => setCargando(false));
-  }, [onError]);
-
-  const cards = resumen
-    ? [
-        ["Usuarios PISU", resumen.usuarios, "text-sky-300"],
-        ["Deportes activos", resumen.deportes_activos, "text-emerald-300"],
-        ["Inscripciones", resumen.inscripciones_activas, "text-cyan-300"],
-        ["Horarios", resumen.horarios_activos, "text-violet-300"],
-        ["Eventos", resumen.eventos_activos, "text-amber-300"],
-        ["Asistencias", resumen.asistencias, "text-rose-300"],
-        ["Alertas", resumen.alertas, "text-slate-200"],
-      ]
-    : [];
-
-  return (
-    <section className="space-y-4">
-      <h2 className="text-lg font-semibold">Resumen administrativo</h2>
-      {cargando ? (
-        <p className="text-sm text-slate-400">Cargando indicadores...</p>
-      ) : (
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          {cards.map(([label, valor, color]) => (
-            <article
-              key={String(label)}
-              className="rounded-3xl border border-white/10 bg-gradient-to-br from-white/10 to-white/[0.02] p-5"
-            >
-              <p className="text-xs uppercase tracking-wide text-slate-400">
-                {label}
-              </p>
-              <p className={`mt-2 text-3xl font-semibold tabular-nums ${color}`}>
-                {valor}
-              </p>
-            </article>
-          ))}
-        </div>
-      )}
-    </section>
-  );
-}
-
-function GestionDeportes({
+export function GestionDeportes({
   deportesCatalogo,
   onAviso,
   onError,
   onRecargar,
 }: {
   deportesCatalogo: DeportePisu[];
-  onAviso: (v: string) => void;
+  onAviso: (v: string, accion?: string) => void;
   onError: (v: string) => void;
   onRecargar: () => Promise<void>;
 }) {
@@ -187,8 +78,15 @@ function GestionDeportes({
   >([]);
   const [nombre, setNombre] = useState("");
   const [descripcion, setDescripcion] = useState("");
+  const [imagen, setImagen] = useState("");
   const [cupo, setCupo] = useState(20);
+  const [categorias, setCategorias] = useState<string[]>([
+    "Pregrado",
+    "Postgrado",
+    "Egresado",
+  ]);
   const [guardando, setGuardando] = useState(false);
+  const [resaltadoId, setResaltadoId] = useState<string | null>(null);
 
   async function recargarLista() {
     setDeportes(await obtenerDeportesAdmin());
@@ -205,13 +103,24 @@ function GestionDeportes({
       await crearDeporteAdmin({
         nombre,
         descripcion: descripcion || undefined,
+        imagen: imagen || undefined,
         cupo_maximo: cupo,
+        categorias_permitidas: categorias as Array<
+          "Pregrado" | "Postgrado" | "Egresado"
+        >,
       });
       setNombre("");
       setDescripcion("");
+      setImagen("");
       setCupo(20);
-      onAviso("Deporte creado.");
-      await Promise.all([recargarLista(), onRecargar()]);
+      setCategorias(["Pregrado", "Postgrado", "Egresado"]);
+      onAviso("Deporte creado.", "deportes");
+      const lista = await obtenerDeportesAdmin();
+      setDeportes(lista);
+      const nuevo = lista.find((d) => d.nombre.trim().toLowerCase() === nombre.trim().toLowerCase());
+      if (nuevo) setResaltadoId(nuevo.id);
+      window.setTimeout(() => setResaltadoId(null), 4000);
+      await onRecargar();
     } catch (err) {
       onError(mensajeError(err));
     } finally {
@@ -266,7 +175,7 @@ function GestionDeportes({
         {deportes.map((deporte) => (
           <article
             key={deporte.id}
-            className="rounded-2xl border border-white/10 bg-white p-5 text-slate-900"
+            className={`rounded-2xl border p-5 text-slate-900 ${resaltadoId === deporte.id ? "border-sky-400 ring-2 ring-sky-400/40" : "border-white/10 bg-white"}`}
           >
             <div className="flex items-start justify-between gap-3">
               <div>
@@ -306,14 +215,14 @@ function GestionDeportes({
   );
 }
 
-function GestionHorarios({
+export function GestionHorarios({
   deportes,
   onAviso,
   onError,
   onRecargar,
 }: {
   deportes: DeportePisu[];
-  onAviso: (v: string) => void;
+  onAviso: (v: string, accion?: string) => void;
   onError: (v: string) => void;
   onRecargar: () => Promise<void>;
 }) {
@@ -365,7 +274,7 @@ function GestionHorarios({
         hora_fin: horaFin,
         lugar,
       });
-      onAviso("Horario publicado. El docente ya puede tomar asistencia.");
+      onAviso("Horario publicado. El docente ya puede tomar asistencia.", "horarios");
       await Promise.all([recargar(), onRecargar()]);
     } catch (err) {
       onError(mensajeError(err));
@@ -523,11 +432,11 @@ function GestionHorarios({
   );
 }
 
-function GestionEventos({
+export function GestionEventos({
   onAviso,
   onError,
 }: {
-  onAviso: (v: string) => void;
+  onAviso: (v: string, accion?: string) => void;
   onError: (v: string) => void;
 }) {
   const [eventos, setEventos] = useState<EventoPisu[]>([]);
@@ -577,7 +486,7 @@ function GestionEventos({
       setFecha("");
       setLugar("");
       setCupo(40);
-      onAviso("Evento creado.");
+      onAviso("Evento creado.", "eventos");
       await recargar();
     } catch (err) {
       onError(mensajeError(err));
@@ -716,11 +625,11 @@ function GestionEventos({
   );
 }
 
-function GestionAlertas({
+export function GestionAlertas({
   onAviso,
   onError,
 }: {
-  onAviso: (v: string) => void;
+  onAviso: (v: string, accion?: string) => void;
   onError: (v: string) => void;
 }) {
   const [alertas, setAlertas] = useState<AlertaPisu[]>([]);
@@ -746,7 +655,7 @@ function GestionAlertas({
       setTitulo("");
       setMensaje("");
       setAudiencia("Todos");
-      onAviso("Alerta publicada.");
+      onAviso("Alerta publicada.", "comunicados");
       await recargar();
     } catch (err) {
       onError(mensajeError(err));
@@ -825,7 +734,7 @@ function GestionAlertas({
                 onClick={() =>
                   void eliminarAlertaAdmin(alerta.id)
                     .then(() => {
-                      onAviso("Alerta eliminada.");
+                      onAviso("Alerta eliminada.", "comunicados");
                       return recargar();
                     })
                     .catch((err) => onError(mensajeError(err)))

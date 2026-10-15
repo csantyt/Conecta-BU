@@ -14,7 +14,11 @@ export type DeportePisu = {
   id: string;
   nombre: string;
   descripcion: string | null;
+<<<<<<< HEAD
+  imagen?: string | null;
+=======
   imagen_url?: string | null;
+>>>>>>> origin/main
   cupo_maximo: number;
   cupo_disponible: number;
   categorias_permitidas: string[];
@@ -92,6 +96,7 @@ export type EventoPisu = {
   id: string;
   nombre: string;
   descripcion: string | null;
+  tipo?: string;
   fecha: string;
   lugar: string;
   cupo_maximo: number;
@@ -163,5 +168,8 @@ export type DocentePisu = {
   id: string;
   nombre: string;
   correo: string;
+  documento?: string | null;
+  especialidad?: string | null;
   rol: PerfilPisu["rol"];
+  estado?: boolean;
 };
