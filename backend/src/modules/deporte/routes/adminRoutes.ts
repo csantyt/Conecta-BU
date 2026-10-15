@@ -12,6 +12,7 @@ import {
   getEstudiantesAdmin,
   getEventosAdmin,
   getHorariosAdmin,
+  getInscritosAgrupadosAdmin,
   getInscritosEventoAdmin,
   getResumenAdmin,
   getUsuariosAdmin,
@@ -30,6 +31,7 @@ import {
   postEventoAdmin,
   postHorarioAdmin,
   postInscripcionManualAdmin,
+  putDeportesDocenteAdmin,
 } from "../controllers/adminController.js";
 import { authMiddleware } from "../middlewares/authMiddleware.js";
 import { administradorPisuOConecta } from "../middlewares/rbacMiddleware.js";
@@ -50,8 +52,10 @@ adminRoutes.get("/usuarios", asyncHandler(getUsuariosAdmin));
 adminRoutes.get("/docentes", asyncHandler(getDocentesAdmin));
 adminRoutes.post("/docentes", asyncHandler(postDocenteAdmin));
 adminRoutes.patch("/docentes/:id", asyncHandler(patchDocenteAdmin));
+adminRoutes.put("/docentes/:id/deportes", asyncHandler(putDeportesDocenteAdmin));
 adminRoutes.post("/docentes/csv", asyncHandler(postDocentesCsvAdmin));
 adminRoutes.get("/estudiantes", asyncHandler(getEstudiantesAdmin));
+adminRoutes.get("/inscripciones/agrupadas", asyncHandler(getInscritosAgrupadosAdmin));
 adminRoutes.get("/estudiantes/buscar", asyncHandler(getBuscarEstudiantesAdmin));
 adminRoutes.get("/estudiantes/:id/inscripciones", asyncHandler(getInscripcionesEstudiante));
 adminRoutes.patch("/estudiantes/:id", asyncHandler(patchEstudianteAdmin));

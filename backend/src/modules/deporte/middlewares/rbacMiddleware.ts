@@ -53,7 +53,12 @@ export function administradorPisuOConecta(
 }
 
 export const soloAdministradorPisu = rbacMiddleware(["Administrador"]);
-export const soloDocentePisu = rbacMiddleware(["Docente", "Administrador"]);
+/**
+ * Rutas del módulo del DOCENTE. Son exclusivas para el rol Docente: un
+ * estudiante o un administrador reciben 403 (RF-004). El administrador gestiona
+ * el módulo por su propio prefijo `/admin`, no por `/docente`.
+ */
+export const soloDocentePisu = rbacMiddleware(["Docente"]);
 export const soloEstudiantePisu = rbacMiddleware(["Estudiante", "Administrador"]);
 export const cualquierRolPisu = rbacMiddleware([
   "Administrador",

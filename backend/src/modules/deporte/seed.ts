@@ -1,11 +1,14 @@
 import bcrypt from "bcryptjs";
 import { Usuario } from "../auth/models/Usuario.js";
 import type { CategoriaPisu } from "./constantes.js";
+import { Alerta } from "./models/Alerta.js";
+import { Asistencia } from "./models/Asistencia.js";
 import { Deporte } from "./models/Deporte.js";
 import { Comunicado } from "./models/Comunicado.js";
 import { EventoDeporte } from "./models/EventoDeporte.js";
 import { HorarioDeporte } from "./models/HorarioDeporte.js";
 import { InscripcionDeporte } from "./models/InscripcionDeporte.js";
+import { InscripcionEvento } from "./models/InscripcionEvento.js";
 import { UsuarioPisu } from "./models/UsuarioPisu.js";
 
 const DEPORTES_INICIALES: Array<{

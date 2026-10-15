@@ -8,14 +8,21 @@ import type {
   DeportePisu,
   DocentePisu,
   EstudianteDeClase,
+  EstudianteDeporteDocente,
   EventoPisu,
+  GrupoInscritosDeporte,
   HorarioAdminPisu,
   HorarioEstudiantePisu,
   InscripcionPisu,
+  InscritoEventoDocentePisu,
   InscritoEventoPisu,
+  MiDeporteDocente,
   PerfilPisu,
+  ReporteDocente,
   ResumenAsistenciaPisu,
   ResumenPisu,
+  SesionHistorialDocente,
+  SesionListaDocente,
   UsuarioPisuAdmin,
 } from "../types/deporte";
 
@@ -34,6 +41,12 @@ export async function obtenerEventosPisu(): Promise<EventoPisu[]> {
   return data.eventos;
 }
 
+/** Eventos en los que el estudiante está inscrito (incluye los cancelados). */
+export async function obtenerMisEventosPisu(): Promise<EventoPisu[]> {
+  const { data } = await api.get<{ eventos: EventoPisu[] }>("/estudiante/eventos/mios");
+  return data.eventos;
+}
+
 export async function obtenerAlertasPisu(): Promise<AlertaPisu[]> {
   const { data } = await api.get<{ alertas: AlertaPisu[] }>("/deportes/alertas");
   return data.alertas;
@@ -48,6 +61,19 @@ export async function obtenerInscripcionesPisu(): Promise<InscripcionPisu[]> {
 
 export async function autoinscribirseDeporte(deporteId: string): Promise<void> {
   await api.post("/estudiante/inscripciones", { deporte_id: deporteId });
+}
+
+/**
+ * Completa el perfil del estudiante con datos que no se pueden inventar
+ * (sección 10.1). Hoy solo la categoría académica.
+ */
+export async function completarPerfilPisu(
+  categoria: "Pregrado" | "Postgrado" | "Egresado",
+): Promise<PerfilPisu> {
+  const { data } = await api.patch<{ perfil: PerfilPisu }>("/estudiante/perfil", {
+    categoria,
+  });
+  return data.perfil;
 }
 
 export async function cancelarInscripcionPisu(id: string): Promise<void> {
@@ -329,6 +355,21 @@ export async function crearDocenteAdmin(payload: {
   return data;
 }
 
+/**
+ * Reemplaza la lista de deportes asignados a un docente. Al asignarle un deporte,
+ * el docente lo verá en su panel aunque todavía no tenga horarios publicados.
+ */
+export async function asignarDeportesDocenteAdmin(
+  id: string,
+  deporteIds: string[],
+): Promise<DeporteAsignadoDocente[]> {
+  const { data } = await api.put<{ deportes: DeporteAsignadoDocente[] }>(
+    `/admin/docentes/${id}/deportes`,
+    { deporteIds },
+  );
+  return data.deportes;
+}
+
 export async function actualizarDocenteAdmin(
   id: string,
   payload: Partial<{
@@ -412,6 +453,11 @@ export async function obtenerInscritosDeporte(
   };
 }
 
+export async function obtenerInscritosAgrupados(params?: { q?: string; categoria?: string }) {
+  const { data } = await api.get<{ grupos: GrupoInscritosDeporte[] }>("/admin/inscripciones/agrupadas", { params });
+  return data.grupos;
+}
+
 export async function obtenerEstudiantesGeneral(params: { deporteId?: string; categoria?: string; sinInscripcion?: boolean; q?: string }) {
   const { data } = await api.get("/admin/estudiantes", { params });
   return data.estudiantes as Array<{ id: string; nombre: string; correo: string; documento?: string | null; categoria: string | null; estado: boolean; inscripciones?: Array<{ deporte_id: string; deporte?: { id: string; nombre: string } }> }>;
@@ -430,4 +476,176 @@ export async function obtenerMisInscripcionesCompletas() {
 export async function obtenerVerificacion() {
   const { data } = await api.get('/admin/verificacion');
   return data.verificacion;
+}
+
+// ============================================================================
+// Rol Docente — cliente del módulo (siempre con JWT por el interceptor)
+// ============================================================================
+
+export async function obtenerMisDeportesDocente(): Promise<MiDeporteDocente[]> {
+  const { data } = await api.get<{ deportes: MiDeporteDocente[] }>("/docente/mis-deportes");
+  return data.deportes;
+}
+
+export async function obtenerClasesHoyDocente(): Promise<ClaseHoyDocente[]> {
+  const { data } = await api.get<{ clases: ClaseHoyDocente[] }>("/docente/hoy");
+  return data.clases;
+}
+
+export async function obtenerSesionListaDocente(
+  horarioId: string,
+  fecha: string,
+): Promise<SesionListaDocente> {
+  const { data } = await api.get<SesionListaDocente>(
+    `/docente/clases/${horarioId}/lista`,
+    { params: { fecha } },
+  );
+  return data;
+}
+
+export async function obtenerHistorialDocente(
+  deporteId?: string,
+): Promise<SesionHistorialDocente[]> {
+  const { data } = await api.get<{ sesiones: SesionHistorialDocente[] }>(
+    "/docente/historial",
+    { params: deporteId ? { deporteId } : undefined },
+  );
+  return data.sesiones;
+}
+
+export async function obtenerEstudiantesDeporteDocente(deporteId: string): Promise<{
+  deporte: { id: string; nombre: string; cupo_maximo: number };
+  dictadas: number;
+  estudiantes: EstudianteDeporteDocente[];
+}> {
+  const { data } = await api.get<{
+    deporte: { id: string; nombre: string; cupo_maximo: number };
+    dictadas: number;
+    estudiantes: EstudianteDeporteDocente[];
+  }>(`/docente/deportes/${deporteId}/estudiantes`);
+  return data;
+}
+
+export async function obtenerReporteDocente(deporteId: string): Promise<ReporteDocente> {
+  const { data } = await api.get<{ reporte: ReporteDocente }>(
+    `/docente/deportes/${deporteId}/reporte`,
+  );
+  return data.reporte;
+}
+
+function nombreDesdeCabecera(disposicion: unknown): string | null {
+  if (typeof disposicion !== "string") return null;
+  const coincidencia = /filename="?([^";]+)"?/i.exec(disposicion);
+  return coincidencia?.[1] ?? null;
+}
+
+/** Descarga el Excel del reporte usando el blob y el nombre del encabezado. */
+export async function descargarReporteExcelDocente(
+  deporteId: string,
+  deporteNombre: string,
+): Promise<void> {
+  const respuesta = await api.get(`/docente/deportes/${deporteId}/reporte/excel`, {
+    responseType: "blob",
+  });
+  const blob = respuesta.data as Blob;
+  const nombre =
+    nombreDesdeCabecera(respuesta.headers["content-disposition"]) ??
+    `reporte_${deporteNombre.toLowerCase().replace(/[^a-z0-9]+/g, "_")}.xlsx`;
+  const url = URL.createObjectURL(blob);
+  const enlace = document.createElement("a");
+  enlace.href = url;
+  enlace.download = nombre;
+  document.body.appendChild(enlace);
+  enlace.click();
+  enlace.remove();
+  URL.revokeObjectURL(url);
+}
+
+// ============================================================================
+// Rol Docente — eventos (torneos, masterclass, etc.)
+// ============================================================================
+
+export type PayloadEventoDocente = {
+  nombre: string;
+  descripcion?: string | null;
+  tipo: string;
+  deporte_id: string;
+  fecha: string;
+  hora_inicio: string;
+  hora_fin: string;
+  lugar: string;
+  cupo_maximo: number;
+  fecha_limite_inscripcion?: string | null;
+  categorias_permitidas?: string[];
+};
+
+export async function obtenerEventosDocente(): Promise<EventoPisu[]> {
+  const { data } = await api.get<{ eventos: EventoPisu[] }>("/deportes/docente/eventos");
+  return data.eventos;
+}
+
+export async function crearEventoDocente(
+  payload: PayloadEventoDocente,
+): Promise<{ evento: EventoPisu; aviso: string | null; notificados: number }> {
+  const { data } = await api.post<{ evento: EventoPisu; aviso: string | null; notificados: number }>(
+    "/deportes/docente/eventos",
+    payload,
+  );
+  return data;
+}
+
+export async function actualizarEventoDocente(
+  id: string,
+  payload: Partial<PayloadEventoDocente>,
+): Promise<{ evento: EventoPisu; aviso: string | null; notificados: number }> {
+  const { data } = await api.put<{ evento: EventoPisu; aviso: string | null; notificados: number }>(
+    `/deportes/docente/eventos/${id}`,
+    payload,
+  );
+  return data;
+}
+
+export async function cancelarEventoDocente(
+  id: string,
+  motivo: string,
+): Promise<{ eliminado: boolean; notificados: number; inscritos: number }> {
+  const { data } = await api.post(
+    `/deportes/docente/eventos/${id}/cancelar`,
+    { motivo },
+  );
+  return data as { eliminado: boolean; notificados: number; inscritos: number };
+}
+
+export async function obtenerInscritosEventoDocente(
+  id: string,
+  q = "",
+): Promise<{ evento: EventoPisu; inscritos: InscritoEventoDocentePisu[] }> {
+  const { data } = await api.get<{
+    evento: EventoPisu;
+    inscritos: InscritoEventoDocentePisu[];
+  }>(`/deportes/docente/eventos/${id}/inscritos`, { params: q ? { q } : undefined });
+  return data;
+}
+
+/** Descarga el CSV de inscritos generado por el backend. */
+export async function descargarCsvInscritosEventoDocente(
+  id: string,
+  nombreEvento: string,
+): Promise<void> {
+  const respuesta = await api.get(`/deportes/docente/eventos/${id}/inscritos`, {
+    params: { formato: "csv" },
+    responseType: "blob",
+  });
+  const blob = respuesta.data as Blob;
+  const nombre =
+    nombreDesdeCabecera(respuesta.headers["content-disposition"]) ??
+    `inscritos_${nombreEvento.toLowerCase().replace(/[^a-z0-9]+/g, "_")}.csv`;
+  const url = URL.createObjectURL(blob);
+  const enlace = document.createElement("a");
+  enlace.href = url;
+  enlace.download = nombre;
+  document.body.appendChild(enlace);
+  enlace.click();
+  enlace.remove();
+  URL.revokeObjectURL(url);
 }

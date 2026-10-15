@@ -1,10 +1,12 @@
 import { Op, fn, col } from "sequelize";
+import { sequelize } from "../../../config/database.js";
 import { Usuario } from "../../auth/models/Usuario.js";
 import type { AudienciaAlertaPisu, CategoriaPisu, RolPisu } from "../constantes.js";
 import { AUDIENCIAS_ALERTA_PISU, CATEGORIAS_PISU, ROLES_PISU } from "../constantes.js";
 import { Alerta } from "../models/Alerta.js";
 import { AsistenciaDetalle } from "../models/AsistenciaDetalle.js";
 import { Deporte } from "../models/Deporte.js";
+import { DeporteDocente } from "../models/DeporteDocente.js";
 import { EventoDeporte } from "../models/EventoDeporte.js";
 import { HorarioDeporte } from "../models/HorarioDeporte.js";
 import { InscripcionDeporte } from "../models/InscripcionDeporte.js";
@@ -738,12 +740,19 @@ function hashearPasswordTemporal(password: string): string {
   return `scrypt:${salt}:${hash}`;
 }
 
+/**
+ * Crea un docente PISU por nombre y correo institucional.
+ *
+ * No se guarda contraseña: el acceso es con Google institucional y el perfil se
+ * vincula por el correo (ver `authMiddleware.resolverPerfilPisu`). El
+ * administrador luego le asigna los deportes con `actualizarDeportesDeDocente`.
+ */
 export async function crearDocente(params: {
   nombre: string;
   correo: string;
   documento?: string | null | undefined;
   especialidad?: string | null | undefined;
-}): Promise<{ docente: UsuarioPisu; passwordTemporal: string }> {
+}): Promise<UsuarioPisu> {
   const nombre = params.nombre.trim();
   const correo = params.correo.trim().toLowerCase();
   if (nombre.length < 2) {
@@ -760,18 +769,148 @@ export async function crearDocente(params: {
     throw new DocenteDuplicadoError("Ya existe un docente con ese correo.");
   }
 
-  const passwordTemporal = generarPasswordTemporal();
-  const docente = await UsuarioPisu.create({
+  return UsuarioPisu.create({
     nombre,
     correo,
     documento: params.documento?.trim() || null,
     especialidad: params.especialidad?.trim() || null,
-    password_hash: hashearPasswordTemporal(passwordTemporal),
     rol: "Docente",
     estado: true,
   });
+}
 
-  return { docente, passwordTemporal };
+// ===================== Asignación de deportes a docentes =====================
+
+export type DeporteAsignadoDocente = {
+  id: string;
+  nombre: string;
+  /** El docente ya tiene al menos un horario publicado en este deporte. */
+  tiene_horario: boolean;
+};
+
+export type DocenteConDeportes = {
+  id: string;
+  nombre: string;
+  correo: string;
+  documento: string | null;
+  especialidad: string | null;
+  rol: RolPisu;
+  estado: boolean;
+  deportes: DeporteAsignadoDocente[];
+};
+
+/**
+ * Lista docentes/administradores con los deportes que tienen asignados
+ * directamente (`deporte.deportes_docentes`). Usa 3 consultas en total.
+ */
+export async function listarDocentesConDeportes(
+  consulta?: string,
+): Promise<DocenteConDeportes[]> {
+  const docentes = await listarDocentesPisu(consulta);
+  const ids = docentes.map((d) => d.id);
+  if (ids.length === 0) {
+    return [];
+  }
+
+  const [asignaciones, horarios] = await Promise.all([
+    DeporteDocente.findAll({
+      where: { docente_id: { [Op.in]: ids } },
+      include: [{ model: Deporte, as: "deporte", attributes: ["id", "nombre"] }],
+    }),
+    HorarioDeporte.findAll({
+      where: { docente_id: { [Op.in]: ids }, estado: true },
+      attributes: ["docente_id", "deporte_id"],
+    }),
+  ]);
+
+  const conHorario = new Set(horarios.map((h) => `${h.docente_id}|${h.deporte_id}`));
+  const porDocente = new Map<string, DeporteAsignadoDocente[]>();
+  for (const asignacion of asignaciones) {
+    const deporte = (asignacion as { deporte?: { id: string; nombre: string } }).deporte;
+    if (!deporte) continue;
+    const lista = porDocente.get(asignacion.docente_id) ?? [];
+    lista.push({
+      id: deporte.id,
+      nombre: deporte.nombre,
+      tiene_horario: conHorario.has(`${asignacion.docente_id}|${deporte.id}`),
+    });
+    porDocente.set(asignacion.docente_id, lista);
+  }
+
+  return docentes.map((docente) => ({
+    id: docente.id,
+    nombre: docente.nombre,
+    correo: docente.correo,
+    documento: docente.documento ?? null,
+    especialidad: docente.especialidad ?? null,
+    rol: docente.rol,
+    estado: docente.estado,
+    deportes: (porDocente.get(docente.id) ?? []).sort((a, b) =>
+      a.nombre.localeCompare(b.nombre, "es"),
+    ),
+  }));
+}
+
+/**
+ * Reemplaza la lista completa de deportes asignados a un docente.
+ *
+ * Regla: solo se asignan deportes a usuarios con rol Docente. Los deportes que
+ * no vengan en la lista se desasignan. Ejemplo: si el docente tenía
+ * [Fútbol, Baloncesto] y se envía [Baloncesto, Voleibol], el resultado es
+ * [Baloncesto, Voleibol].
+ */
+export async function actualizarDeportesDeDocente(params: {
+  docenteId: string;
+  deporteIds: string[];
+}): Promise<DeporteAsignadoDocente[]> {
+  const docente = await UsuarioPisu.findByPk(params.docenteId);
+  if (!docente) {
+    throw new RecursoAdminNoEncontradoError("El docente no existe.");
+  }
+  if (docente.rol !== "Docente") {
+    throw new DatosRolPisuInvalidosError(
+      "Solo se pueden asignar deportes a usuarios con rol Docente.",
+    );
+  }
+  if (!docente.estado) {
+    throw new DatosRolPisuInvalidosError(
+      "No se pueden asignar deportes a un docente inactivo.",
+    );
+  }
+
+  const unicos = [...new Set(params.deporteIds)];
+  if (unicos.length > 0) {
+    const deportes = await Deporte.findAll({ where: { id: { [Op.in]: unicos } } });
+    if (deportes.length !== unicos.length) {
+      throw new RecursoAdminNoEncontradoError("Algún deporte seleccionado no existe.");
+    }
+  }
+
+  await sequelize.transaction(async (transaction) => {
+    await DeporteDocente.destroy({
+      where: {
+        docente_id: docente.id,
+        ...(unicos.length > 0 ? { deporte_id: { [Op.notIn]: unicos } } : {}),
+      },
+      transaction,
+    });
+    const actuales = await DeporteDocente.findAll({
+      where: { docente_id: docente.id },
+      transaction,
+    });
+    const yaAsignados = new Set(actuales.map((a) => a.deporte_id));
+    for (const deporteId of unicos) {
+      if (!yaAsignados.has(deporteId)) {
+        await DeporteDocente.create(
+          { docente_id: docente.id, deporte_id: deporteId },
+          { transaction },
+        );
+      }
+    }
+  });
+
+  const resultado = await listarDocentesConDeportes();
+  return resultado.find((d) => d.id === docente.id)?.deportes ?? [];
 }
 
 export async function crearAdministradorPisu(params: {
@@ -1056,6 +1195,7 @@ export async function dashboardAdministracion(): Promise<{
     inscritos: number;
     ocupacion: number;
     categorias_permitidas: string[];
+    estado: boolean;
   }>;
   deporteMasOcupado: { nombre: string; ocupacion: number } | null;
   deporteMenosOcupado: { nombre: string; ocupacion: number } | null;
@@ -1079,6 +1219,7 @@ export async function dashboardAdministracion(): Promise<{
       inscritos,
       ocupacion,
       categorias_permitidas: deporte.categorias_permitidas,
+      estado: deporte.estado,
     });
     if (deporte.estado) {
       if (!masOcupado || ocupacion > masOcupado.ocupacion) {

@@ -1,4 +1,5 @@
 import { Op } from "sequelize";
+import type { CategoriaPisu } from "../constantes.js";
 import { Asistencia } from "../models/Asistencia.js";
 import { AsistenciaDetalle } from "../models/AsistenciaDetalle.js";
 import { Deporte } from "../models/Deporte.js";
@@ -6,7 +7,9 @@ import { EventoDeporte } from "../models/EventoDeporte.js";
 import { HorarioDeporte } from "../models/HorarioDeporte.js";
 import { InscripcionDeporte } from "../models/InscripcionDeporte.js";
 import { InscripcionEvento } from "../models/InscripcionEvento.js";
+import { UsuarioPisu } from "../models/UsuarioPisu.js";
 import type { UsuarioPisuSesion } from "../middlewares/tipos.js";
+import { RecursoNoEncontradoError } from "./inscripcionesService.js";
 
 export function plazoCancelacionVigente(): boolean {
   const inicioStr = process.env["SEMESTRE_INICIO"];
@@ -21,6 +24,22 @@ export function plazoCancelacionVigente(): boolean {
   }
   const puntoMedio = new Date(inicio.getTime() + (fin.getTime() - inicio.getTime()) / 2);
   return new Date() <= puntoMedio;
+}
+
+/**
+ * Completa datos obligatorios del perfil del estudiante que no pueden
+ * inventarse (p. ej. la categoría académica). Se le solicitan al usuario.
+ */
+export async function completarPerfilEstudiante(
+  perfil: UsuarioPisuSesion,
+  params: { categoria: CategoriaPisu },
+): Promise<UsuarioPisu> {
+  const ficha = await UsuarioPisu.findByPk(perfil.id);
+  if (!ficha) {
+    throw new RecursoNoEncontradoError("No se encontró tu perfil PISU.");
+  }
+  await ficha.update({ categoria: params.categoria });
+  return ficha;
 }
 
 export async function listarInscripcionesEstudiante(

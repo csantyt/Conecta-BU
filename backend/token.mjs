@@ -1,0 +1,11 @@
+import jwt from 'jsonwebtoken';
+import pg from 'pg';
+import fs from 'node:fs';
+const envText=fs.readFileSync('C:/Users/BIENVENIDO/Conecta-BU/backend/.env','utf8');
+const env=Object.fromEntries(envText.split(/\r?\n/).filter(l=>l&&!l.startsWith('#')).map(l=>{const i=l.indexOf('=');return[l.slice(0,i),l.slice(i+1)]}));
+const pool=new pg.Pool({connectionString:env.DATABASE_URL});
+const r=await pool.query("SELECT id FROM auth.usuarios WHERE email=$1",['smoke.admin@uniautonoma.edu.co']);
+const id=r.rows[0].id;
+console.log(jwt.sign({id,email:'smoke.admin@uniautonoma.edu.co',rol:'ADMINISTRADOR'},env.JWT_SECRET,{expiresIn:'1h'}));
+await pool.end();
+process.exit(0);

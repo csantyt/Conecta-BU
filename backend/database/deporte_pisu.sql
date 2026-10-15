@@ -25,12 +25,7 @@ CREATE TABLE IF NOT EXISTS deporte.usuarios (
   estado BOOLEAN NOT NULL DEFAULT TRUE,
   fecha_creacion TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   CONSTRAINT usuarios_correo_institucional_chk
-    CHECK (correo ~* '@uniautonoma\.edu\.co$'),
-  CONSTRAINT usuarios_categoria_estudiante_chk
-    CHECK (
-      (rol = 'Estudiante' AND categoria IS NOT NULL)
-      OR (rol IN ('Administrador', 'Docente'))
-    )
+    CHECK (correo ~* '@uniautonoma\.edu\.co$')
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS usuarios_correo_unico

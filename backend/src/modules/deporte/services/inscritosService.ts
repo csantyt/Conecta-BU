@@ -168,6 +168,114 @@ export async function listarInscritosDeporte(params: {
   return { filas, total: typeof count === "number" ? count : (count as unknown as { length: number }).length, page, pageSize };
 }
 
+export type InscripcionAgrupada = {
+  deporte: { id: string; nombre: string; cupo_maximo: number; estado: boolean };
+  total: number;
+  inscritos: Array<Omit<InscritoRow, "id" | "estudiante_id">>;
+};
+
+type FilaInterna = {
+  estudiante_id: string;
+  fila: Omit<InscritoRow, "id" | "estudiante_id">;
+};
+
+export async function listarInscripcionesAgrupadas(params?: {
+  q?: string;
+  categoria?: string;
+}): Promise<InscripcionAgrupada[]> {
+  const whereEstudiante: Record<string, unknown> = {};
+  if (params?.categoria) whereEstudiante.categoria = params.categoria;
+  if (params?.q?.trim()) {
+    const q = `%${params.q.trim()}%`;
+    Object.assign(whereEstudiante, {
+      [Op.or]: [
+        { nombre: { [Op.iLike]: q } },
+        { documento: { [Op.iLike]: q } },
+      ],
+    });
+  }
+
+  const inscripciones = await InscripcionDeporte.findAll({
+    where: { estado: "Activa" },
+    include: [
+      {
+        model: Deporte,
+        as: "deporte",
+        attributes: ["id", "nombre", "cupo_maximo", "estado"],
+      },
+      {
+        model: UsuarioPisu,
+        as: "estudiante",
+        attributes: ["id", "nombre", "documento", "correo", "categoria"],
+        where: Object.keys(whereEstudiante).length ? (whereEstudiante as WhereOptions) : ({} as WhereOptions),
+        required: true,
+      },
+    ],
+    order: [["fecha_inscripcion", "DESC"]],
+  });
+
+  const deportes = await Deporte.findAll({
+    where: { estado: true },
+    attributes: ["id", "nombre", "cupo_maximo", "estado"],
+    order: [["nombre", "ASC"]],
+  });
+
+  const grupos = new Map<string, { deporte: InscripcionAgrupada["deporte"]; filas: FilaInterna[] }>();
+  for (const d of deportes) {
+    grupos.set(d.id, {
+      deporte: {
+        id: d.id,
+        nombre: d.nombre,
+        cupo_maximo: d.cupo_maximo,
+        estado: d.estado,
+      },
+      filas: [],
+    });
+  }
+
+  for (const ins of inscripciones) {
+    const grupo = grupos.get(ins.deporte_id);
+    const est = (ins as { estudiante?: UsuarioPisu }).estudiante;
+    if (!grupo || !est) continue;
+    grupo.filas.push({
+      estudiante_id: ins.estudiante_id,
+      fila: {
+        nombre: est.nombre,
+        documento: est.documento ?? null,
+        correo: est.correo ?? null,
+        categoria: est.categoria ?? null,
+        fecha_inscripcion: ins.fecha_inscripcion ? new Date(ins.fecha_inscripcion).toISOString() : "",
+        asistencias_total: 0,
+        asistencias_presentes: 0,
+        porcentaje_asistencia: null,
+        inasistencias: 0,
+      },
+    });
+  }
+
+  const resultado: InscripcionAgrupada[] = [];
+  for (const grupo of grupos.values()) {
+    grupo.filas.sort((a, b) => a.fila.nombre.localeCompare(b.fila.nombre, "es"));
+    const resumen = await obtenerAsistenciaResumen(grupo.filas.map((f) => f.estudiante_id), grupo.deporte.id);
+    resultado.push({
+      deporte: grupo.deporte,
+      total: grupo.filas.length,
+      inscritos: grupo.filas.map(({ estudiante_id, fila }) => {
+        const asist = resumen.get(estudiante_id) ?? { total: 0, presentes: 0 };
+        const pct = asist.total > 0 ? Math.round((asist.presentes / asist.total) * 100) : null;
+        return {
+          ...fila,
+          asistencias_total: asist.total,
+          asistencias_presentes: asist.presentes,
+          porcentaje_asistencia: pct,
+          inasistencias: asist.total - asist.presentes,
+        };
+      }),
+    });
+  }
+  return resultado;
+}
+
 export async function listarEstudiantesGeneral(params: {
   deporteId?: string;
   categoria?: string;

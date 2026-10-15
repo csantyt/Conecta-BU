@@ -1,10 +1,23 @@
 import type { NextFunction, Request, Response } from "express";
+import { UniqueConstraintError } from "sequelize";
 import { authMiddleware as verificarJwtConecta } from "../../../middlewares/authMiddleware.js";
 import { Usuario } from "../../auth/models/Usuario.js";
-import { ROLES } from "../../auth/roles.js";
+import { ROLES, normalizarCorreoInstitucional } from "../../auth/roles.js";
 import { UsuarioPisu } from "../models/UsuarioPisu.js";
 import { serializarPerfilPisu } from "./tipos.js";
 
+/**
+ * Resuelve (y crea si hace falta) la ficha PISU del usuario autenticado.
+ *
+ * Reglas de negocio (sección 10.1):
+ *  - Todo usuario autenticado con correo institucional verificado entra al
+ *    módulo como Estudiante si no tiene un rol administrativo o docente.
+ *  - La ficha queda ligada de forma ÚNICA a la cuenta de Conecta (`auth_usuario_id`),
+ *    con un índice único en base de datos; si otra petición simultánea la crea
+ *    primero, se reutiliza la existente (no se duplican perfiles).
+ *  - NO se inventan datos personales: la categoría académica nace vacía y el
+ *    estudiante la completa después (`PATCH /estudiante/perfil`).
+ */
 async function resolverPerfilPisu(req: Request, res: Response): Promise<boolean> {
   const authUser = req.user;
   if (!authUser) {
@@ -12,10 +25,27 @@ async function resolverPerfilPisu(req: Request, res: Response): Promise<boolean>
     return false;
   }
 
-  let perfil =
-    (await UsuarioPisu.findOne({ where: { auth_usuario_id: authUser.id } })) ??
-    (await UsuarioPisu.findOne({ where: { correo: authUser.email } }));
+  const correo =
+    normalizarCorreoInstitucional(authUser.email) ??
+    authUser.email.trim().toLowerCase();
 
+  // 1) Ficha ya vinculada a esta cuenta (camino normal).
+  let perfil = await UsuarioPisu.findOne({
+    where: { auth_usuario_id: authUser.id },
+  });
+
+  // 2) Ficha creada por administración/seed con el mismo correo y sin vincular:
+  //    se adopta. Si ya pertenece a OTRA cuenta no se toca (evita suplantación).
+  if (!perfil) {
+    const sinVincular = await UsuarioPisu.findOne({
+      where: { correo, auth_usuario_id: null },
+    });
+    if (sinVincular) {
+      perfil = await sinVincular.update({ auth_usuario_id: authUser.id });
+    }
+  }
+
+  // 3) Primer ingreso: se crea la ficha con los datos verificados de Google.
   if (!perfil) {
     const cuentaAuth = await Usuario.findByPk(authUser.id);
     const esAdminConecta = authUser.rol === ROLES.ADMINISTRADOR;
@@ -27,15 +57,28 @@ async function resolverPerfilPisu(req: Request, res: Response): Promise<boolean>
         : "Estudiante";
     const nombre = cuentaAuth?.nombre_completo?.trim() || authUser.email;
 
-    perfil = await UsuarioPisu.create({
-      auth_usuario_id: authUser.id,
-      nombre,
-      correo: authUser.email,
-      rol: rolPisu,
-      ...(rolPisu === "Estudiante" ? { categoria: "Pregrado" as const } : {}),
-    });
-  } else if (!perfil.auth_usuario_id) {
-    await perfil.update({ auth_usuario_id: authUser.id });
+    try {
+      perfil = await UsuarioPisu.create({
+        auth_usuario_id: authUser.id,
+        nombre,
+        correo,
+        rol: rolPisu,
+        // La categoría es obligatoria para inscribirse, pero NO se inventa:
+        // el estudiante la completa en su perfil.
+        categoria: null,
+      });
+    } catch (error) {
+      if (!(error instanceof UniqueConstraintError)) {
+        throw error;
+      }
+      // Carrera con otra petición: la ficha ya existe, se reutiliza.
+      perfil = await UsuarioPisu.findOne({
+        where: { auth_usuario_id: authUser.id },
+      });
+      if (!perfil) {
+        throw error;
+      }
+    }
   }
 
   if (perfil.estado === false) {

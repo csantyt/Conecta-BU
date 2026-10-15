@@ -3,6 +3,7 @@ import { Asistencia } from "./Asistencia.js";
 import { AsistenciaDetalle } from "./AsistenciaDetalle.js";
 import { Comunicado } from "./Comunicado.js";
 import { Deporte } from "./Deporte.js";
+import { DeporteDocente } from "./DeporteDocente.js";
 import { EventoDeporte } from "./EventoDeporte.js";
 import { HorarioDeporte } from "./HorarioDeporte.js";
 import { InscripcionDeporte } from "./InscripcionDeporte.js";
@@ -20,6 +21,24 @@ HorarioDeporte.belongsTo(UsuarioPisu, {
 
 Deporte.hasMany(HorarioDeporte, { foreignKey: "deporte_id", as: "horarios" });
 HorarioDeporte.belongsTo(Deporte, { foreignKey: "deporte_id", as: "deporte" });
+
+// Asignación directa docente ↔ deporte (hecha por el administrador).
+UsuarioPisu.hasMany(DeporteDocente, {
+  foreignKey: "docente_id",
+  as: "deportes_asignados",
+});
+DeporteDocente.belongsTo(UsuarioPisu, {
+  foreignKey: "docente_id",
+  as: "docente",
+});
+Deporte.hasMany(DeporteDocente, {
+  foreignKey: "deporte_id",
+  as: "docentes_asignados",
+});
+DeporteDocente.belongsTo(Deporte, {
+  foreignKey: "deporte_id",
+  as: "deporte",
+});
 
 UsuarioPisu.hasMany(InscripcionDeporte, {
   foreignKey: "estudiante_id",
@@ -93,6 +112,20 @@ InscripcionEvento.belongsTo(UsuarioPisu, {
   as: "estudiante",
 });
 
+// Evento ↔ Deporte (un evento del docente pertenece a uno de sus deportes).
+Deporte.hasMany(EventoDeporte, { foreignKey: "deporte_id", as: "eventos" });
+EventoDeporte.belongsTo(Deporte, { foreignKey: "deporte_id", as: "deporte" });
+
+// Evento ↔ creador (docente o administrador que lo registró).
+UsuarioPisu.hasMany(EventoDeporte, {
+  foreignKey: "creado_por_id",
+  as: "eventos_creados",
+});
+EventoDeporte.belongsTo(UsuarioPisu, {
+  foreignKey: "creado_por_id",
+  as: "creador",
+});
+
 UsuarioPisu.hasMany(Alerta, {
   foreignKey: "estudiante_id",
   as: "alertas_personales",
@@ -108,6 +141,7 @@ export {
   AsistenciaDetalle,
   Comunicado,
   Deporte,
+  DeporteDocente,
   EventoDeporte,
   HorarioDeporte,
   InscripcionDeporte,
