@@ -32,6 +32,16 @@ export default function DeportePage({ usuario, onVolver: _onVolver, vistaInicial
   useEffect(() => {
     setView(vistaInicial);
   }, [vistaInicial]);
+
+  // Sync view with App.tsx router when hash/URL changes
+  useEffect(() => {
+    const path = window.location.pathname;
+    if (path.startsWith("/mis-deportes") || path.startsWith("/mi-horario")) setView("actividad");
+    else if (path.startsWith("/asistencia")) setView("asistencia");
+    else if (path.startsWith("/admin")) setView("admin");
+    else if (path.startsWith("/usuarios")) setView("usuarios");
+    else setView("catalogo");
+  }, []);
   useEffect(() => {
     setError(null);
     setAccionConflicto(undefined);

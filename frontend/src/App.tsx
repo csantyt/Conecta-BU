@@ -15,7 +15,7 @@ function App() {
   const navigate = useNavigate();
   const [usuario, setUsuario] = useState<Usuario | null>(leerUsuario);
   const [moduloActivo, setModuloActivo] = useState<ModuloId | null>(null);
-  const [vistaDeporte, setVistaDeporte] = useState<"catalogo" | "actividad" | "asistencia" | "usuarios" | "admin">("catalogo");
+  const [vistaDeporte, setVistaDeporte] = useState<"catalogo" | "actividad" | "asistencia" | "usuarios" | "admin" | "eventos">("catalogo");
 
   useEffect(() => {
     const path = location.pathname;
@@ -32,6 +32,7 @@ function App() {
       setModuloActivo("deporte");
       if (path.startsWith("/mis-deportes") || path.startsWith("/mi-horario")) setVistaDeporte("actividad");
       else if (path.startsWith("/asistencia")) setVistaDeporte("asistencia");
+      else if (path.startsWith("/eventos")) setVistaDeporte("eventos");
       else setVistaDeporte("catalogo");
     }
   }, [location.pathname]);
