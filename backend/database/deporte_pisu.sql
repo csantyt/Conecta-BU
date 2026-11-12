@@ -136,6 +136,19 @@ CREATE TABLE IF NOT EXISTS deporte.asistencias (
   fecha_registro TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- Asegurar columnas requeridas por si la tabla ya existe desde una versión previa
+-- (CREATE TABLE IF NOT EXISTS no modifica tablas existentes).
+ALTER TABLE deporte.asistencias
+  ADD COLUMN IF NOT EXISTS horario_id UUID REFERENCES deporte.horarios (id) ON DELETE CASCADE,
+  ADD COLUMN IF NOT EXISTS estudiante_id UUID REFERENCES deporte.usuarios (id) ON DELETE RESTRICT,
+  ADD COLUMN IF NOT EXISTS docente_id UUID REFERENCES deporte.usuarios (id) ON DELETE RESTRICT,
+  ADD COLUMN IF NOT EXISTS fecha DATE,
+  ADD COLUMN IF NOT EXISTS presente BOOLEAN NOT NULL DEFAULT FALSE,
+  ADD COLUMN IF NOT EXISTS fecha_registro TIMESTAMPTZ NOT NULL DEFAULT NOW();
+
+-- Recrear el índice único con las columnas correctas (horario_id, estudiante_id, fecha).
+-- Si existe una versión previa con menos columnas, se reemplaza.
+DROP INDEX IF EXISTS deporte.asistencias_unica_por_sesion;
 CREATE UNIQUE INDEX IF NOT EXISTS asistencias_unica_por_sesion
   ON deporte.asistencias (horario_id, estudiante_id, fecha);
 CREATE INDEX IF NOT EXISTS asistencias_estudiante_idx
