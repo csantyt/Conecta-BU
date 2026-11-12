@@ -121,7 +121,7 @@ const TRAMOS_BANDA = [
 /* ───────────── PIE DE PÁGINA (nuevo) ───────────── */
 
 type PieDePaginaProps = {
-  activos: typeof MODULOS;
+  activos: Array<(typeof MODULOS)[number]>;
   onAbrirModulo: (id: ModuloId) => void;
 };
 
