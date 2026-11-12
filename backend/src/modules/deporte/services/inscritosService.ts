@@ -1,6 +1,5 @@
 import { fn, col, Op, type Includeable, type WhereOptions } from "sequelize";
 import { Asistencia } from "../models/Asistencia.js";
-import { AsistenciaDetalle } from "../models/AsistenciaDetalle.js";
 import { Deporte } from "../models/Deporte.js";
 import { HorarioDeporte } from "../models/HorarioDeporte.js";
 import { InscripcionDeporte } from "../models/InscripcionDeporte.js";
@@ -29,50 +28,36 @@ export async function obtenerAsistenciaResumen(
   const resultado = new Map<string, { total: number; presentes: number }>();
   if (estudianteIds.length === 0) return resultado;
 
-  const filas = await AsistenciaDetalle.findAll({
+  const filas = await Asistencia.findAll({
     attributes: [
       "estudiante_id",
-      [fn("COUNT", col("AsistenciaDetalle.id")), "total"],
+      [fn("COUNT", col("Asistencia.id")), "total"],
+      [fn("COUNT", col("Asistencia.presente")), "presentes_tmp"],
     ],
     include: [
       {
-        model: Asistencia,
-        as: "asistencia",
+        model: HorarioDeporte,
+        as: "horario",
         attributes: [],
+        where: { deporte_id: deporteId },
         required: true,
-        include: [
-          {
-            model: HorarioDeporte,
-            as: "horario",
-            attributes: [],
-            where: { deporte_id: deporteId },
-            required: true,
-          },
-        ],
       },
     ],
     where: { estudiante_id: { [Op.in]: estudianteIds } },
     group: ["estudiante_id"],
     raw: true,
-  }) as unknown as Array<{ estudiante_id: string; total: string }>;
+  }) as unknown as Array<{ estudiante_id: string; total: string; [key: string]: unknown }>;
 
-  const presentesFilas = await AsistenciaDetalle.findAll({
-    attributes: ["estudiante_id", [fn("COUNT", col("AsistenciaDetalle.id")), "presentes"]],
+  // presentes requires conditional sum; redo efficiently
+  const presentesFilas = await Asistencia.findAll({
+    attributes: ["estudiante_id", [fn("COUNT", col("Asistencia.id")), "presentes"]],
     include: [
       {
-        model: Asistencia,
-        as: "asistencia",
+        model: HorarioDeporte,
+        as: "horario",
         attributes: [],
+        where: { deporte_id: deporteId },
         required: true,
-        include: [
-          {
-            model: HorarioDeporte,
-            as: "horario",
-            attributes: [],
-            where: { deporte_id: deporteId },
-            required: true,
-          },
-        ],
       },
     ],
     where: { estudiante_id: { [Op.in]: estudianteIds }, presente: true },

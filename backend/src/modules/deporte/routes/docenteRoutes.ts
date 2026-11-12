@@ -16,7 +16,7 @@ import {
   getHistorial,
   getHorariosDocente,
   getMisClases,
-  getMisClasesHoy,
+  getMisDeportes,
   getPerfilDocente,
   getReporte,
   getReporteExcel,
@@ -25,11 +25,6 @@ import {
   putAsistencia,
 } from "../controllers/docenteController.js";
 import { authMiddleware } from "../middlewares/authMiddleware.js";
-import {
-  propiedadAsistenciaMiddleware,
-  propiedadClaseBodyMiddleware,
-  propiedadClaseMiddleware,
-} from "../middlewares/propiedadRecursoMiddleware.js";
 import { soloDocentePisu } from "../middlewares/rbacMiddleware.js";
 
 export const docenteRoutes = Router();
@@ -40,21 +35,16 @@ docenteRoutes.get("/perfil", asyncHandler(getPerfilDocente));
 docenteRoutes.get("/mis-deportes", asyncHandler(getMisDeportes));
 docenteRoutes.get("/hoy", asyncHandler(getClasesHoy));
 docenteRoutes.get("/mis-clases", asyncHandler(getMisClases));
-docenteRoutes.get("/mis-clases/hoy", asyncHandler(getMisClasesHoy));
 docenteRoutes.get("/horarios", asyncHandler(getHorariosDocente));
-docenteRoutes.get(
-  "/clases/:horarioId/estudiantes",
-  propiedadClaseMiddleware(),
-  asyncHandler(getEstudiantesDeClase),
-);
+docenteRoutes.get("/historial", asyncHandler(getHistorial));
+
+docenteRoutes.get("/clases/:horarioId/estudiantes", asyncHandler(getEstudiantesDeClase));
+docenteRoutes.get("/clases/:horarioId/lista", asyncHandler(getSesionLista));
+
 docenteRoutes.get("/asistencias", asyncHandler(getAsistenciasDocente));
-docenteRoutes.post(
-  "/asistencia",
-  propiedadClaseBodyMiddleware(),
-  asyncHandler(postAsistencia),
-);
-docenteRoutes.put(
-  "/asistencia/:asistenciaId",
-  propiedadAsistenciaMiddleware,
-  asyncHandler(putAsistencia),
-);
+docenteRoutes.post("/asistencia", asyncHandler(postAsistencia));
+docenteRoutes.put("/asistencia/:asistenciaId", asyncHandler(putAsistencia));
+
+docenteRoutes.get("/deportes/:deporteId/estudiantes", asyncHandler(getEstudiantesDeDeporte));
+docenteRoutes.get("/deportes/:deporteId/reporte", asyncHandler(getReporte));
+docenteRoutes.get("/deportes/:deporteId/reporte/excel", asyncHandler(getReporteExcel));

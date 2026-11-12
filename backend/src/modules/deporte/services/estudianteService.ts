@@ -1,7 +1,6 @@
 import { Op } from "sequelize";
 import type { CategoriaPisu } from "../constantes.js";
 import { Asistencia } from "../models/Asistencia.js";
-import { AsistenciaDetalle } from "../models/AsistenciaDetalle.js";
 import { Deporte } from "../models/Deporte.js";
 import { EventoDeporte } from "../models/EventoDeporte.js";
 import { HorarioDeporte } from "../models/HorarioDeporte.js";
@@ -88,31 +87,24 @@ export type ResumenAsistenciaDeporte = {
 };
 
 export async function listarAsistenciasEstudiante(perfil: UsuarioPisuSesion) {
-  const asistencias = await AsistenciaDetalle.findAll({
+  const asistencias = await Asistencia.findAll({
     where: { estudiante_id: perfil.id },
     include: [
       {
-        model: Asistencia,
-        as: "asistencia",
-        include: [
-          {
-            model: HorarioDeporte,
-            as: "horario",
-            attributes: ["id", "deporte_id", "dia_semana", "hora_inicio", "hora_fin", "lugar"],
-            include: [{ model: Deporte, as: "deporte", attributes: ["id", "nombre"] }],
-          },
-        ],
+        model: HorarioDeporte,
+        as: "horario",
+        attributes: ["id", "deporte_id", "dia_semana", "hora_inicio", "hora_fin", "lugar"],
+        include: [{ model: Deporte, as: "deporte", attributes: ["id", "nombre"] }],
       },
     ],
-    order: [["fecha_registro", "DESC"]],
+    order: [["fecha", "DESC"]],
   });
 
   const porDeporte = new Map<string, ResumenAsistenciaDeporte>();
   for (const item of asistencias) {
-    const asistencia = item.get("asistencia") as
-      | (Asistencia & { horario?: HorarioDeporte & { deporte?: Deporte } })
+    const horario = item.get("horario") as
+      | (HorarioDeporte & { deporte?: Deporte })
       | undefined;
-    const horario = asistencia?.horario;
     const deporteId = horario?.deporte_id ?? "sin-deporte";
     const fila = porDeporte.get(deporteId) ?? {
       deporte_id: deporteId,
@@ -211,10 +203,13 @@ export async function obtenerMiHorario(
     (calendario[bloque.dia_semana] ?? (calendario[bloque.dia_semana] = [])).push(bloque);
   }
 
-  const totalInasistencias = await AsistenciaDetalle.count({
+  const totalInasistencias = await Asistencia.count({
     where: {
       estudiante_id: perfil.id,
-      presente: false,
+      [Op.or]: [
+        { presente: false },
+        { estado: { [Op.in]: ["AUSENTE", "Ausente", "ausente"] } },
+      ],
     },
   });
 
