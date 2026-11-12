@@ -65,6 +65,101 @@
   box-shadow: 0 12px 28px -14px rgb(238 125 0 / 0.85);
 }
 
+/* Tarjeta de vidrio reutilizable en las vistas del estudiante. */
+@utility tarjeta-vidrio {
+  background-color: rgb(255 255 255 / 0.05);
+  border: 1px solid rgb(255 255 255 / 0.1);
+  backdrop-filter: blur(14px);
+}
+
+/* Tarjeta clara (calendario, formularios) sobre el fondo nocturno. */
+@utility tarjeta-clara {
+  background-color: #ffffff;
+  color: var(--color-slate-900);
+  border: 1px solid rgb(255 255 255 / 0.6);
+  box-shadow: 0 24px 60px -32px rgb(5 12 44 / 0.8);
+}
+
+@keyframes uni-aparecer {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes uni-aparecer-escala {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes uni-flotar {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes uni-brillo {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@keyframes uni-girar {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animar-entrada {
+  animation: uni-aparecer 0.45s cubic-bezier(0.22, 0.85, 0.3, 1) both;
+}
+
+.animar-aparecer {
+  animation: uni-aparecer-escala 0.3s cubic-bezier(0.22, 0.85, 0.3, 1) both;
+}
+
+.animar-flotar {
+  animation: uni-flotar 5s ease-in-out infinite;
+}
+
+.animar-girar {
+  animation: uni-girar 0.8s linear infinite;
+}
+
+.skeleton-brillo {
+  background-image: linear-gradient(
+    100deg,
+    rgb(255 255 255 / 0.06) 20%,
+    rgb(255 255 255 / 0.16) 40%,
+    rgb(255 255 255 / 0.06) 60%
+  );
+  background-size: 200% 100%;
+  animation: uni-brillo 1.6s linear infinite;
+}
+
+/* Foco visible para navegación con teclado en toda la app. */
+:focus-visible {
+  outline: 2px solid var(--color-uni-cian);
+  outline-offset: 2px;
+}
+
 html,
 body,
 #root {
@@ -83,4 +178,16 @@ body {
   background-position: center top;
   background-attachment: fixed;
   -webkit-font-smoothing: antialiased;
+}
+
+/* Respeta la preferencia del sistema de reducir movimiento. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

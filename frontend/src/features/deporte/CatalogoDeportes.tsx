@@ -2,7 +2,19 @@ import { useMemo, useState } from "react";
 import { autoinscribirseDeporte, cancelarInscripcionPisu } from "../../api/deporte";
 import type { DeportePisu, PerfilPisu } from "../../types/deporte";
 import CompletarPerfilPisu from "./CompletarPerfilPisu";
-import { SportIcon } from "./ui";
+import { CoverDeporte } from "./estudianteUI";
+import {
+  Badge,
+  Button,
+  ConfirmDialog,
+  EmptyState,
+  Icon,
+  PageHeader,
+  ProgressBar,
+  SearchBar,
+  Select,
+  SkeletonCard,
+} from "./ui";
 import { DIAS, etiquetaHorario, mensajeError } from "./utils";
 
 type CatalogoDeportesProps = {
@@ -13,6 +25,14 @@ type CatalogoDeportesProps = {
   onError: (valor: string) => void;
   onRecargar: () => Promise<void>;
 };
+
+function tonoCupo(deporte: DeportePisu): "success" | "warning" | "danger" {
+  if (deporte.cupo_disponible <= 0) return "danger";
+  if (deporte.cupo_disponible <= Math.max(1, Math.ceil(deporte.cupo_maximo * 0.2))) {
+    return "warning";
+  }
+  return "success";
+}
 
 export default function CatalogoDeportes({
   deportes,
@@ -78,8 +98,21 @@ export default function CatalogoDeportes({
     }
   }
 
+  const hayFiltros = nombre.trim().length > 0 || dia !== "";
+
   return (
     <section>
+      <PageHeader
+        title="Catálogo de deportes"
+        description="Explora las disciplinas PISU, revisa horarios y cupos, e inscríbete en segundos."
+        action={
+          <Badge tone="info">
+            <Icon nombre="deportes" className="h-3.5 w-3.5" />
+            {deportes.length} disciplinas
+          </Badge>
+        }
+      />
+
       {perfil?.rol === "Estudiante" ? (
         <div className="mb-5">
           <CompletarPerfilPisu
@@ -90,28 +123,25 @@ export default function CatalogoDeportes({
           />
         </div>
       ) : null}
-      <div className="mb-5 grid gap-3 sm:grid-cols-[1fr_12rem]">
-        <label className="block">
-          <span className="mb-1 block text-xs uppercase tracking-wide text-slate-400">
-            Buscar por nombre
-          </span>
-          <input
-            value={nombre}
-            onChange={(event) => setNombre(event.target.value)}
-            placeholder="Fútbol, voleibol..."
-            className="w-full rounded-xl border border-white/15 bg-white/5 px-3 py-2.5 text-sm text-white outline-none ring-sky-400 placeholder:text-slate-400 focus:ring-2"
-          />
-        </label>
-        <label className="block">
-          <span className="mb-1 block text-xs uppercase tracking-wide text-slate-400">
-            Día
-          </span>
-          <select
+
+      <div className="mb-6 rounded-2xl border border-white/10 bg-white/[0.03] p-3 sm:p-4">
+        <div className="grid gap-3 sm:grid-cols-[1fr_14rem]">
+          <div>
+            <span className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+              Buscar
+            </span>
+            <SearchBar
+              value={nombre}
+              onChange={setNombre}
+              placeholder="Busca por nombre: fútbol, voleibol..."
+            />
+          </div>
+          <Select
+            label="Día de la semana"
             value={dia === "" ? "" : String(dia)}
             onChange={(event) =>
               setDia(event.target.value === "" ? "" : Number(event.target.value))
             }
-            className="w-full rounded-xl border border-white/15 bg-slate-900 px-3 py-2.5 text-sm text-white outline-none ring-sky-400 focus:ring-2"
           >
             <option value="">Todos los días</option>
             {DIAS.map((etiqueta, indice) => (
@@ -119,153 +149,209 @@ export default function CatalogoDeportes({
                 {etiqueta}
               </option>
             ))}
-          </select>
-        </label>
+          </Select>
+        </div>
+
+        <div
+          className="mt-3 flex flex-wrap items-center gap-1.5"
+          role="group"
+          aria-label="Filtrar por día"
+        >
+          <button
+            type="button"
+            aria-pressed={dia === ""}
+            onClick={() => setDia("")}
+            className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
+              dia === ""
+                ? "banda-uni text-uni-noche"
+                : "border border-white/15 text-slate-300 hover:bg-white/10"
+            }`}
+          >
+            Todos
+          </button>
+          {DIAS.slice(1).map((etiqueta, indice) => {
+            const valor = indice + 1;
+            return (
+              <button
+                key={etiqueta}
+                type="button"
+                aria-pressed={dia === valor}
+                onClick={() => setDia(dia === valor ? "" : valor)}
+                className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
+                  dia === valor
+                    ? "banda-uni text-uni-noche"
+                    : "border border-white/15 text-slate-300 hover:bg-white/10"
+                }`}
+              >
+                {etiqueta.slice(0, 3)}
+              </button>
+            );
+          })}
+        </div>
+
+        <p className="mt-3 text-xs text-slate-400" role="status" aria-live="polite">
+          {cargando
+            ? "Cargando disciplinas…"
+            : `${filtrados.length} de ${deportes.length} disciplinas`}
+        </p>
       </div>
 
       {cargando ? (
-        <p className="text-sm text-slate-400">Cargando disciplinas...</p>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {[0, 1, 2, 3, 4, 5].map((i) => (
+            <SkeletonCard key={i} />
+          ))}
+        </div>
       ) : filtrados.length === 0 ? (
-        <p className="rounded-2xl border border-white/10 bg-white/5 px-4 py-6 text-sm text-slate-300">
-          No hay deportes que coincidan con el filtro.
-        </p>
+        <EmptyState
+          title="No encontramos disciplinas"
+          description="Prueba con otro nombre o cambia el día. Si ya estás inscrito, revisa «Mis deportes»."
+          icono="buscar"
+          action={
+            hayFiltros ? (
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setNombre("");
+                  setDia("");
+                }}
+              >
+                Limpiar filtros
+              </Button>
+            ) : null
+          }
+        />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {filtrados.map((deporte) => {
-            const ocupados = Math.max(
-              0,
-              deporte.cupo_maximo - deporte.cupo_disponible,
-            );
+            const maximo = Math.max(1, deporte.cupo_maximo);
+            const ocupados = Math.max(0, maximo - deporte.cupo_disponible);
+            const tono = tonoCupo(deporte);
             return (
               <article
                 key={deporte.id}
-                className="flex flex-col rounded-2xl border border-white/10 bg-white/[0.04] p-5 text-slate-100"
+                className="group flex flex-col overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] transition-all duration-300 hover:-translate-y-0.5 hover:border-uni-cian/30 hover:shadow-xl hover:shadow-black/20"
               >
-                <div className="flex items-start gap-3">
-                  <div
-                    aria-hidden
-                    className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white/5 text-orange-300"
-                  >
-                    {deporte.imagen_url || deporte.imagen ? (
-                      <img
-                        src={String(deporte.imagen_url ?? deporte.imagen)}
-                        alt=""
-                        className="absolute inset-0 h-full w-full object-cover"
-                        onError={(event) => {
-                          event.currentTarget.style.display = "none";
-                        }}
-                      />
-                    ) : null}
-                    <SportIcon nombre={deporte.nombre} />
-                  </div>
-                  <div className="min-w-0">
-                    <h2 className="text-lg font-semibold">{deporte.nombre}</h2>
-                    <p className="mt-1 text-xs font-medium text-slate-400">
-                      Cupos {deporte.cupo_disponible}/{deporte.cupo_maximo}
-                      <span className="text-slate-400"> · {ocupados} inscritos</span>
-                    </p>
-                    <div className="mt-2">
-                      <div className="h-2 overflow-hidden rounded-full bg-slate-100">
-                        <div
-                          className={`h-full ${
-                            deporte.cupo_disponible <= 0
-                              ? "bg-rose-500"
-                              : deporte.cupo_disponible <=
-                                  Math.max(1, Math.ceil(deporte.cupo_maximo * 0.2))
-                                ? "bg-amber-500"
-                                : "bg-emerald-500"
-                          }`}
-                          style={{
-                            width: `${Math.min(100, Math.round(((deporte.cupo_maximo - deporte.cupo_disponible) / deporte.cupo_maximo) * 100))}%`,
-                          }}
-                        />
-                      </div>
-                      <p className="mt-1 text-[11px] font-medium uppercase tracking-wide text-slate-500">
-                        {deporte.cupo_disponible <= 0
-                          ? "Lleno"
-                          : deporte.cupo_disponible <=
-                              Math.max(1, Math.ceil(deporte.cupo_maximo * 0.2))
-                            ? "Últimos cupos"
-                            : "Disponible"}
-                        {" · "}
-                        {deporte.cupo_disponible} cupos libres de {deporte.cupo_maximo}
+                <CoverDeporte
+                  nombre={deporte.nombre}
+                  imagen={deporte.imagen_url ?? deporte.imagen}
+                  className="h-40 rounded-none"
+                >
+                  <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-2 p-4">
+                    <div className="min-w-0">
+                      <h2 className="truncate text-lg font-bold text-white">
+                        {deporte.nombre}
+                      </h2>
+                      <p className="text-[11px] font-medium uppercase tracking-wide text-slate-300">
+                        {deporte.cupo_disponible} cupos libres
                       </p>
                     </div>
-                  </div>
-                </div>
-
-                <p className="mt-3 line-clamp-2 text-sm leading-6 text-slate-300">
-                  {deporte.descripcion || "Disciplina del programa PISU."}
-                </p>
-
-                <div className="mt-3 flex flex-wrap gap-1.5">
-                  {deporte.categorias_permitidas.map((categoria) => (
-                    <span
-                      key={categoria}
-                      className="rounded-full bg-white/10 px-2.5 py-0.5 text-[11px] font-medium uppercase tracking-wide text-slate-200"
-                    >
-                      {categoria}
-                    </span>
-                  ))}
-                </div>
-
-                {deporte.horarios.length > 0 ? (
-                  <div className="mt-3 flex flex-wrap gap-1.5">
-                    {deporte.horarios.map((horario) => (
-                      <span
-                        key={horario.id}
-                        className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-700"
+                    {deporte.inscrito ? (
+                      <Badge tone="success">
+                        <Icon nombre="check" className="h-3 w-3" />
+                        Inscrito
+                      </Badge>
+                    ) : (
+                      <Badge
+                        tone={
+                          tono === "danger"
+                            ? "danger"
+                            : tono === "warning"
+                              ? "warning"
+                              : "info"
+                        }
                       >
-                        {etiquetaHorario(horario)}
-                        {horario.docente ? ` · ${horario.docente.nombre}` : ""}
-                      </span>
-                    ))}
+                        {tono === "danger"
+                          ? "Lleno"
+                          : tono === "warning"
+                            ? "Últimos cupos"
+                            : "Disponible"}
+                      </Badge>
+                    )}
                   </div>
-                ) : (
-                  <p className="mt-3 text-xs text-slate-400">
-                    Aún no hay horarios publicados.
-                  </p>
-                )}
+                </CoverDeporte>
 
-                <div className="mt-auto pt-4">
-                  {deporte.inscrito ? (
-                    <button
-                      type="button"
-                      disabled={enviandoId === deporte.id}
-                      onClick={() => void cancelar(deporte)}
-                      className="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm disabled:opacity-50"
-                    >
-                      Cancelar inscripción
-                    </button>
+                <div className="flex flex-1 flex-col gap-3 p-4">
+                  <p className="line-clamp-2 text-sm leading-6 text-slate-300">
+                    {deporte.descripcion || "Disciplina del programa PISU."}
+                  </p>
+
+                  <ProgressBar
+                    value={ocupados}
+                    max={maximo}
+                    label={`Cupos ocupados · ${ocupados}/${deporte.cupo_maximo}`}
+                    tone={tono}
+                  />
+
+                  {deporte.categorias_permitidas.length > 0 ? (
+                    <div className="flex flex-wrap gap-1.5">
+                      {deporte.categorias_permitidas.map((categoria) => (
+                        <span
+                          key={categoria}
+                          className="rounded-full bg-white/10 px-2.5 py-0.5 text-[11px] font-medium uppercase tracking-wide text-slate-200"
+                        >
+                          {categoria}
+                        </span>
+                      ))}
+                    </div>
+                  ) : null}
+
+                  {deporte.horarios.length > 0 ? (
+                    <ul className="flex flex-wrap gap-1.5">
+                      {deporte.horarios.map((horario) => (
+                        <li
+                          key={horario.id}
+                          className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-uni-noche/60 px-2.5 py-1 text-[11px] font-medium text-slate-200"
+                        >
+                          <Icon nombre="reloj" className="h-3 w-3 text-uni-cian" />
+                          {etiquetaHorario(horario)}
+                          {horario.docente ? ` · ${horario.docente.nombre}` : ""}
+                        </li>
+                      ))}
+                    </ul>
                   ) : (
-                    <button
-                      type="button"
-                      title={
-                        faltaCategoria
-                          ? "Completa tu categoría en tu perfil para inscribirte."
-                          : !puedeInscribirse
-                            ? "Solo estudiantes pueden inscribirse."
-                            : deporte.cupo_disponible <= 0
-                              ? "No hay cupos disponibles."
-                              : "Inscribirme"
-                      }
-                      disabled={
-                        enviandoId === deporte.id ||
-                        deporte.cupo_disponible <= 0 ||
-                        !puedeInscribirse
-                      }
-                      onClick={() => setPendiente(deporte)}
-                      className="w-full rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white disabled:opacity-50"
-                    >
-                      {deporte.cupo_disponible <= 0
-                        ? "Sin cupo"
-                        : faltaCategoria
-                          ? "Completa tu perfil"
-                          : puedeInscribirse
-                            ? "Inscribirme"
-                            : "Solo estudiantes"}
-                    </button>
+                    <p className="inline-flex items-center gap-1.5 text-xs text-slate-400">
+                      <Icon nombre="info" className="h-3.5 w-3.5" />
+                      Aún no hay horarios publicados.
+                    </p>
                   )}
+
+                  <div className="mt-auto pt-1">
+                    {deporte.inscrito ? (
+                      <Button
+                        variant="secondary"
+                        className="w-full"
+                        loading={enviandoId === deporte.id}
+                        onClick={() => void cancelar(deporte)}
+                      >
+                        Cancelar inscripción
+                      </Button>
+                    ) : (
+                      <Button
+                        className="w-full"
+                        loading={enviandoId === deporte.id}
+                        disabled={deporte.cupo_disponible <= 0 || !puedeInscribirse}
+                        title={
+                          faltaCategoria
+                            ? "Completa tu categoría en tu perfil para inscribirte."
+                            : !puedeInscribirse
+                              ? "Solo estudiantes pueden inscribirse."
+                              : deporte.cupo_disponible <= 0
+                                ? "No hay cupos disponibles."
+                                : "Inscribirme"
+                        }
+                        onClick={() => setPendiente(deporte)}
+                      >
+                        {deporte.cupo_disponible <= 0
+                          ? "Sin cupo"
+                          : faltaCategoria
+                            ? "Completa tu perfil"
+                            : puedeInscribirse
+                              ? "Inscribirme"
+                              : "Solo estudiantes"}
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </article>
             );
@@ -273,40 +359,13 @@ export default function CatalogoDeportes({
         </div>
       )}
 
-      {pendiente ? (
-        <div className="fixed inset-0 z-40 flex items-end justify-center bg-slate-950/70 p-4 sm:items-center">
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="confirmar-inscripcion"
-            className="w-full max-w-md rounded-2xl bg-white p-5 text-slate-900 shadow-2xl"
-          >
-            <h3 id="confirmar-inscripcion" className="text-lg font-semibold">
-              Confirmar inscripción
-            </h3>
-            <p className="mt-2 text-sm leading-6 text-slate-300">
-              ¿Deseas inscribirte en <strong>{pendiente.nombre}</strong>? Se
-              validarán cupo, categoría y cruces de horario.
-            </p>
-            <div className="mt-5 flex gap-2">
-              <button
-                type="button"
-                onClick={() => setPendiente(null)}
-                className="flex-1 rounded-xl border px-4 py-2.5 text-sm"
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                onClick={() => void confirmarInscripcion()}
-                className="flex-1 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white"
-              >
-                Confirmar
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
+      <ConfirmDialog
+        open={Boolean(pendiente)}
+        message={`¿Deseas inscribirte en ${pendiente?.nombre ?? "esta disciplina"}? Se validarán cupo, categoría y cruces de horario.`}
+        confirmLabel="Inscribirme"
+        onCancel={() => setPendiente(null)}
+        onConfirm={() => void confirmarInscripcion()}
+      />
     </section>
   );
 }

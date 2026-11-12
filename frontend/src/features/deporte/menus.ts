@@ -76,12 +76,18 @@ export const MENU_DOCENTE: MenuGroup[] = [
 
 export const MENU_ESTUDIANTE: MenuGroup[] = [
   {
-    title: "GENERAL",
+    title: "MI ESPACIO",
+    items: [
+      { key: "inicio", label: "Inicio", icon: "inicio" },
+      { key: "mis-deportes", label: "Mis deportes", icon: "inscritos" },
+      { key: "horario", label: "Mi horario", icon: "horarios" },
+    ],
+  },
+  {
+    title: "PARTICIPA",
     items: [
       { key: "catalogo", label: "Catálogo", icon: "deportes" },
       { key: "eventos", label: "Eventos", icon: "eventos" },
-      { key: "mis-deportes", label: "Mis deportes", icon: "inscritos" },
-      { key: "horario", label: "Mi horario", icon: "horarios" },
     ],
   },
 ];

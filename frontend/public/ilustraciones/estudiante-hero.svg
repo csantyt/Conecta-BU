@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 480" role="img" aria-label="Ilustración de estudiantes universitarios">
+  <defs>
+    <linearGradient id="cielo" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#29c5e6" stop-opacity="0.9"/>
+      <stop offset="1" stop-color="#2f6bff" stop-opacity="0.35"/>
+    </linearGradient>
+    <linearGradient id="sol" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffc20e"/>
+      <stop offset="1" stop-color="#ee7d00"/>
+    </linearGradient>
+  </defs>
+  <circle cx="560" cy="96" r="58" fill="url(#sol)" opacity="0.9"/>
+  <circle cx="560" cy="96" r="92" fill="none" stroke="#ffc20e" stroke-opacity="0.25" stroke-width="2"/>
+  <path d="M60 392c84-120 176-150 300-118 96 25 168 12 300-64v170H60z" fill="url(#cielo)" opacity="0.35"/>
+  <path d="M60 418c96-86 196-104 320-78 90 19 170 10 280-42v122H60z" fill="#0b1a4a"/>
+  <g fill="none" stroke="#29c5e6" stroke-opacity="0.45" stroke-width="2">
+    <circle cx="158" cy="140" r="44"/>
+    <circle cx="158" cy="140" r="26"/>
+    <path d="M420 74h88M420 94h58"/>
+  </g>
+  <g>
+    <circle cx="236" cy="238" r="30" fill="#ffc20e"/>
+    <path d="M188 360c0-30 21-54 48-54s48 24 48 54z" fill="#f7931e"/>
+    <rect x="176" y="352" width="120" height="16" rx="8" fill="#ee7d00"/>
+  </g>
+  <g>
+    <circle cx="388" cy="212" r="34" fill="#e8f9fd"/>
+    <path d="M330 352c0-36 26-64 58-64s58 28 58 64z" fill="#29c5e6"/>
+    <rect x="318" y="344" width="140" height="18" rx="9" fill="#12aed0"/>
+  </g>
+  <g>
+    <circle cx="536" cy="250" r="26" fill="#c6f0fa"/>
+    <path d="M494 356c0-27 19-49 42-49s42 22 42 49z" fill="#2f6bff"/>
+    <rect x="486" y="348" width="100" height="16" rx="8" fill="#1d4ed8"/>
+  </g>
+  <g fill="#29c5e6" opacity="0.6">
+    <circle cx="92" cy="284" r="5"/>
+    <circle cx="120" cy="312" r="3.5"/>
+    <circle cx="620" cy="210" r="5"/>
+    <circle cx="648" cy="240" r="3"/>
+  </g>
+  <path d="M86 196l6-14 6 14 14 6-14 6-6 14-6-14-14-6z" fill="#ffc20e" opacity="0.8"/>
+  <path d="M638 150l4-9 4 9 9 4-9 4-4 9-4-9-9-4z" fill="#29c5e6" opacity="0.8"/>
+</svg>

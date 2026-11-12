@@ -9,6 +9,7 @@ import DocenteHistorial from "../features/deporte/DocenteHistorial";
 import DocenteLlamarLista from "../features/deporte/DocenteLlamarLista";
 import DocenteMisDeportes from "../features/deporte/DocenteMisDeportes";
 import DocenteReporte from "../features/deporte/DocenteReporte";
+import EstudianteInicio from "../features/deporte/EstudianteInicio";
 import EstudianteMisDeportes from "../features/deporte/EstudianteMisDeportes";
 import MiActividadPisu from "../features/deporte/MiActividadPisu";
 import DeporteShell from "../features/deporte/DeporteShell";
@@ -162,6 +163,15 @@ export default function DeportePage({ usuario, onVolver }: DeportePageProps) {
   };
 
   const contenidoEstudiante = () => {
+    if (base === "inicio")
+      return (
+        <EstudianteInicio
+          perfil={perfil}
+          usuario={usuario}
+          onNavegar={navegar}
+          onError={mostrarError}
+        />
+      );
     if (base === "catalogo")
       return (
         <CatalogoDeportes
@@ -185,7 +195,8 @@ export default function DeportePage({ usuario, onVolver }: DeportePageProps) {
           onRecargar={recargar}
         />
       );
-    if (base === "horario") return <MiActividadPisu onError={mostrarError} />;
+    if (base === "horario")
+      return <MiActividadPisu onError={mostrarError} onNavegar={navegar} />;
     return null;
   };
 

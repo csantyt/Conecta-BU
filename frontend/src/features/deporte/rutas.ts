@@ -44,6 +44,7 @@ export const RUTAS = {
     eventos: "eventos",
   },
   estudiante: {
+    inicio: "inicio",
     catalogo: "catalogo",
     eventos: "eventos",
     misDeportes: "mis-deportes",
@@ -74,7 +75,7 @@ const VISTAS_POR_ROL: Record<RolPisu, readonly string[]> = {
 export function homeDeRol(rol: RolPisu): string {
   if (rol === "Administrador") return RUTAS.admin.panel;
   if (rol === "Docente") return RUTAS.docente.misDeportes;
-  return RUTAS.estudiante.catalogo;
+  return RUTAS.estudiante.inicio;
 }
 
 /** Divide una vista interna (`base:param1:param2`) en base y parámetros. */
