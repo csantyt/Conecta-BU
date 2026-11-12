@@ -44,27 +44,29 @@ export default function CalendarioMes({
   }
 
   return (
-    <div className="rounded-2xl border border-slate-200 p-3 sm:p-4">
+    <div className="rounded-2xl border border-white/10 bg-uni-noche/40 p-3 sm:p-4">
       <div className="mb-3 flex items-center justify-between">
         <button
           type="button"
-          className="rounded-lg px-2 py-1 text-sm hover:bg-slate-100"
           onClick={() => cambiarMes(-1)}
+          aria-label="Mes anterior"
+          className="grid h-8 w-8 place-items-center rounded-lg border border-white/10 text-sm text-slate-300 transition hover:bg-white/10 hover:text-white"
         >
           ←
         </button>
-        <p className="text-sm font-semibold">
+        <p className="text-sm font-semibold text-white" aria-live="polite">
           {NOMBRES_MES[mes]} {anio}
         </p>
         <button
           type="button"
-          className="rounded-lg px-2 py-1 text-sm hover:bg-slate-100"
           onClick={() => cambiarMes(1)}
+          aria-label="Mes siguiente"
+          className="grid h-8 w-8 place-items-center rounded-lg border border-white/10 text-sm text-slate-300 transition hover:bg-white/10 hover:text-white"
         >
           →
         </button>
       </div>
-      <div className="grid grid-cols-7 gap-1 text-center text-[11px] font-medium text-slate-500 sm:text-xs">
+      <div className="grid grid-cols-7 gap-1 text-center text-[11px] font-semibold uppercase tracking-wide text-slate-500 sm:text-xs">
         {["D", "L", "M", "M", "J", "V", "S"].map((dia, i) => (
           <span key={`${dia}-${i}`}>{dia}</span>
         ))}
@@ -79,27 +81,36 @@ export default function CalendarioMes({
           const pasado = fecha < hoy;
           const habil = habilitados.has(weekday) && !pasado;
           const seleccionado = valor === fecha;
+          const esHoy = fecha === hoy;
           return (
             <button
               key={fecha}
               type="button"
               disabled={!habil}
+              aria-label={`${dia} de ${NOMBRES_MES[mes]}${esHoy ? ", hoy" : ""}${habil ? ", con horarios" : ""}`}
+              aria-pressed={seleccionado}
               onClick={() => onChange(fecha)}
-              className={`aspect-square rounded-lg text-xs sm:text-sm ${
+              className={`relative aspect-square rounded-lg text-xs font-medium transition-all duration-200 sm:text-sm ${
                 seleccionado
-                  ? "bg-slate-900 text-white"
+                  ? "banda-uni font-bold text-uni-noche shadow-lg shadow-uni-cian/20"
                   : habil
-                    ? "bg-sky-50 text-slate-900 hover:bg-sky-100"
-                    : "text-slate-300"
-              }`}
+                    ? "bg-white/[0.06] text-slate-100 hover:bg-uni-cian/15 hover:text-white"
+                    : "cursor-not-allowed text-slate-600"
+              } ${esHoy && !seleccionado ? "ring-1 ring-inset ring-uni-cian/60" : ""}`}
             >
               {dia}
+              {habil && !seleccionado ? (
+                <span
+                  aria-hidden="true"
+                  className="absolute bottom-0.5 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-uni-cian/70"
+                />
+              ) : null}
             </button>
           );
         })}
       </div>
       <p className="mt-2 text-[11px] text-slate-500">
-        Los días en azul tienen horarios del servicio elegido.
+        Los días resaltados tienen horarios del servicio elegido.
       </p>
     </div>
   );
