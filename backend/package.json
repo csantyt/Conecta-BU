@@ -4,8 +4,8 @@
   "type": "module",
   "main": "dist/server.js",
   "scripts": {
-    "dev": "tsx watch src/server.ts",
-    "build": "tsc",
+    "dev": "node ./node_modules/tsx/dist/cli.mjs watch src/server.ts",
+    "build": "node ./node_modules/typescript/bin/tsc",
     "start": "node dist/server.js",
     "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --runInBand",
     "test:unit": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --runInBand --testPathPattern=tests/unit",
@@ -16,7 +16,6 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "exceljs": "^4.4.0",
@@ -32,7 +31,6 @@
     "@jest/globals": "^30.5.2",
     "@swc/core": "^1.16.2",
     "@swc/jest": "^0.2.39",
-    "@types/bcryptjs": "^2.4.6",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/jsonwebtoken": "^9.0.10",

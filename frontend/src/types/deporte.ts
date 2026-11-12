@@ -57,14 +57,6 @@ export type ClaseDocente = HorarioPisu & {
   deporte?: { id: string; nombre: string; descripcion?: string | null };
 };
 
-export type ComunicadoPisu = {
-  id: string;
-  titulo: string;
-  mensaje: string;
-  audiencia: "Todos" | "Docentes" | "Estudiantes";
-  fecha_creacion: string;
-};
-
 export type EstudianteDeClase = {
   inscripcion_id: string;
   estudiante: {

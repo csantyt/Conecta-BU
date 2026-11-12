@@ -2,7 +2,7 @@
 const config = {
   testEnvironment: "node",
   extensionsToTreatAsEsm: [".ts"],
-  setupFiles: ["<rootDir>/tests/setupEnv.ts"],
+  setupFiles: ["<rootDir>/tests/setupEnv.ts", "<rootDir>/tests/setupDb.ts"],
   testMatch: ["<rootDir>/tests/**/*.test.ts"],
   resolver: "<rootDir>/tests/jestResolver.cjs",
   forceExit: true,

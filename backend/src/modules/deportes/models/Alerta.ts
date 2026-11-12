@@ -7,19 +7,22 @@ import {
 } from "sequelize";
 import { sequelize } from "../../../config/database.js";
 import { SCHEMAS } from "../../../config/schemas.js";
+import type { AudienciaAlertaPisu } from "../constantes.js";
 
-export class Comunicado extends Model<
-  InferAttributes<Comunicado>,
-  InferCreationAttributes<Comunicado>
+export class Alerta extends Model<
+  InferAttributes<Alerta>,
+  InferCreationAttributes<Alerta>
 > {
   declare id: CreationOptional<string>;
   declare titulo: string;
   declare mensaje: string;
-  declare audiencia: "Todos" | "Docentes" | "Estudiantes";
+  declare audiencia: AudienciaAlertaPisu;
+  declare estudiante_id: CreationOptional<string | null>;
+  declare clave: CreationOptional<string | null>;
   declare fecha_creacion: CreationOptional<Date>;
 }
 
-Comunicado.init(
+Alerta.init(
   {
     id: {
       type: DataTypes.UUID,
@@ -37,7 +40,14 @@ Comunicado.init(
     audiencia: {
       type: DataTypes.STRING(32),
       allowNull: false,
-      defaultValue: "Todos",
+    },
+    estudiante_id: {
+      type: DataTypes.UUID,
+      allowNull: true,
+    },
+    clave: {
+      type: DataTypes.STRING(200),
+      allowNull: true,
     },
     fecha_creacion: {
       type: DataTypes.DATE,
@@ -48,7 +58,7 @@ Comunicado.init(
   {
     sequelize,
     schema: SCHEMAS.deporte,
-    tableName: "comunicados",
+    tableName: "alertas",
     timestamps: false,
   },
 );
