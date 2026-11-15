@@ -13,7 +13,7 @@
  * - Lo consume `docenteController.ts`, que traduce los errores a códigos HTTP.
  */
 
-import { Op, UniqueConstraintError, fn, col, literal } from "sequelize";
+import { Op, UniqueConstraintError, fn, col, literal, QueryTypes } from "sequelize";
 import { sequelize } from "../../../config/database.js";
 import type { UsuarioPisuSesion } from "../middlewares/tipos.js";
 import {
@@ -237,6 +237,14 @@ export type MiDeporte = {
   cupos_disponibles: number;
   porcentaje_asistencia: number | null;
   clases_hoy: number;
+  /** Total de sesiones con asistencia registrada en este deporte (por este docente). */
+  total_sesiones_registradas: number;
+  /** Total de marcas de asistencia registradas (presentes + ausentes). */
+  total_asistencias_registradas: number;
+  /** Total de ausencias registradas. */
+  total_faltas: number;
+  /** Fecha de la última sesión con asistencia registrada. */
+  ultima_actividad: string | null;
   horarios: HorarioResumen[];
 };
 
@@ -283,53 +291,97 @@ export async function listarMisDeportes(
     return [];
   }
 
-  const [inscritosFilas, asistenciaTotales, asistenciaPresentes] = await Promise.all([
-    InscripcionDeporte.findAll({
-      attributes: ["deporte_id", [fn("COUNT", col("id")), "total"]],
-      where: { deporte_id: { [Op.in]: ids }, estado: "Activa" },
-      group: ["deporte_id"],
-      raw: true,
-    }) as unknown as Promise<Array<{ deporte_id: string; total: string }>>,
-    Asistencia.findAll({
-      attributes: [
-        [col("horario.deporte_id"), "deporte_id"],
-        [fn("COUNT", col("Asistencia.id")), "total"],
-      ],
-      include: [
-        {
-          model: HorarioDeporte,
-          as: "horario",
-          attributes: [],
-          where: { docente_id: perfil.id },
-          required: true,
-        },
-      ],
-      group: [col("horario.deporte_id")],
-      raw: true,
-    }) as unknown as Promise<Array<{ deporte_id: string; total: string }>>,
-    Asistencia.findAll({
-      attributes: [
-        [col("horario.deporte_id"), "deporte_id"],
-        [fn("COUNT", col("Asistencia.id")), "presentes"],
-      ],
-      include: [
-        {
-          model: HorarioDeporte,
-          as: "horario",
-          attributes: [],
-          where: { docente_id: perfil.id },
-          required: true,
-        },
-      ],
-      where: { presente: true },
-      group: [col("horario.deporte_id")],
-      raw: true,
-    }) as unknown as Promise<Array<{ deporte_id: string; presentes: string }>>,
-  ]);
+  const [inscritosFilas, asistenciaTotales, asistenciaPresentes, sesionesPorDeporte, ultimaActividad] =
+    await Promise.all([
+      InscripcionDeporte.findAll({
+        attributes: ["deporte_id", [fn("COUNT", col("id")), "total"]],
+        where: { deporte_id: { [Op.in]: ids }, estado: "Activa" },
+        group: ["deporte_id"],
+        raw: true,
+      }) as unknown as Promise<Array<{ deporte_id: string; total: string }>>,
+      Asistencia.findAll({
+        attributes: [
+          [col("horario.deporte_id"), "deporte_id"],
+          [fn("COUNT", col("Asistencia.id")), "total"],
+        ],
+        include: [
+          {
+            model: HorarioDeporte,
+            as: "horario",
+            attributes: [],
+            where: { docente_id: perfil.id },
+            required: true,
+          },
+        ],
+        group: [col("horario.deporte_id")],
+        raw: true,
+      }) as unknown as Promise<Array<{ deporte_id: string; total: string }>>,
+      Asistencia.findAll({
+        attributes: [
+          [col("horario.deporte_id"), "deporte_id"],
+          [fn("COUNT", col("Asistencia.id")), "presentes"],
+        ],
+        include: [
+          {
+            model: HorarioDeporte,
+            as: "horario",
+            attributes: [],
+            where: { docente_id: perfil.id },
+            required: true,
+          },
+        ],
+        where: { presente: true },
+        group: [col("horario.deporte_id")],
+        raw: true,
+      }) as unknown as Promise<Array<{ deporte_id: string; presentes: string }>>,
+      // Número de sesiones distintas (horario_id + fecha) con asistencia registrada, por deporte.
+      Asistencia.findAll({
+        attributes: [
+          [col("horario.deporte_id"), "deporte_id"],
+          [fn("COUNT", fn("DISTINCT", col("Asistencia.horario_id"), col("Asistencia.fecha"))), "sesiones"],
+        ],
+        include: [
+          {
+            model: HorarioDeporte,
+            as: "horario",
+            attributes: [],
+            where: { docente_id: perfil.id },
+            required: true,
+          },
+        ],
+        group: [col("horario.deporte_id")],
+        raw: true,
+      }) as unknown as Promise<Array<{ deporte_id: string; sesiones: string }>>,
+      // Última fecha con asistencia registrada por este docente (agrupada por deporte).
+      Asistencia.findAll({
+        attributes: [
+          [col("horario.deporte_id"), "deporte_id"],
+          [fn("MAX", col("Asistencia.fecha")), "ultima_fecha"],
+        ],
+        include: [
+          {
+            model: HorarioDeporte,
+            as: "horario",
+            attributes: [],
+            where: { docente_id: perfil.id },
+            required: true,
+          },
+        ],
+        group: [col("horario.deporte_id")],
+        raw: true,
+      }) as unknown as Promise<Array<{ deporte_id: string; ultima_fecha: string | Date }>>,
+    ]);
 
   const inscritosMap = new Map(inscritosFilas.map((f) => [f.deporte_id, Number(f.total)]));
   const totalMap = new Map(asistenciaTotales.map((f) => [f.deporte_id, Number(f.total)]));
   const presentesMap = new Map(asistenciaPresentes.map((f) => [f.deporte_id, Number(f.presentes)]));
+  const sesionesMap = new Map(sesionesPorDeporte.map((f) => [f.deporte_id, Number(f.sesiones)]));
+  const ultimaMap = new Map(
+    ultimaActividad.map((f) => [
+      f.deporte_id,
+      f.ultima_fecha instanceof Date ? f.ultima_fecha.toISOString().split("T")[0] : String(f.ultima_fecha),
+    ]),
+  );
 
   return ids.map((id) => {
     const deporte = deportes.get(id)!;
@@ -337,6 +389,8 @@ export async function listarMisDeportes(
     const inscritos = inscritosMap.get(id) ?? 0;
     const total = totalMap.get(id) ?? 0;
     const presentes = presentesMap.get(id) ?? 0;
+    const sesiones = sesionesMap.get(id) ?? 0;
+    const faltas = total - presentes;
     return {
       id: deporte.id,
       nombre: deporte.nombre,
@@ -348,6 +402,10 @@ export async function listarMisDeportes(
       cupos_disponibles: Math.max(0, deporte.cupo_maximo - inscritos),
       porcentaje_asistencia: total > 0 ? Math.round((presentes / total) * 100) : null,
       clases_hoy: delDeporte.filter((h) => h.dia_semana === ahora.getDay()).length,
+      total_sesiones_registradas: sesiones,
+      total_asistencias_registradas: total,
+      total_faltas: faltas,
+      ultima_actividad: ultimaMap.get(id) ?? null,
       horarios: delDeporte.map((h) => ({
         id: h.id,
         dia_semana: h.dia_semana,
@@ -1085,6 +1143,115 @@ export async function listarEstudiantesDeDeporte(
     deporte: { id: deporte.id, nombre: deporte.nombre, cupo_maximo: deporte.cupo_maximo },
     dictadas,
     estudiantes,
+  };
+}
+
+/**
+ * Lista los inscritos activos de un deporte con su resumen de asistencia.
+ * Similar a la vista de compañeros del estudiante, pero con el detalle de
+ * asistencia que el docente necesita.
+ */
+export type InscritoDeporteDocente = {
+  estudiante_id: string;
+  nombre: string;
+  documento: string | null;
+  correo: string | null;
+  categoria: string | null;
+  fecha_inscripcion: string | null;
+  presentes: number;
+  ausentes: number;
+  total: number;
+  porcentaje: number | null;
+  estado: EstadoAsistencia;
+};
+
+export async function listarInscritosDeporteDocente(
+  perfil: UsuarioPisuSesion,
+  deporteId: string,
+): Promise<{ deporte: { id: string; nombre: string; cupo_maximo: number }; total: number; inscritos: InscritoDeporteDocente[] }> {
+  const deporte = await asegurarDeporteDelDocente({ perfil, deporteId });
+
+  const inscripciones = await InscripcionDeporte.findAll({
+    where: { deporte_id: deporteId, estado: "Activa" },
+    include: [
+      {
+        model: UsuarioPisu,
+        as: "estudiante",
+        attributes: ["id", "nombre", "documento", "correo", "categoria", "fecha_creacion"],
+      },
+    ],
+    order: [["fecha_inscripcion", "ASC"]],
+  });
+
+  const dictadas = await contarClasesDictadas(deporteId);
+
+  // Presentes por estudiante (solo sesiones de este deporte).
+  const presentesFilas = (await Asistencia.findAll({
+    attributes: ["estudiante_id", [fn("COUNT", col("Asistencia.id")), "presentes"]],
+    include: [
+      {
+        model: HorarioDeporte,
+        as: "horario",
+        attributes: [],
+        where: { deporte_id: deporteId },
+        required: true,
+      },
+    ],
+    where: { presente: true },
+    group: ["estudiante_id"],
+    raw: true,
+  })) as unknown as Array<{ estudiante_id: string; presentes: string }>;
+  const presentesMap = new Map(presentesFilas.map((f) => [f.estudiante_id, Number(f.presentes)]));
+
+  // Total de asistencias (presentes + ausentes) por estudiante.
+  const totalesFilas = (await Asistencia.findAll({
+    attributes: ["estudiante_id", [fn("COUNT", col("Asistencia.id")), "total"]],
+    include: [
+      {
+        model: HorarioDeporte,
+        as: "horario",
+        attributes: [],
+        where: { deporte_id: deporteId },
+        required: true,
+      },
+    ],
+    group: ["estudiante_id"],
+    raw: true,
+  })) as unknown as Array<{ estudiante_id: string; total: string }>;
+  const totalesMap = new Map(totalesFilas.map((f) => [f.estudiante_id, Number(f.total)]));
+
+  const inscritos: InscritoDeporteDocente[] = inscripciones
+    .map((ins) => {
+      const est = ins.get("estudiante") as UsuarioPisu | undefined;
+      const presentes = presentesMap.get(ins.estudiante_id) ?? 0;
+      const totalSesiones = totalesMap.get(ins.estudiante_id) ?? 0;
+      const ausentes = totalSesiones - presentes;
+      return {
+        estudiante_id: ins.estudiante_id,
+        nombre: est?.nombre ?? "Estudiante",
+        documento: est?.documento ?? null,
+        correo: est?.correo ?? null,
+        categoria: est?.categoria ?? null,
+        fecha_inscripcion: ((
+          ins.fecha_inscripcion
+            ? ins.fecha_inscripcion instanceof Date
+              ? ins.fecha_inscripcion.toISOString().split("T")[0]
+              : String(ins.fecha_inscripcion)
+            : null
+        ) as string | null),
+        presentes,
+        ausentes,
+        total: totalSesiones,
+        porcentaje: dictadas > 0 ? Math.round((presentes / dictadas) * 100) : null,
+        estado: clasificarAsistencia({ presentes, dictadas }),
+      };
+    })
+    .sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
+
+  return {
+    deporte: { id: deporte.id, nombre: deporte.nombre, cupo_maximo: deporte.cupo_maximo },
+    total: inscritos.length,
+    inscritos,
   };
 }
 
