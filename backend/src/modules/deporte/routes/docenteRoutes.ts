@@ -15,6 +15,7 @@ import {
   getEstudiantesDeDeporte,
   getHistorial,
   getHorariosDocente,
+  getInscritosDeporte,
   getMisClases,
   getMisDeportes,
   getPerfilDocente,
@@ -46,5 +47,6 @@ docenteRoutes.post("/asistencia", asyncHandler(postAsistencia));
 docenteRoutes.put("/asistencia/:asistenciaId", asyncHandler(putAsistencia));
 
 docenteRoutes.get("/deportes/:deporteId/estudiantes", asyncHandler(getEstudiantesDeDeporte));
+docenteRoutes.get("/deportes/:deporteId/inscritos", asyncHandler(getInscritosDeporte));
 docenteRoutes.get("/deportes/:deporteId/reporte", asyncHandler(getReporte));
 docenteRoutes.get("/deportes/:deporteId/reporte/excel", asyncHandler(getReporteExcel));

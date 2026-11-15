@@ -123,7 +123,7 @@ async function obtenerOCrearDocente(params: {
   nombre: string;
   correo: string;
 }): Promise<UsuarioPisu> {
-  const [docente] = await UsuarioPisu.findOrCreate({
+  const [docente, creado] = await UsuarioPisu.findOrCreate({
     where: { correo: params.correo },
     defaults: {
       nombre: params.nombre,
@@ -133,6 +133,16 @@ async function obtenerOCrearDocente(params: {
       estado: true,
     },
   });
+  // Si la ficha ya existía (no se acaba de crear), asegurar que tenga rol Docente
+  // y los campos básicos actualizados. Esto evita que un primer ingreso con
+  // Google (que crea la ficha como Estudiante) impida el acceso como docente.
+  if (!creado && docente.rol !== "Docente") {
+    await docente.update({
+      nombre: params.nombre,
+      rol: "Docente",
+      estado: true,
+    });
+  }
   return docente;
 }
 

@@ -72,6 +72,12 @@ export default function DocenteMisDeportes({ onError, onNavegar }: Props) {
 
   const totalInscritos = deportes.reduce((acc, d) => acc + d.inscritos, 0);
   const clasesHoy = deportes.reduce((acc, d) => acc + d.clases_hoy, 0);
+  const totalSesiones = deportes.reduce((acc, d) => acc + (d.total_sesiones_registradas ?? 0), 0);
+  const totalAsistencias = deportes.reduce(
+    (acc, d) => acc + (d.total_asistencias_registradas ?? 0),
+    0,
+  );
+  const totalFaltas = deportes.reduce((acc, d) => acc + (d.total_faltas ?? 0), 0);
   const conPorcentaje = deportes.filter((d) => d.porcentaje_asistencia !== null);
   const promedioAsistencia = conPorcentaje.length
     ? Math.round(
@@ -124,6 +130,18 @@ export default function DocenteMisDeportes({ onError, onNavegar }: Props) {
             {promedioAsistencia === null ? "—" : `${promedioAsistencia}%`}
           </p>
           <p className="mt-1 text-xs uppercase tracking-wide text-slate-400">Asistencia promedio</p>
+        </Card>
+        <Card>
+          <p className="text-3xl font-semibold text-orange-300">{totalSesiones}</p>
+          <p className="mt-1 text-xs uppercase tracking-wide text-slate-400">Sesiones registradas</p>
+        </Card>
+        <Card>
+          <p className="text-3xl font-semibold text-orange-300">{totalAsistencias}</p>
+          <p className="mt-1 text-xs uppercase tracking-wide text-slate-400">Marcas de asistencia</p>
+        </Card>
+        <Card>
+          <p className="text-3xl font-semibold text-orange-300">{totalFaltas}</p>
+          <p className="mt-1 text-xs uppercase tracking-wide text-slate-400">Faltas registradas</p>
         </Card>
       </div>
 
@@ -231,6 +249,26 @@ export default function DocenteMisDeportes({ onError, onNavegar }: Props) {
               <ProgressBar value={deporte.porcentaje_asistencia ?? 0} />
 
               <div className="space-y-2">
+                <div className="grid gap-2 sm:grid-cols-2 text-xs">
+                  <div className="rounded-xl border border-white/10 bg-white/[0.03] p-2">
+                    <p className="text-slate-400 uppercase tracking-wider">Sesiones</p>
+                    <p className="font-semibold text-white">{deporte.total_sesiones_registradas ?? 0}</p>
+                  </div>
+                  <div className="rounded-xl border border-white/10 bg-white/[0.03] p-2">
+                    <p className="text-slate-400 uppercase tracking-wider">Asistencias</p>
+                    <p className="font-semibold text-white">{deporte.total_asistencias_registradas ?? 0}</p>
+                  </div>
+                  <div className="rounded-xl border border-white/10 bg-white/[0.03] p-2">
+                    <p className="text-slate-400 uppercase tracking-wider">Faltas</p>
+                    <p className="font-semibold text-white text-rose-300">{deporte.total_faltas ?? 0}</p>
+                  </div>
+                  <div className="rounded-xl border border-white/10 bg-white/[0.03] p-2">
+                    <p className="text-slate-400 uppercase tracking-wider">Última actividad</p>
+                    <p className="font-semibold text-white">
+                      {deporte.ultima_actividad ? fechaLocal(new Date(deporte.ultima_actividad)) : "—"}
+                    </p>
+                  </div>
+                </div>
                 {deporte.horarios.length === 0 ? (
                   <p className="rounded-xl border border-amber-400/30 bg-amber-400/10 px-3 py-2 text-xs text-amber-200">
                     Deporte asignado. Aún no tiene horarios publicados: pídele al

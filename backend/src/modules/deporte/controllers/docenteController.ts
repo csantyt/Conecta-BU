@@ -29,6 +29,7 @@ import {
   listarEstudiantesDeClase,
   listarEstudiantesDeDeporte,
   listarHistorialAsistencias,
+  listarInscritosDeporteDocente,
   listarMisClases,
   listarMisDeportes,
   obtenerSesionLista,
@@ -298,6 +299,27 @@ export async function getEstudiantesDeDeporte(req: Request, res: Response): Prom
   }
   try {
     const resultado = await listarEstudiantesDeDeporte(perfil, deporteId);
+    res.status(200).json(resultado);
+  } catch (error) {
+    if (!responderErrorDocente(res, error)) {
+      throw error;
+    }
+  }
+}
+
+export async function getInscritosDeporte(req: Request, res: Response): Promise<void> {
+  const perfil = req.usuarioPisu;
+  if (!perfil) {
+    res.status(401).json({ message: "No autenticado." });
+    return;
+  }
+  const deporteId = idDeRuta(req, "deporteId");
+  if (!deporteId) {
+    res.status(400).json({ message: "Identificador de deporte inválido." });
+    return;
+  }
+  try {
+    const resultado = await listarInscritosDeporteDocente(perfil, deporteId);
     res.status(200).json(resultado);
   } catch (error) {
     if (!responderErrorDocente(res, error)) {
