@@ -11,6 +11,7 @@ import type {
   EstudianteDeClase,
   EstudianteDeporteDocente,
   EventoPisu,
+  InscritoDeporteDocente,
   GrupoInscritosDeporte,
   HorarioAdminPisu,
   HorarioEstudiantePisu,
@@ -507,6 +508,19 @@ export async function obtenerEstudiantesDeporteDocente(deporteId: string): Promi
     dictadas: number;
     estudiantes: EstudianteDeporteDocente[];
   }>(`/docente/deportes/${deporteId}/estudiantes`);
+  return data;
+}
+
+export async function obtenerInscritosDeporteDocente(deporteId: string): Promise<{
+  deporte: { id: string; nombre: string; cupo_maximo: number };
+  total: number;
+  inscritos: InscritoDeporteDocente[];
+}> {
+  const { data } = await api.get<{
+    deporte: { id: string; nombre: string; cupo_maximo: number };
+    total: number;
+    inscritos: InscritoDeporteDocente[];
+  }>(`/docente/deportes/${deporteId}/inscritos`);
   return data;
 }
 

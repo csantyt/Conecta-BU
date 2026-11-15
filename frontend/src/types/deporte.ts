@@ -272,6 +272,14 @@ export type MiDeporteDocente = {
   cupos_disponibles: number;
   porcentaje_asistencia: number | null;
   clases_hoy: number;
+  /** Total de sesiones con asistencia registrada en este deporte (por este docente). */
+  total_sesiones_registradas: number;
+  /** Total de marcas de asistencia registradas (presentes + ausentes). */
+  total_asistencias_registradas: number;
+  /** Total de ausencias registradas. */
+  total_faltas: number;
+  /** Fecha de la última sesión con asistencia registrada. */
+  ultima_actividad: string | null;
   horarios: HorarioResumenDocente[];
 };
 
@@ -342,6 +350,20 @@ export type EstudianteDeporteDocente = {
   faltas: number;
   dictadas: number;
   porcentaje: number;
+  estado: EstadoAsistenciaTexto;
+};
+
+export type InscritoDeporteDocente = {
+  estudiante_id: string;
+  nombre: string;
+  documento: string | null;
+  correo: string | null;
+  categoria: string | null;
+  fecha_inscripcion: string | null;
+  presentes: number;
+  ausentes: number;
+  total: number;
+  porcentaje: number | null;
   estado: EstadoAsistenciaTexto;
 };
 
