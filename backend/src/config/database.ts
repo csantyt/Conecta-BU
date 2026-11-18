@@ -17,6 +17,15 @@ export const sequelize = new Sequelize(databaseUrl, {
   define: {
     underscored: true,
   },
+  dialectOptions:
+    process.env["NODE_ENV"] === "production" || process.env["SUPABASE_SSL"] === "true"
+      ? {
+          ssl: {
+            require: true,
+            rejectUnauthorized: false,
+          },
+        }
+      : {},
 });
 
 export async function probarConexion(): Promise<void> {
