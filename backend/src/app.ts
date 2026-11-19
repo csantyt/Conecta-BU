@@ -15,7 +15,20 @@ import iaRoutes from "./modules/ia/routes/iaRoutes.js";
 
 const app = express();
 
-app.use(cors());
+// En producción se listan los orígenes permitidos en CORS_ORIGINS
+// (separados por comas). Sin la variable se mantiene abierto, útil en local.
+const origenesPermitidos = (process.env["CORS_ORIGINS"] ?? "")
+  .split(",")
+  .map((origen) => origen.trim().replace(/\/$/, ""))
+  .filter(Boolean);
+
+app.use(
+  cors({
+    origin: origenesPermitidos.length > 0 ? origenesPermitidos : true,
+    // Necesario para que el navegador lea el nombre del Excel descargado.
+    exposedHeaders: ["Content-Disposition"],
+  }),
+);
 app.use(express.json());
 
 app.use("/api/v1/auth", authRoutes);

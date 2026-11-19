@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "type": "module",
   "main": "dist/server.js",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "dev": "node ./node_modules/tsx/dist/cli.mjs watch src/server.ts",
     "build": "node ./node_modules/typescript/bin/tsc",

@@ -1,0 +1,31 @@
+services:
+  - type: web
+    name: conecta-bu-api
+    runtime: node
+    plan: free
+    rootDir: backend
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm start
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: SUPABASE_SSL
+        value: "true"
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_HOSTED_DOMAIN
+        value: uniautonoma.edu.co
+      - key: ADMIN_EMAILS
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
+      - key: N8N_WEBHOOK_ORIENTACION
+        sync: false
+      - key: N8N_WEBHOOK_RECOMENDACIONES
+        sync: false
