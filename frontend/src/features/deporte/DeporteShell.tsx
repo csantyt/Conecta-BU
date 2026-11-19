@@ -247,7 +247,15 @@ export default function DeporteShell({ usuario, rolPisu, view, setView, onVolver
             >
               <Icon nombre="flecha" className="h-5 w-5 rotate-180" />
             </button>
-            <Avatar nombre={nombre} size="sm" className="ml-1 hidden sm:inline-flex" />
+            <div className="ml-1 hidden items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-2.5 py-1.5 sm:flex">
+              <Avatar nombre={nombre} size="sm" />
+              <div className="text-right">
+                <p className="max-w-[10rem] truncate text-[11px] font-bold text-white">{nombre}</p>
+                <p className="text-[9px] font-bold uppercase tracking-wider text-uni-cian">
+                  {ETIQUETA_ROL[rol]}
+                </p>
+              </div>
+            </div>
           </div>
         </header>
 

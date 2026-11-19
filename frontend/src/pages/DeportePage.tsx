@@ -140,7 +140,14 @@ export default function DeportePage({ usuario, onVolver }: DeportePageProps) {
   const { base, params } = parseVista(vista);
 
   const contenidoDocente = () => {
-    if (base === "mis-deportes") return <DocenteMisDeportes onError={mostrarError} onNavegar={navegar} />;
+    if (base === "mis-deportes")
+      return (
+        <DocenteMisDeportes
+          usuario={usuario}
+          onError={mostrarError}
+          onNavegar={navegar}
+        />
+      );
     if (base === "hoy") return <DocenteClasesHoy onError={mostrarError} onNavegar={navegar} />;
     if (base === "eventos")
       return <DocenteEventos deporteInicial={params[0]} onAviso={mostrarAviso} onError={mostrarError} />;

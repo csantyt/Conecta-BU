@@ -10,10 +10,24 @@
 import { useCallback, useEffect, useState } from "react";
 import { obtenerEventosDocente, obtenerMisDeportesDocente } from "../../api/deporte";
 import type { EventoPisu, MiDeporteDocente } from "../../types/deporte";
-import { Badge, Button, Card, EmptyState, ErrorState, PageHeader, ProgressBar, Skeleton, SportIcon } from "./ui";
+import PanelHero from "./PanelHero";
+import {
+  Badge,
+  Button,
+  Card,
+  EmptyState,
+  ErrorState,
+  Icon,
+  ProgressBar,
+  Skeleton,
+  SportIcon,
+  StatCard,
+  Tabs,
+} from "./ui";
 import { DIAS, fechaLocal, horaCorta, mensajeError } from "./utils";
 
 type Props = {
+  usuario: { nombre_completo?: string; email: string };
   onError: (mensaje: string) => void;
   onNavegar: (vista: string) => void;
 };
@@ -27,7 +41,7 @@ function tonoEtiqueta(etiqueta: string): "neutral" | "success" | "warning" {
   return "neutral";
 }
 
-export default function DocenteMisDeportes({ onError, onNavegar }: Props) {
+export default function DocenteMisDeportes({ usuario, onError, onNavegar }: Props) {
   const [deportes, setDeportes] = useState<MiDeporteDocente[]>([]);
   const [eventos, setEventos] = useState<EventoPisu[]>([]);
   const [cargando, setCargando] = useState(true);
@@ -89,14 +103,14 @@ export default function DocenteMisDeportes({ onError, onNavegar }: Props) {
 
   if (cargando) {
     return (
-      <div className="space-y-4">
-        <Skeleton className="h-8 w-56" />
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="space-y-5">
+        <Skeleton className="h-56 w-full rounded-3xl" />
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {[0, 1, 2, 3].map((i) => (
-            <Skeleton key={i} className="h-24" />
+            <Skeleton key={i} className="h-28 w-full rounded-2xl" />
           ))}
         </div>
-        <Skeleton className="h-64" />
+        <Skeleton className="h-64 w-full rounded-2xl" />
       </div>
     );
   }
@@ -105,62 +119,92 @@ export default function DocenteMisDeportes({ onError, onNavegar }: Props) {
     return <ErrorState message={error} onRetry={() => void cargar()} />;
   }
 
+  const nombre = usuario.nombre_completo || usuario.email;
+  const chipClass =
+    "inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-[11px] font-semibold text-slate-100 ring-1 ring-white/10";
+
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Mis deportes"
-        description="Consulta tu semana, tus deportes asignados y el estado de la asistencia."
+    <div className="space-y-5">
+      <PanelHero
+        nombre={nombre}
+        rol="Docente"
+        descripcion="Consulta tu semana, tus deportes asignados y el estado de la asistencia."
+        chips={
+          <>
+            <span className={chipClass}>
+              <Icon nombre="deportes" className="h-3.5 w-3.5 text-uni-cian" />
+              {deportes.length} deportes asignados
+            </span>
+            <span className={chipClass}>
+              <Icon nombre="usuarios" className="h-3.5 w-3.5 text-uni-amarillo" />
+              {totalInscritos} estudiantes inscritos
+            </span>
+            <span className={chipClass}>
+              <Icon nombre="horario" className="h-3.5 w-3.5 text-emerald-300" />
+              {clasesHoy} clases hoy
+            </span>
+            <span className={chipClass}>
+              <Icon nombre="racha" className="h-3.5 w-3.5 text-uni-cian" />
+              {promedioAsistencia === null ? "—" : `${promedioAsistencia}%`} asistencia promedio
+            </span>
+          </>
+        }
       />
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <p className="text-3xl font-semibold text-orange-300">{deportes.length}</p>
-          <p className="mt-1 text-xs uppercase tracking-wide text-slate-400">Deportes asignados</p>
-        </Card>
-        <Card>
-          <p className="text-3xl font-semibold text-orange-300">{totalInscritos}</p>
-          <p className="mt-1 text-xs uppercase tracking-wide text-slate-400">Estudiantes inscritos</p>
-        </Card>
-        <Card>
-          <p className="text-3xl font-semibold text-orange-300">{clasesHoy}</p>
-          <p className="mt-1 text-xs uppercase tracking-wide text-slate-400">Clases hoy</p>
-        </Card>
-        <Card>
-          <p className="text-3xl font-semibold text-orange-300">
-            {promedioAsistencia === null ? "—" : `${promedioAsistencia}%`}
-          </p>
-          <p className="mt-1 text-xs uppercase tracking-wide text-slate-400">Asistencia promedio</p>
-        </Card>
-        <Card>
-          <p className="text-3xl font-semibold text-orange-300">{totalSesiones}</p>
-          <p className="mt-1 text-xs uppercase tracking-wide text-slate-400">Sesiones registradas</p>
-        </Card>
-        <Card>
-          <p className="text-3xl font-semibold text-orange-300">{totalAsistencias}</p>
-          <p className="mt-1 text-xs uppercase tracking-wide text-slate-400">Marcas de asistencia</p>
-        </Card>
-        <Card>
-          <p className="text-3xl font-semibold text-orange-300">{totalFaltas}</p>
-          <p className="mt-1 text-xs uppercase tracking-wide text-slate-400">Faltas registradas</p>
-        </Card>
-      </div>
+      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard
+          value={deportes.length}
+          label="Deportes asignados"
+          icono="deportes"
+          acento="text-uni-cian"
+        />
+        <StatCard
+          value={totalInscritos}
+          label="Estudiantes inscritos"
+          icono="usuarios"
+          acento="text-uni-amarillo"
+        />
+        <StatCard
+          value={clasesHoy}
+          label="Clases hoy"
+          icono="horario"
+          acento="text-emerald-300"
+        />
+        <StatCard
+          value={promedioAsistencia === null ? "—" : `${promedioAsistencia}%`}
+          label="Asistencia promedio"
+          icono="racha"
+          acento="text-uni-cian"
+        />
+        <StatCard
+          value={totalSesiones}
+          label="Sesiones registradas"
+          icono="calendario"
+          acento="text-uni-amarillo"
+        />
+        <StatCard
+          value={totalAsistencias}
+          label="Marcas de asistencia"
+          icono="check"
+          acento="text-emerald-300"
+        />
+        <StatCard
+          value={totalFaltas}
+          label="Faltas registradas"
+          icono="alerta"
+          acento="text-rose-300"
+        />
+      </section>
 
-      <div className="inline-flex rounded-full border border-white/10 bg-white/5 p-1 text-xs">
-        <button
-          type="button"
-          onClick={() => setModo("semana")}
-          className={`rounded-full px-4 py-1.5 font-semibold ${modo === "semana" ? "bg-white/15 text-white" : "text-slate-300"}`}
-        >
-          Semana
-        </button>
-        <button
-          type="button"
-          onClick={() => setModo("deportes")}
-          className={`rounded-full px-4 py-1.5 font-semibold ${modo === "deportes" ? "bg-white/15 text-white" : "text-slate-300"}`}
-        >
-          Mis deportes
-        </button>
-      </div>
+      <Tabs
+        label="Vista de deportes"
+        items={[
+          { id: "semana", label: "Semana", icono: "calendario" },
+          { id: "deportes", label: "Mis deportes", icono: "deportes" },
+        ]}
+        value={modo}
+        onChange={(id) => setModo(id as "semana" | "deportes")}
+      />
 
       {deportes.length === 0 ? (
         <EmptyState
@@ -179,7 +223,7 @@ export default function DocenteMisDeportes({ onError, onNavegar }: Props) {
               const esHoy = new Date().getDay() === dia;
               return (
                 <div key={dia} className="space-y-2">
-                  <p className={`text-xs font-bold uppercase tracking-wide ${esHoy ? "text-orange-300" : "text-slate-400"}`}>
+                  <p className={`text-xs font-bold uppercase tracking-wide ${esHoy ? "text-uni-amarillo" : "text-slate-400"}`}>
                     {DIAS[dia]}
                   </p>
                   {bloques.length === 0 ? (
@@ -188,7 +232,7 @@ export default function DocenteMisDeportes({ onError, onNavegar }: Props) {
                     bloques.map(({ deporte, horario }) => (
                       <div
                         key={horario.id}
-                        className={`rounded-xl border p-3 text-xs ${horario.describe.en_curso ? "border-emerald-400/40 bg-emerald-500/10" : horario.describe.es_hoy ? "border-orange-400/40 bg-orange-500/10" : "border-white/10 bg-white/[0.04]"}`}
+                        className={`rounded-xl border p-3 text-xs ${horario.describe.en_curso ? "border-emerald-400/40 bg-emerald-500/10" : horario.describe.es_hoy ? "border-uni-amarillo/40 bg-uni-amarillo/10" : "border-white/10 bg-white/[0.04]"}`}
                       >
                         <p className="font-semibold text-white">{deporte.nombre}</p>
                         <p className="mt-0.5 text-slate-300">
@@ -239,7 +283,7 @@ export default function DocenteMisDeportes({ onError, onNavegar }: Props) {
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-2xl font-semibold text-orange-300">
+                  <p className="text-2xl font-semibold text-uni-amarillo">
                     {deporte.porcentaje_asistencia === null ? "—" : `${deporte.porcentaje_asistencia}%`}
                   </p>
                   <p className="text-[11px] uppercase tracking-wide text-slate-400">Asistencia</p>

@@ -19,15 +19,9 @@ import type {
   PerfilPisu,
   ResumenAsistenciaPisu,
 } from "../../types/deporte";
+import { AnilloProgreso, CoverDeporte, Logro } from "./estudianteUI";
+import PanelHero from "./PanelHero";
 import {
-  AnilloProgreso,
-  CoverDeporte,
-  Logro,
-  fechaLargaHoy,
-  saludoActual,
-} from "./estudianteUI";
-import {
-  Avatar,
   Button,
   Card,
   EmptyState,
@@ -222,67 +216,39 @@ export default function EstudianteInicio({
   return (
     <div className="animar-entrada space-y-5">
       {/* Bienvenida */}
-      <section className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-uni-marino via-uni-noche to-uni-noche p-5 sm:p-7">
-        <div
-          aria-hidden="true"
-          className="absolute -right-6 -top-10 h-52 w-52 rounded-full bg-uni-cian/20 blur-3xl sm:h-64 sm:w-64"
-        />
-        <img
-          src="/ilustraciones/estudiante-hero.svg"
-          alt=""
-          aria-hidden="true"
-          className="pointer-events-none absolute bottom-0 right-0 hidden h-52 w-auto opacity-90 sm:block lg:h-64"
-        />
-        <div className="relative flex flex-wrap items-start justify-between gap-4">
-          <div className="min-w-0 max-w-xl">
-            <p className="text-[11px] font-black uppercase tracking-[0.24em] text-uni-cian">
-              {fechaLargaHoy()}
-            </p>
-            <h1 className="mt-2 text-2xl font-black leading-tight text-white sm:text-4xl">
-              {saludoActual()}, <span className="text-uni-amarillo">{nombre.split(" ")[0]}</span>
-            </h1>
-            <p className="mt-2 max-w-md text-sm leading-6 text-slate-300">
-              Este es tu espacio de Bienestar. Revisa tus clases, la asistencia y
-              los eventos disponibles para hoy.
-            </p>
-            <div className="mt-4 flex flex-wrap gap-2">
+      <PanelHero
+        nombre={nombre}
+        rol="Estudiante"
+        descripcion="Este es tu espacio de Bienestar. Revisa tus clases, la asistencia y los eventos disponibles para hoy."
+        chips={
+          <>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-[11px] font-semibold text-slate-100 ring-1 ring-white/10">
+              <Icon nombre="deportes" className="h-3.5 w-3.5 text-uni-cian" />
+              {inscripciones.length} disciplina{inscripciones.length === 1 ? "" : "s"}
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-[11px] font-semibold text-slate-100 ring-1 ring-white/10">
+              <Icon nombre="campana" className="h-3.5 w-3.5 text-uni-amarillo" />
+              {eventosActivos.length} evento{eventosActivos.length === 1 ? "" : "s"}{" "}
+              {eventosActivos.length === 1 ? "inscrito" : "inscritos"}
+            </span>
+            {perfil?.categoria ? (
               <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-[11px] font-semibold text-slate-100 ring-1 ring-white/10">
-                <Icon nombre="deportes" className="h-3.5 w-3.5 text-uni-cian" />
-                {inscripciones.length} disciplina{inscripciones.length === 1 ? "" : "s"}
+                <Icon nombre="medalla" className="h-3.5 w-3.5 text-emerald-300" />
+                {perfil.categoria}
               </span>
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-[11px] font-semibold text-slate-100 ring-1 ring-white/10">
-                <Icon nombre="campana" className="h-3.5 w-3.5 text-uni-amarillo" />
-                {eventosActivos.length} evento{eventosActivos.length === 1 ? "" : "s"}{" "}
-                {eventosActivos.length === 1 ? "inscrito" : "inscritos"}
-              </span>
-              {perfil?.categoria ? (
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-[11px] font-semibold text-slate-100 ring-1 ring-white/10">
-                  <Icon nombre="medalla" className="h-3.5 w-3.5 text-emerald-300" />
-                  {perfil.categoria}
-                </span>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => onNavegar("mis-deportes")}
-                  className="inline-flex items-center gap-1.5 rounded-full bg-uni-amarillo/15 px-3 py-1 text-[11px] font-semibold text-uni-amarillo ring-1 ring-uni-amarillo/30 transition hover:bg-uni-amarillo/25"
-                >
-                  <Icon nombre="alerta" className="h-3.5 w-3.5" />
-                  Completa tu perfil
-                </button>
-              )}
-            </div>
-          </div>
-          <div className="hidden items-center gap-3 sm:flex lg:mr-40">
-            <Avatar nombre={nombre} size="lg" />
-            <div className="text-right">
-              <p className="max-w-[12rem] truncate text-sm font-bold text-white">{nombre}</p>
-              <p className="text-[10px] font-bold uppercase tracking-wider text-uni-cian">
-                Estudiante PISU
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
+            ) : (
+              <button
+                type="button"
+                onClick={() => onNavegar("mis-deportes")}
+                className="inline-flex items-center gap-1.5 rounded-full bg-uni-amarillo/15 px-3 py-1 text-[11px] font-semibold text-uni-amarillo ring-1 ring-uni-amarillo/30 transition hover:bg-uni-amarillo/25"
+              >
+                <Icon nombre="alerta" className="h-3.5 w-3.5" />
+                Completa tu perfil
+              </button>
+            )}
+          </>
+        }
+      />
 
       {/* Métricas */}
       <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">

@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { obtenerAlertasAdmin, obtenerDashboardAdmin, obtenerDeportesAdmin, obtenerEventosAdmin, obtenerHorariosAdmin, obtenerResumenPisu, obtenerVerificacion } from "../../api/deporte";
 import type { AlertaPisu, DeportePisu, EventoPisu, HorarioAdminPisu, ResumenPisu } from "../../types/deporte";
+import PanelHero from "./PanelHero";
+import { Badge, Button, Card, Icon, ProgressBar, Spinner, StatCard } from "./ui";
 import { mensajeError } from "./utils";
 
 type DashboardAdminData = {
@@ -19,6 +21,9 @@ type Props = {
   onError: (v: string) => void;
   onNavegar: (v: string) => void;
 };
+
+const TITULO_SECCION =
+  "flex items-center gap-2 text-sm font-black uppercase tracking-wider text-slate-300";
 
 export default function PanelInformacionAdmin({ usuario, onError, onNavegar }: Props) {
   const [resumen, setResumen] = useState<ResumenPisu | null>(null);
@@ -74,106 +79,267 @@ export default function PanelInformacionAdmin({ usuario, onError, onNavegar }: P
   const disponibles = [...deportesActivos].sort((a, b) => a.ocupacion - b.ocupacion).slice(0, 3);
   const masOcupados = [...deportesActivos].sort((a, b) => b.ocupacion - a.ocupacion).slice(0, 3);
 
-  return (
-    <section className="space-y-6">
-      <article className="rounded-3xl border border-white/10 bg-white/[0.04] p-6">
-        <h1 className="text-xl font-semibold">Hola, {usuario.nombre_completo || usuario.email}</h1>
-        <p className="mt-1 text-sm text-slate-400">{new Date().toLocaleDateString("es-CO", { dateStyle: "full" })}</p>
-        <div className="mt-4 flex flex-wrap gap-3">
-          <button className="banda-uni rounded-full px-4 py-2 text-sm font-bold text-uni-noche" onClick={() => onNavegar("deportes")}>Crear deporte</button>
-          <button className="rounded-full border border-white/15 px-4 py-2 text-sm" onClick={() => onNavegar("docentes")}>Crear docente</button>
-          <button className="rounded-full border border-white/15 px-4 py-2 text-sm" onClick={() => onNavegar("eventos")}>Crear evento</button>
-          <button className="rounded-full border border-white/15 px-4 py-2 text-sm" onClick={() => onNavegar("comunicados")}>Enviar comunicado</button>
-        </div>
-      </article>
+  const nombre = usuario.nombre_completo || usuario.email;
+  const chipClass =
+    "inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-[11px] font-semibold text-slate-100 ring-1 ring-white/10";
 
-      <article className="rounded-3xl border border-white/10 bg-white/[0.04] p-6">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-300">Requiere tu atención</h2>
+  return (
+    <section className="space-y-5">
+      <PanelHero
+        nombre={nombre}
+        rol="Administrador"
+        descripcion="Administra los deportes, horarios, eventos y personas de Deporte PISU."
+        chips={
+          <>
+            <span className={chipClass}>
+              <Icon nombre="deportes" className="h-3.5 w-3.5 text-uni-cian" />
+              {deportesActivos.length} deportes activos
+            </span>
+            <span className={chipClass}>
+              <Icon nombre="eventos" className="h-3.5 w-3.5 text-uni-amarillo" />
+              {eventosProximos.length} eventos próximos
+            </span>
+            <span className={chipClass}>
+              <Icon nombre="usuarios" className="h-3.5 w-3.5 text-emerald-300" />
+              {dashboard?.docentesActivos ?? 0} docentes activos
+            </span>
+          </>
+        }
+        acciones={
+          <>
+            <Button onClick={() => onNavegar("deportes")}>Crear deporte</Button>
+            <Button variant="secondary" onClick={() => onNavegar("docentes")}>Crear docente</Button>
+            <Button variant="secondary" onClick={() => onNavegar("eventos")}>Crear evento</Button>
+            <Button variant="secondary" onClick={() => onNavegar("comunicados")}>Enviar comunicado</Button>
+          </>
+        }
+      />
+
+      <Card>
+        <h2 className={TITULO_SECCION}>
+          <Icon nombre="alerta" className="h-4 w-4 text-uni-amarillo" />
+          Requiere tu atención
+        </h2>
         {alertasAtencion.length === 0 ? (
-          <p className="mt-3 text-sm text-emerald-300">Todo en orden. No hay alertas pendientes.</p>
+          <p className="mt-3 rounded-xl bg-white/5 px-4 py-5 text-center text-sm text-emerald-300">
+            Todo en orden. No hay alertas pendientes.
+          </p>
         ) : (
           <ul className="mt-3 space-y-2">
             {alertasAtencion.map((a, idx) => (
-              <li key={idx} className="flex items-center justify-between gap-3 rounded-xl border border-white/10 px-3 py-2 text-sm">
-                <span>{a.texto}</span>
-                <button className="text-xs text-sky-300" onClick={() => onNavegar(a.accion)}>Resolver</button>
+              <li
+                key={idx}
+                className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5 text-sm"
+              >
+                <span className="text-slate-200">{a.texto}</span>
+                <button
+                  type="button"
+                  onClick={() => onNavegar(a.accion)}
+                  className="inline-flex items-center gap-1 text-xs font-semibold text-uni-cian transition hover:text-white"
+                >
+                  Resolver <Icon nombre="flecha" className="h-3.5 w-3.5" />
+                </button>
               </li>
             ))}
           </ul>
         )}
-      </article>
+      </Card>
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        {[
-          ["Deportes activos", deportesActivos.length],
-          ["Eventos próximos 7d", eventosProximos.length],
-          ["Docentes activos", dashboard?.docentesActivos ?? 0],
-          ["Estudiantes registrados", dashboard?.totalEstudiantes ?? 0],
-          ["Ocupación global (%)", `${ocupacionGlobal}%`],
-          ["Inscritos vs sin inscripción", `${resumen?.inscripciones_activas ?? 0} / ${Math.max(0, (dashboard?.totalEstudiantes ?? 0))}`],
-          ["Inscripciones últimos 7d", inscripciones7dias],
-        ].map(([label, val]) => (
-          <article key={String(label)} className="rounded-3xl border border-white/10 bg-gradient-to-br from-white/10 to-white/[0.02] p-5">
-            <p className="text-xs uppercase tracking-wide text-slate-400">{label}</p>
-            <p className="mt-2 text-2xl font-semibold tabular-nums text-slate-100">{val}</p>
-          </article>
-        ))}
-      </div>
+      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard
+          value={deportesActivos.length}
+          label="Deportes activos"
+          description="Disciplinas habilitadas"
+          icono="deportes"
+          acento="text-uni-cian"
+        />
+        <StatCard
+          value={eventosProximos.length}
+          label="Eventos próximos 7d"
+          description="Torneos y masterclasses"
+          icono="eventos"
+          acento="text-uni-amarillo"
+        />
+        <StatCard
+          value={dashboard?.docentesActivos ?? 0}
+          label="Docentes activos"
+          description="Con deportes asignados"
+          icono="usuarios"
+          acento="text-emerald-300"
+        />
+        <StatCard
+          value={dashboard?.totalEstudiantes ?? 0}
+          label="Estudiantes registrados"
+          description="En el sistema PISU"
+          icono="medalla"
+          acento="text-uni-mandarina"
+        />
+        <StatCard
+          value={`${ocupacionGlobal}%`}
+          label="Ocupación global"
+          description={`${totalInscritos} de ${totalCupos} cupos`}
+          icono="racha"
+          acento="text-uni-cian"
+        />
+        <StatCard
+          value={`${resumen?.inscripciones_activas ?? 0} / ${Math.max(0, dashboard?.totalEstudiantes ?? 0)}`}
+          label="Inscritos vs sin inscripción"
+          description="Cobertura de inscripciones"
+          icono="trofeo"
+          acento="text-uni-amarillo"
+        />
+        <StatCard
+          value={inscripciones7dias}
+          label="Inscripciones últimos 7d"
+          description="Ritmo de participación"
+          icono="horario"
+          acento="text-emerald-300"
+        />
+      </section>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <article className="rounded-3xl border border-white/10 bg-white/[0.03] p-5">
-          <h3 className="text-sm font-semibold">Ocupación por deporte</h3>
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card>
+          <h3 className={TITULO_SECCION}>
+            <Icon nombre="deportes" className="h-4 w-4 text-uni-cian" />
+            Ocupación por deporte
+          </h3>
           <div className="mt-4 space-y-3">
-            {deportesActivos.length === 0 ? <p className="text-xs text-slate-400">Sin datos.</p> : deportesActivos.map((d) => (
-              <div key={d.id}>
-                <div className="mb-1 flex items-center justify-between text-xs text-slate-300"><span>{d.nombre}</span><span>{d.inscritos}/{d.cupo_maximo}</span></div>
-                <div className="h-3 rounded-full bg-white/10"><div className="h-3 rounded-full bg-sky-400" style={{ width: `${Math.min(100, d.ocupacion)}%` }} /></div>
-              </div>
-            ))}
+            {deportesActivos.length === 0 ? (
+              <p className="text-xs text-slate-400">Sin datos.</p>
+            ) : (
+              deportesActivos.map((d) => (
+                <ProgressBar
+                  key={d.id}
+                  value={d.ocupacion}
+                  label={`${d.nombre} · ${d.inscritos}/${d.cupo_maximo}`}
+                />
+              ))
+            )}
           </div>
-        </article>
+        </Card>
 
-        <article className="rounded-3xl border border-white/10 bg-white/[0.03] p-5">
-          <h3 className="text-sm font-semibold">Estudiantes por categoría</h3>
+        <Card>
+          <h3 className={TITULO_SECCION}>
+            <Icon nombre="usuarios" className="h-4 w-4 text-uni-mandarina" />
+            Estudiantes por categoría
+          </h3>
           <div className="mt-4 space-y-3">
             {(["Pregrado", "Postgrado", "Egresado"] as const).map((cat) => {
               const val = dashboard?.estudiantesPorCategoria?.[cat] ?? 0;
               const max = Math.max(1, dashboard?.totalEstudiantes ?? 1);
-              return <div key={cat}>
-                <div className="mb-1 flex items-center justify-between text-xs text-slate-300"><span>{cat}</span><span>{val}</span></div>
-                <div className="h-3 rounded-full bg-white/10"><div className="h-3 rounded-full bg-orange-400" style={{ width: `${Math.min(100, (val / max) * 100)}%` }} /></div>
-              </div>;
+              return (
+                <ProgressBar
+                  key={cat}
+                  value={val}
+                  max={max}
+                  label={`${cat} · ${val}`}
+                  tone="success"
+                />
+              );
             })}
           </div>
-        </article>
+        </Card>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <article className="rounded-3xl border border-white/10 bg-white/[0.03] p-5">
-          <h3 className="text-sm font-semibold">Top 3 más ocupados</h3>
-          <ul className="mt-3 space-y-2">{masOcupados.map((d) => <li key={d.id} className="text-sm">{d.nombre} · {d.ocupacion}%</li>)}</ul>
-        </article>
-        <article className="rounded-3xl border border-white/10 bg-white/[0.03] p-5">
-          <h3 className="text-sm font-semibold">Top 3 con más cupos libres</h3>
-          <ul className="mt-3 space-y-2">{disponibles.map((d) => <li key={d.id} className="text-sm">{d.nombre} · {d.cupo_maximo - d.inscritos} disponibles</li>)}</ul>
-        </article>
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card>
+          <h3 className={TITULO_SECCION}>
+            <Icon nombre="trofeo" className="h-4 w-4 text-uni-amarillo" />
+            Top 3 más ocupados
+          </h3>
+          {masOcupados.length === 0 ? (
+            <p className="mt-3 text-sm text-slate-400">Sin datos.</p>
+          ) : (
+            <ul className="mt-4 space-y-2">
+              {masOcupados.map((d, idx) => (
+                <li
+                  key={d.id}
+                  className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5 text-sm"
+                >
+                  <span className="truncate text-slate-200">
+                    <span className="font-black text-slate-500">#{idx + 1}</span> {d.nombre}
+                  </span>
+                  <Badge tone="warning">{d.ocupacion}%</Badge>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+
+        <Card>
+          <h3 className={TITULO_SECCION}>
+            <Icon nombre="chispa" className="h-4 w-4 text-emerald-300" />
+            Top 3 con más cupos libres
+          </h3>
+          {disponibles.length === 0 ? (
+            <p className="mt-3 text-sm text-slate-400">Sin datos.</p>
+          ) : (
+            <ul className="mt-4 space-y-2">
+              {disponibles.map((d, idx) => (
+                <li
+                  key={d.id}
+                  className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5 text-sm"
+                >
+                  <span className="truncate text-slate-200">
+                    <span className="font-black text-slate-500">#{idx + 1}</span> {d.nombre}
+                  </span>
+                  <Badge tone="success">{d.cupo_maximo - d.inscritos} libres</Badge>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
       </div>
 
-      <article className="rounded-3xl border border-white/10 bg-white/[0.03] p-5">
-        <h3 className="text-sm font-semibold">Últimos comunicados</h3>
-        {alertas.length === 0 ? <p className="mt-3 text-sm text-slate-400">No hay comunicados.</p> : <ul className="mt-3 space-y-2">{alertas.slice(0, 5).map((a) => <li key={a.id} className="text-sm">{a.titulo}</li>)}</ul>}
-      </article>
+      <Card>
+        <h3 className={TITULO_SECCION}>
+          <Icon nombre="campana" className="h-4 w-4 text-uni-amarillo" />
+          Últimos comunicados
+        </h3>
+        {alertas.length === 0 ? (
+          <p className="mt-3 rounded-xl bg-white/5 px-4 py-5 text-center text-sm text-slate-400">
+            No hay comunicados.
+          </p>
+        ) : (
+          <ul className="mt-3 space-y-2">
+            {alertas.slice(0, 5).map((a) => (
+              <li
+                key={a.id}
+                className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5 text-sm text-slate-200"
+              >
+                <Icon nombre="campana" className="h-3.5 w-3.5 shrink-0 text-uni-cian" />
+                {a.titulo}
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
 
-      <article className="rounded-3xl border border-white/10 bg-white/[0.03] p-5">
-        <h3 className="text-sm font-semibold">Evolución de inscripciones en 30 días</h3>
-        <div className="mt-4 flex items-end gap-1 h-24">
+      <Card>
+        <h3 className={TITULO_SECCION}>
+          <Icon nombre="racha" className="h-4 w-4 text-uni-cian" />
+          Evolución de inscripciones en 30 días
+        </h3>
+        <div className="mt-4 flex h-24 items-end gap-1">
           {(dashboard?.inscripciones30Dias ?? []).map((d, idx) => {
             const max = Math.max(1, ...(dashboard?.inscripciones30Dias ?? []).map((x) => x.total));
-            return <div key={idx} className="flex-1 bg-orange-400/80 rounded-t" style={{ height: `${(d.total / max) * 100}%` }} title={`${d.fecha}: ${d.total}`} />;
+            return (
+              <div
+                key={idx}
+                className="flex-1 rounded-t bg-uni-mandarina/80"
+                style={{ height: `${(d.total / max) * 100}%` }}
+                title={`${d.fecha}: ${d.total}`}
+              />
+            );
           })}
         </div>
-      </article>
-      {cargando ? <p className="text-sm text-slate-400">Cargando...</p> : null}
+      </Card>
+
+      {cargando ? (
+        <p className="flex items-center gap-2 text-sm text-slate-400">
+          <Spinner /> Cargando…
+        </p>
+      ) : null}
     </section>
   );
 }
