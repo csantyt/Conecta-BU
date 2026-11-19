@@ -4,6 +4,7 @@ import {
   deleteAlertaAdmin,
   deleteDeporteAdmin,
   getAlertasAdmin,
+  getAsistenciaExcelAdmin,
   getBuscarEstudiantesAdmin,
   getDashboardAdmin,
   getDeportesAdmin,
@@ -65,6 +66,7 @@ adminRoutes.post("/administradores", asyncHandler(postAdministradorPisuAdmin));
 adminRoutes.patch("/usuarios/:id", asyncHandler(patchRolUsuarioAdmin));
 
 adminRoutes.get("/deportes", asyncHandler(getDeportesAdmin));
+adminRoutes.get("/deportes/:id/asistencia/excel", asyncHandler(getAsistenciaExcelAdmin));
 adminRoutes.post("/deportes", asyncHandler(postDeporteAdmin));
 adminRoutes.patch("/deportes/:id", asyncHandler(patchDeporteAdmin));
 adminRoutes.delete("/deportes/:id", asyncHandler(deleteDeporteAdmin));

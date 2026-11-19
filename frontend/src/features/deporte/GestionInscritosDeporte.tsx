@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import {
+  descargarExcelAsistenciaAdmin,
   inscribirEstudianteManualAdmin,
   obtenerDeportesAdmin,
   obtenerEstudiantesGeneral,
@@ -36,6 +37,19 @@ export default function GestionInscritosDeporte({
   const [vista, setVista] = useState<"agrupado" | "individual">("agrupado");
   const [grupos, setGrupos] = useState<GrupoInscritosDeporte[]>([]);
   const [cargandoGrupos, setCargandoGrupos] = useState(false);
+  const [exportandoId, setExportandoId] = useState<string | null>(null);
+
+  async function exportarExcel(deporteId: string, nombre: string) {
+    setExportandoId(deporteId);
+    try {
+      await descargarExcelAsistenciaAdmin(deporteId, nombre);
+      onAviso(`Excel de asistencia de ${nombre} descargado.`, "inscritos");
+    } catch (err) {
+      onError(mensajeError(err));
+    } finally {
+      setExportandoId(null);
+    }
+  }
 
   async function recargarGrupos() {
     setCargandoGrupos(true);
@@ -176,6 +190,11 @@ export default function GestionInscritosDeporte({
           </select>
         </div>
 
+        <p className="text-xs text-slate-400">
+          Todos los estudiantes con inscripción activa por deporte y su asistencia
+          consolidada. Descarga el Excel para el detalle sesión por sesión.
+        </p>
+
         {cargandoGrupos ? (
           <p className="text-sm text-slate-400">Cargando inscritos por deporte...</p>
         ) : grupos.length === 0 ? (
@@ -186,9 +205,19 @@ export default function GestionInscritosDeporte({
               <article key={grupo.deporte.id} className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <h3 className="text-base font-semibold text-white">{grupo.deporte.nombre}</h3>
-                  <span className="rounded-full bg-white/10 px-3 py-1 text-xs text-slate-200">
-                    {grupo.total} inscritos · cupo {grupo.deporte.cupo_maximo}
-                  </span>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="rounded-full bg-white/10 px-3 py-1 text-xs text-slate-200">
+                      {grupo.total} inscritos · cupo {grupo.deporte.cupo_maximo}
+                    </span>
+                    <button
+                      type="button"
+                      className="banda-uni sombra-uni rounded-full px-4 py-2 text-xs font-semibold text-uni-noche disabled:opacity-60"
+                      disabled={exportandoId === grupo.deporte.id || grupo.total === 0}
+                      onClick={() => void exportarExcel(grupo.deporte.id, grupo.deporte.nombre)}
+                    >
+                      {exportandoId === grupo.deporte.id ? "Generando..." : "Exportar Excel"}
+                    </button>
+                  </div>
                 </div>
 
                 {grupo.total === 0 ? (
@@ -203,7 +232,9 @@ export default function GestionInscritosDeporte({
                           <th className="px-4 py-3">Correo</th>
                           <th className="px-4 py-3">Categoría</th>
                           <th className="px-4 py-3">Fecha</th>
-                          <th className="px-4 py-3">Asistencia</th>
+                          <th className="px-4 py-3">Asistencias</th>
+                          <th className="px-4 py-3">Faltas</th>
+                          <th className="px-4 py-3">%</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -214,8 +245,24 @@ export default function GestionInscritosDeporte({
                             <td className="px-4 py-3 text-slate-400">{f.correo ?? "—"}</td>
                             <td className="px-4 py-3">{f.categoria ?? "—"}</td>
                             <td className="px-4 py-3 text-slate-400">{formatearFecha(f.fecha_inscripcion)}</td>
+                            <td className="px-4 py-3">{f.asistencias_presentes}/{f.asistencias_total}</td>
+                            <td className="px-4 py-3">{f.inasistencias}</td>
                             <td className="px-4 py-3">
-                              {f.porcentaje_asistencia === null ? "Sin datos" : `${f.porcentaje_asistencia}%`} ({f.inasistencias} inasist.)
+                              {f.porcentaje_asistencia === null ? (
+                                <span className="text-slate-500">Sin datos</span>
+                              ) : (
+                                <span
+                                  className={
+                                    f.porcentaje_asistencia >= 80
+                                      ? "font-semibold text-emerald-300"
+                                      : f.porcentaje_asistencia >= 50
+                                        ? "font-semibold text-amber-300"
+                                        : "font-semibold text-rose-300"
+                                  }
+                                >
+                                  {f.porcentaje_asistencia}%
+                                </span>
+                              )}
                             </td>
                           </tr>
                         ))}
@@ -265,6 +312,17 @@ export default function GestionInscritosDeporte({
           <option value="inasistencias">Inasistencias</option>
         </select>
         <button className="rounded-full border border-white/15 px-4 py-2 text-xs" onClick={exportarCsv}>Exportar CSV</button>
+        <button
+          type="button"
+          className="banda-uni sombra-uni rounded-full px-4 py-2 text-xs font-semibold text-uni-noche disabled:opacity-60"
+          disabled={!deporteId || exportandoId === deporteId}
+          onClick={() => {
+            const deporte = deportes.find((d) => d.id === deporteId);
+            if (deporte) void exportarExcel(deporte.id, deporte.nombre);
+          }}
+        >
+          {exportandoId === deporteId ? "Generando..." : "Exportar Excel"}
+        </button>
       </div>
 
       <div className="flex flex-wrap gap-2">

@@ -2,6 +2,7 @@ import { Op, fn, col } from "sequelize";
 import { sequelize } from "../../../config/database.js";
 import { Usuario } from "../../auth/models/Usuario.js";
 import { sincronizarRolAuth } from "../../auth/services/sincronizacionRoles.js";
+import { normalizarCorreoInstitucional } from "../../auth/roles.js";
 import type { AudienciaAlertaPisu, CategoriaPisu, RolPisu } from "../constantes.js";
 import { AUDIENCIAS_ALERTA_PISU, CATEGORIAS_PISU, ROLES_PISU } from "../constantes.js";
 import { Alerta } from "../models/Alerta.js";
@@ -770,12 +771,14 @@ export async function crearDocente(params: {
   especialidad?: string | null | undefined;
 }): Promise<UsuarioPisu> {
   const nombre = params.nombre.trim();
-  const correo = params.correo.trim().toLowerCase();
+  const correo = normalizarCorreoInstitucional(params.correo);
   if (nombre.length < 2) {
     throw new DatosRolPisuInvalidosError("El nombre del docente es obligatorio.");
   }
-  if (!correo.includes("@")) {
-    throw new DatosRolPisuInvalidosError("El correo del docente no es válido.");
+  if (!correo) {
+    throw new DatosRolPisuInvalidosError(
+      "El correo del docente debe pertenecer al dominio institucional.",
+    );
   }
 
   const existente = await UsuarioPisu.findOne({
@@ -944,9 +947,14 @@ export async function crearAdministradorPisu(params: {
   documento?: string | null | undefined;
 }): Promise<{ docente: UsuarioPisu; passwordTemporal: string }> {
   const nombre = params.nombre.trim();
-  const correo = params.correo.trim().toLowerCase();
+  const correo = normalizarCorreoInstitucional(params.correo);
   if (nombre.length < 2) {
     throw new DatosRolPisuInvalidosError("El nombre del administrador es obligatorio.");
+  }
+  if (!correo) {
+    throw new DatosRolPisuInvalidosError(
+      "El correo del administrador debe pertenecer al dominio institucional.",
+    );
   }
   const existente = await UsuarioPisu.findOne({
     where: { correo: { [Op.iLike]: correo } },
@@ -995,7 +1003,12 @@ export async function actualizarDocente(
     docente.nombre = nombre;
   }
   if (cambios.correo !== undefined) {
-    const correo = cambios.correo.trim().toLowerCase();
+    const correo = normalizarCorreoInstitucional(cambios.correo);
+    if (!correo) {
+      throw new DatosRolPisuInvalidosError(
+        "El correo debe pertenecer al dominio institucional.",
+      );
+    }
     const duplicado = await UsuarioPisu.findOne({
       where: { id: { [Op.ne]: id }, correo: { [Op.iLike]: correo } },
     });
@@ -1203,12 +1216,14 @@ export async function eliminarDeporteAdmin(id: string): Promise<void> {
   if (!deporte) {
     throw new RecursoAdminNoEncontradoError("El deporte no existe.");
   }
+  // El FK inscripciones.deporte_id es ON DELETE RESTRICT, así que también
+  // bloquean las inscripciones canceladas: se cuentan todas, no solo activas.
   const inscritos = await InscripcionDeporte.count({
-    where: { deporte_id: id, estado: "Activa" },
+    where: { deporte_id: id },
   });
   if (inscritos > 0) {
     throw new DeporteConInscritosError(
-      `El deporte tiene ${inscritos} estudiante(s) inscrito(s). No se puede eliminar sin impactar inscripciones.`,
+      `El deporte tiene ${inscritos} inscripción(es) registrada(s). No se puede eliminar sin impactar inscripciones.`,
     );
   }
   await HorarioDeporte.destroy({ where: { deporte_id: id } });

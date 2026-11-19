@@ -46,6 +46,14 @@ import {
 } from "../services/eventosService.js";
 import { listarEstudiantesGeneral, listarInscripcionesAgrupadas } from "../services/inscritosService.js";
 import {
+  DeporteReporteNoEncontradoError,
+  calcularReporteAsistenciaDeporte,
+} from "../services/reporteAdminService.js";
+import {
+  construirReporteExcel,
+  nombreArchivoReporte,
+} from "../utils/reporteExcel.js";
+import {
   actualizarDeporteSchema,
   actualizarDocenteSchema,
   actualizarEstudiantePisuSchema,
@@ -75,6 +83,10 @@ function responderErrorAdmin(res: Response, error: unknown): boolean {
     return true;
   }
   if (error instanceof RecursoAdminNoEncontradoError) {
+    res.status(404).json({ message: error.message });
+    return true;
+  }
+  if (error instanceof DeporteReporteNoEncontradoError) {
     res.status(404).json({ message: error.message });
     return true;
   }
@@ -355,6 +367,29 @@ export async function postAdministradorPisuAdmin(req: Request, res: Response): P
 export async function getDeportesAdmin(_req: Request, res: Response): Promise<void> {
   const deportes = await listarDeportesAdmin();
   res.status(200).json({ deportes });
+}
+
+export async function getAsistenciaExcelAdmin(req: Request, res: Response): Promise<void> {
+  const deporteId = idDeRuta(req, "id");
+  if (!deporteId) {
+    res.status(400).json({ message: "Identificador de deporte inválido." });
+    return;
+  }
+  try {
+    const reporte = await calcularReporteAsistenciaDeporte(deporteId);
+    const buffer = await construirReporteExcel(reporte);
+    const nombre = nombreArchivoReporte(reporte.deporte.nombre, new Date());
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    );
+    res.setHeader("Content-Disposition", `attachment; filename="${nombre}"`);
+    res.status(200).send(buffer);
+  } catch (error) {
+    if (!responderErrorAdmin(res, error)) {
+      throw error;
+    }
+  }
 }
 
 export async function patchRolUsuarioAdmin(

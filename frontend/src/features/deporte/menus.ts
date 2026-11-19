@@ -27,7 +27,7 @@ export const MENU_ADMINISTRADOR: MenuGroup[] = [
       { key: "deportes", label: "Deportes", icon: "deportes" },
       { key: "horarios", label: "Horarios", icon: "horarios" },
       { key: "eventos", label: "Eventos", icon: "eventos" },
-      { key: "inscritos", label: "Inscritos por deporte", icon: "inscritos" },
+      { key: "inscritos", label: "Inscritos y asistencia", icon: "inscritos" },
     ],
   },
   {

@@ -1,7 +1,7 @@
 import axios from "axios";
 import { useEffect, useState } from "react";
 import { actualizarRolUsuario, listarUsuarios } from "../api/auth";
-import EventosSugeridosIA from "../components/EventosSugeridosIA";
+import EventosDestacados from "../components/EventosDestacados";
 import { MODULOS, type ModuloId } from "../config/modulos";
 import { etiquetaRol, type Usuario } from "../types/auth";
 
@@ -100,7 +100,7 @@ export default function HomePage({ usuario, onAbrirModulo }: HomePageProps) {
         </section>
 
         <div className="mx-auto max-w-6xl px-4 pt-10 sm:px-6">
-          <EventosSugeridosIA onIrAEventos={() => onAbrirModulo("desarrollo-humano")} />
+          <EventosDestacados onIrAEventos={() => onAbrirModulo("deporte")} />
           {esAdmin ? <PanelAdministradores sesion={usuario} /> : null}
         </div>
       </main>

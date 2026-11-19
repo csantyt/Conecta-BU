@@ -39,7 +39,9 @@ Inscripcion.init(
       allowNull: false,
     },
     estado: {
-      type: DataTypes.ENUM("INSCRITO", "CANCELADO"),
+      // La columna real es varchar(32) con CHECK; el ENUM de Sequelize
+      // intentaba crear un tipo inexistente y rompía el sync.
+      type: DataTypes.STRING(32),
       allowNull: false,
       defaultValue: "INSCRITO",
     },

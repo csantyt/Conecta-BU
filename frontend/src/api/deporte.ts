@@ -443,6 +443,31 @@ export async function obtenerInscritosAgrupados(params?: { q?: string; categoria
   return data.grupos;
 }
 
+/**
+ * Descarga el Excel consolidado de asistencia de un deporte (todos sus horarios).
+ * Lo genera el backend a partir del mismo reporte que usa la vista.
+ */
+export async function descargarExcelAsistenciaAdmin(
+  deporteId: string,
+  deporteNombre: string,
+): Promise<void> {
+  const respuesta = await api.get(`/admin/deportes/${deporteId}/asistencia/excel`, {
+    responseType: "blob",
+  });
+  const blob = respuesta.data as Blob;
+  const nombre =
+    nombreDesdeCabecera(respuesta.headers["content-disposition"]) ??
+    `reporte_${deporteNombre.toLowerCase().replace(/[^a-z0-9]+/g, "_")}.xlsx`;
+  const url = URL.createObjectURL(blob);
+  const enlace = document.createElement("a");
+  enlace.href = url;
+  enlace.download = nombre;
+  document.body.appendChild(enlace);
+  enlace.click();
+  enlace.remove();
+  URL.revokeObjectURL(url);
+}
+
 export async function obtenerEstudiantesGeneral(params: { deporteId?: string; categoria?: string; sinInscripcion?: boolean; q?: string }) {
   const { data } = await api.get("/admin/estudiantes", { params });
   return data.estudiantes as Array<{ id: string; nombre: string; correo: string; documento?: string | null; categoria: string | null; estado: boolean; inscripciones?: Array<{ deporte_id: string; deporte?: { id: string; nombre: string } }> }>;
