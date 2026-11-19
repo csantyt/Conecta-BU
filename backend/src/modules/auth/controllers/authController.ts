@@ -1,8 +1,8 @@
 import type { Request, Response } from "express";
 import jwt from "jsonwebtoken";
-import { z } from "zod";
-import { ROLES } from "../roles.js";
+import { ROLES, esAdministradorBootstrap, normalizarRolAuth } from "../roles.js";
 import { Usuario } from "../models/Usuario.js";
+import { sincronizarRolPisu } from "../services/sincronizacionRoles.js";
 
 function obtenerJwtSecret(): string {
   const secret = process.env["JWT_SECRET"];
@@ -44,12 +44,14 @@ export async function loginGoogle(req: Request, res: Response): Promise<void> {
     return;
   }
 
+  const esAdminBootstrap = esAdministradorBootstrap(identidad.email);
+
   const [usuario] = await Usuario.findOrCreate({
     where: { email: identidad.email },
     defaults: {
       email: identidad.email,
       nombre_completo: identidad.nombreCompleto,
-      rol: ROLES.USUARIO,
+      rol: esAdminBootstrap ? ROLES.ADMINISTRADOR : ROLES.ESTUDIANTE,
     },
   });
 
@@ -60,11 +62,28 @@ export async function loginGoogle(req: Request, res: Response): Promise<void> {
     await usuario.update({ nombre_completo: identidad.nombreCompleto });
   }
 
+  // `USUARIO` era el rol legado de estudiante; se normaliza al rol nuevo.
+  if (usuario.rol === ROLES.USUARIO) {
+    await usuario.update({ rol: ROLES.ESTUDIANTE });
+  }
+
+  if (esAdminBootstrap && usuario.rol !== ROLES.ADMINISTRADOR) {
+    await usuario.update({ rol: ROLES.ADMINISTRADOR });
+  }
+
   if (!usuario.estado) {
     res.status(403).json({
       message: "La cuenta se encuentra inactiva.",
     });
     return;
+  }
+
+  if (esAdminBootstrap) {
+    await sincronizarRolPisu({
+      authUsuarioId: usuario.id,
+      email: usuario.email,
+      rol: usuario.rol,
+    });
   }
 
   res.status(200).json({
@@ -83,14 +102,12 @@ export async function listarUsuarios(_req: Request, res: Response): Promise<void
 }
 
 export async function actualizarRol(req: Request, res: Response): Promise<void> {
-  const parsed = z
-    .object({
-      rol: z.enum([ROLES.USUARIO, ROLES.ADMINISTRADOR]),
-    })
-    .safeParse(req.body);
+  const rol = normalizarRolAuth(req.body?.rol);
 
-  if (!parsed.success) {
-    res.status(400).json({ message: "Rol inválido." });
+  if (!rol) {
+    res.status(400).json({
+      message: "Rol inválido. Usa Estudiante, Docente o Administrador.",
+    });
     return;
   }
 
@@ -107,11 +124,7 @@ export async function actualizarRol(req: Request, res: Response): Promise<void> 
     return;
   }
 
-  if (
-    req.user?.id === usuario.id &&
-    usuario.rol === ROLES.ADMINISTRADOR &&
-    parsed.data.rol === ROLES.USUARIO
-  ) {
+  if (usuario.rol === ROLES.ADMINISTRADOR && rol !== ROLES.ADMINISTRADOR) {
     const administradores = await Usuario.count({
       where: { rol: ROLES.ADMINISTRADOR, estado: true },
     });
@@ -123,7 +136,15 @@ export async function actualizarRol(req: Request, res: Response): Promise<void> 
     }
   }
 
-  await usuario.update({ rol: parsed.data.rol });
+  await usuario.update({ rol });
+
+  // El rol de Deporte (PISU) acompaña al rol de la cuenta.
+  await sincronizarRolPisu({
+    authUsuarioId: usuario.id,
+    email: usuario.email,
+    rol,
+  });
+
   res.status(200).json({
     usuario: serializarUsuario(usuario),
   });

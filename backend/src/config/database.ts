@@ -58,16 +58,13 @@ export async function alinearRolesUsuarios(): Promise<void> {
       IF EXISTS (
         SELECT 1
         FROM information_schema.tables
-        WHERE table_schema = 'auth' AND table_name = 'usuarios'
+        WHERE table_schema = 'conecta_auth' AND table_name = 'usuarios'
       ) THEN
-        ALTER TABLE auth.usuarios
+        ALTER TABLE conecta_auth.usuarios
           ALTER COLUMN rol TYPE VARCHAR(32)
           USING rol::text;
-        ALTER TABLE auth.usuarios
-          ALTER COLUMN rol SET DEFAULT 'USUARIO';
-        UPDATE auth.usuarios
-          SET rol = 'USUARIO'
-          WHERE rol = 'ESTUDIANTE';
+        ALTER TABLE conecta_auth.usuarios
+          ALTER COLUMN rol SET DEFAULT 'ESTUDIANTE';
       END IF;
     END $$;
   `);

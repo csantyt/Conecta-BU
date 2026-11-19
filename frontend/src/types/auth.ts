@@ -1,4 +1,8 @@
-export type RolUsuario = "USUARIO" | "ADMINISTRADOR";
+export type RolUsuario =
+  | "ESTUDIANTE"
+  | "DOCENTE"
+  | "ADMINISTRADOR"
+  | "USUARIO";
 
 export type Usuario = {
   id: string;
@@ -12,7 +16,10 @@ export function etiquetaRol(rol: string): string {
   if (rol === "ADMINISTRADOR") {
     return "Administrador";
   }
-  return "Usuario";
+  if (rol === "DOCENTE") {
+    return "Docente";
+  }
+  return "Estudiante";
 }
 
 export type LoginGoogleResponse = {

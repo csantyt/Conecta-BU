@@ -1,6 +1,10 @@
 import type { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
-import { normalizarCorreoInstitucional } from "../modules/auth/roles.js";
+import { Usuario } from "../modules/auth/models/Usuario.js";
+import {
+  normalizarCorreoInstitucional,
+  normalizarRolAuth,
+} from "../modules/auth/roles.js";
 import type { RolUsuario } from "../modules/auth/roles.js";
 
 export interface AuthUser {
@@ -25,11 +29,11 @@ function obtenerJwtSecret(): string {
   return secret;
 }
 
-export function authMiddleware(
+export async function authMiddleware(
   req: Request,
   res: Response,
   next: NextFunction,
-): void {
+): Promise<void> {
   const authorization = req.headers.authorization;
 
   if (!authorization?.startsWith("Bearer ")) {
@@ -71,10 +75,33 @@ export function authMiddleware(
       return;
     }
 
+    const id = String(payload["id"]);
+    let rol = payload["rol"] as RolUsuario;
+
+    // El rol vigente vive en la cuenta: así una degradación o ascenso hecho por
+    // el administrador aplica sin esperar a que el token expire.
+    try {
+      const cuenta = await Usuario.findByPk(id, {
+        attributes: ["id", "email", "rol", "estado"],
+      });
+      if (cuenta) {
+        if (!cuenta.estado) {
+          res.status(403).json({ message: "La cuenta se encuentra inactiva." });
+          return;
+        }
+        rol = normalizarRolAuth(cuenta.rol) ?? rol;
+      }
+    } catch (error) {
+      console.warn(
+        "No se pudo refrescar el rol desde la base:",
+        (error as Error).message,
+      );
+    }
+
     req.user = {
-      id: String(payload["id"]),
+      id,
       email,
-      rol: payload["rol"] as RolUsuario,
+      rol,
     };
 
     next();

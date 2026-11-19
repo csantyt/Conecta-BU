@@ -1,5 +1,6 @@
 export const SCHEMAS = {
-  auth: "auth",
+  // Supabase reserva el schema `auth`; la identidad propia vive en uno aparte.
+  auth: "conecta_auth",
   desarrolloHumano: "desarrollo_humano",
   permanenciaEstudiantil: "permanencia_estudiantil",
   saludIntegral: "salud_integral",

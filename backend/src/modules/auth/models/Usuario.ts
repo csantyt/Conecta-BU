@@ -42,7 +42,7 @@ Usuario.init(
     rol: {
       type: DataTypes.STRING(32),
       allowNull: false,
-      defaultValue: "USUARIO",
+      defaultValue: "ESTUDIANTE",
     },
     estado: {
       type: DataTypes.BOOLEAN,
