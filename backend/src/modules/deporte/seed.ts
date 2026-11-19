@@ -72,6 +72,8 @@ const DEPORTES_INICIALES: Array<{
   },
 ];
 
+/** Administrador del sistema (siempre entra con rol Administrador). */
+const CORREO_ADMIN = "estiven.realpe.h@uniautonoma.edu.co";
 /** Docente de prueba principal (el que usa la interfaz del docente). */
 const CORREO_KEVIN = "kevin.ruiz.m@uniautonoma.edu.co";
 /** Segundo docente: es dueño de un deporte que Kevin NO debe ver. */
@@ -601,6 +603,19 @@ export async function sembrarDeportesPisu(): Promise<void> {
       rol: "Administrador",
       estado: true,
     });
+  }
+
+  const [adminEstiven] = await UsuarioPisu.findOrCreate({
+    where: { correo: CORREO_ADMIN },
+    defaults: {
+      nombre: "Estiven Realpe Hormiga",
+      correo: CORREO_ADMIN,
+      rol: "Administrador",
+      estado: true,
+    },
+  });
+  if (adminEstiven.rol !== "Administrador") {
+    await adminEstiven.update({ rol: "Administrador", categoria: null });
   }
 
   const docentesExistentes = await UsuarioPisu.count({ where: { rol: "Docente" } });

@@ -1,10 +1,11 @@
 -- =============================================================================
 -- Conecta BU — script inicial PostgreSQL
--- Identidad en schema auth. Cada módulo de Bienestar tiene schema propio.
--- Roles de la aplicación: USUARIO y ADMINISTRADOR.
+-- Identidad en `conecta_auth` (Supabase reserva `auth`). Cada módulo de
+-- Bienestar tiene schema propio.
+-- Roles de la aplicación: ADMINISTRADOR, DOCENTE y ESTUDIANTE.
 -- =============================================================================
 
-CREATE SCHEMA IF NOT EXISTS auth;
+CREATE SCHEMA IF NOT EXISTS conecta_auth;
 CREATE SCHEMA IF NOT EXISTS desarrollo_humano;
 CREATE SCHEMA IF NOT EXISTS permanencia_estudiantil;
 CREATE SCHEMA IF NOT EXISTS salud_integral;
@@ -15,22 +16,24 @@ CREATE SCHEMA IF NOT EXISTS cultura;
 -- Identidad compartida (no pertenece a un módulo de Bienestar)
 -- -----------------------------------------------------------------------------
 
-CREATE TABLE IF NOT EXISTS auth.roles (
+CREATE TABLE IF NOT EXISTS conecta_auth.roles (
   codigo VARCHAR(32) PRIMARY KEY,
   nombre VARCHAR(80) NOT NULL
 );
 
-INSERT INTO auth.roles (codigo, nombre) VALUES
-  ('USUARIO', 'Usuario'),
-  ('ADMINISTRADOR', 'Administrador')
+INSERT INTO conecta_auth.roles (codigo, nombre) VALUES
+  ('ADMINISTRADOR', 'Administrador'),
+  ('DOCENTE', 'Docente'),
+  ('ESTUDIANTE', 'Estudiante'),
+  ('USUARIO', 'Usuario')
 ON CONFLICT (codigo) DO NOTHING;
 
-CREATE TABLE IF NOT EXISTS auth.usuarios (
+CREATE TABLE IF NOT EXISTS conecta_auth.usuarios (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   email VARCHAR(255) NOT NULL UNIQUE,
   nombre_completo VARCHAR(255),
-  rol VARCHAR(32) NOT NULL DEFAULT 'USUARIO'
-    REFERENCES auth.roles (codigo),
+  rol VARCHAR(32) NOT NULL DEFAULT 'ESTUDIANTE'
+    REFERENCES conecta_auth.roles (codigo),
   estado BOOLEAN NOT NULL DEFAULT TRUE,
   fecha_creacion TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

@@ -26,29 +26,11 @@ async function iniciarServidor(): Promise<void> {
     await asegurarEsquemasIndependientes();
     await alinearEsquemaDeportePisu();
 
-    // sequelize.sync() puede fallar en Supabase para tablas del schema 'auth'
-    // (reservado por Supabase Auth). Lo envolvemos en try-catch para no bloquear el arranque.
-    try {
-      await sequelize.sync();
-    } catch (syncError) {
-      console.warn("⚠️  sequelize.sync() falló (posiblemente tablas de auth reservadas en Supabase):", (syncError as Error).message);
-    }
-
+    // Identidad propia en `conecta_auth` (Supabase reserva el schema `auth`).
+    await sequelize.sync();
     await alinearEsquemaEventos();
-
-    // alinearRolesUsuarios y sembrarRoles tocan el schema 'auth' (reservado en Supabase).
-    // Los envolvemos en try-catch para no bloquear el arranque en Supabase.
-    try {
-      await alinearRolesUsuarios();
-    } catch (rolesError) {
-      console.warn("⚠️  alinearRolesUsuarios() falló (schema auth reservado en Supabase):", (rolesError as Error).message);
-    }
-
-    try {
-      await sembrarRoles();
-    } catch (seedRolesError) {
-      console.warn("⚠️  sembrarRoles() falló (schema auth reservado en Supabase):", (seedRolesError as Error).message);
-    }
+    await alinearRolesUsuarios();
+    await sembrarRoles();
 
     await sembrarServiciosDesarrolloHumano();
     await sembrarDeportesPisu();

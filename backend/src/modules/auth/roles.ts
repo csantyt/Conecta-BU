@@ -7,6 +7,41 @@ export const ROLES = {
 
 export type RolUsuario = (typeof ROLES)[keyof typeof ROLES];
 
+/** Normaliza un rol recibido (incluye el legado `USUARIO` → `ESTUDIANTE`). */
+export function normalizarRolAuth(valor: unknown): RolUsuario | null {
+  if (typeof valor !== "string") {
+    return null;
+  }
+  const rol = valor.trim().toUpperCase();
+  if (rol === ROLES.ESTUDIANTE || rol === ROLES.USUARIO) {
+    return ROLES.ESTUDIANTE;
+  }
+  if (rol === ROLES.DOCENTE) {
+    return ROLES.DOCENTE;
+  }
+  if (rol === ROLES.ADMINISTRADOR) {
+    return ROLES.ADMINISTRADOR;
+  }
+  return null;
+}
+
+/**
+ * Correos que siempre entran como administrador, aunque sea su primer login.
+ * Se configura con `ADMIN_EMAILS` (lista separada por comas).
+ */
+export function correosAdministradores(): string[] {
+  const raw = process.env["ADMIN_EMAILS"] ?? "estiven.realpe.h@uniautonoma.edu.co";
+  return raw
+    .split(",")
+    .map((correo) => correo.trim().toLowerCase())
+    .filter((correo) => correo.length > 0);
+}
+
+export function esAdministradorBootstrap(email: string): boolean {
+  const normalizado = email.trim().toLowerCase();
+  return correosAdministradores().includes(normalizado);
+}
+
 /** Dominio institucional autorizado, sin `@`, sin espacios y en minúsculas. */
 export function obtenerDominioInstitucional(): string {
   const dominio = process.env["GOOGLE_HOSTED_DOMAIN"] ?? "uniautonoma.edu.co";

@@ -22,7 +22,7 @@ Están habilitados **Desarrollo humano y orientación** y **Deporte (PISU)**. Lo
 
 **Arquitectura:** monolito modular (un schema PostgreSQL y una carpeta por módulo) con capas dentro de cada módulo: rutas → middlewares → controladores → servicios → modelos.
 
-**Roles:** `USUARIO` (el RF “Estudiante” se mapea aquí) y `ADMINISTRADOR`. El primer administrador se promueve desde la home, después de iniciar sesión con Google institucional (`uniautonoma.edu.co`).
+**Roles:** `ESTUDIANTE` (por defecto para todo correo `@uniautonoma.edu.co`), `DOCENTE` y `ADMINISTRADOR`. El administrador se define con `ADMIN_EMAILS` (por defecto `estiven.realpe.h@uniautonoma.edu.co`) y, una vez dentro, puede asignar Docente o Administrador al resto.
 
 ## Tecnologías y herramientas
 

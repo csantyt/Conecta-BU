@@ -1,6 +1,7 @@
 import { Op, fn, col } from "sequelize";
 import { sequelize } from "../../../config/database.js";
 import { Usuario } from "../../auth/models/Usuario.js";
+import { sincronizarRolAuth } from "../../auth/services/sincronizacionRoles.js";
 import type { AudienciaAlertaPisu, CategoriaPisu, RolPisu } from "../constantes.js";
 import { AUDIENCIAS_ALERTA_PISU, CATEGORIAS_PISU, ROLES_PISU } from "../constantes.js";
 import { Alerta } from "../models/Alerta.js";
@@ -140,6 +141,12 @@ export async function asignarRolPisu(params: {
 
   if (perfil) {
     await perfil.update({ rol: params.rol, categoria });
+    await sincronizarRolAuth({
+      authUsuarioId: perfil.auth_usuario_id,
+      correo: perfil.correo,
+      nombre: perfil.nombre,
+      rolPisu: params.rol,
+    });
     return perfil;
   }
 
@@ -152,13 +159,22 @@ export async function asignarRolPisu(params: {
     throw new UsuarioPisuNoEncontradoError("La cuenta Conecta no existe.");
   }
 
-  return UsuarioPisu.create({
+  const creado = await UsuarioPisu.create({
     auth_usuario_id: cuenta.id,
     nombre: cuenta.nombre_completo?.trim() || cuenta.email,
     correo: cuenta.email,
     rol: params.rol,
     categoria,
   });
+
+  await sincronizarRolAuth({
+    authUsuarioId: cuenta.id,
+    correo: cuenta.email,
+    nombre: cuenta.nombre_completo,
+    rolPisu: params.rol,
+  });
+
+  return creado;
 }
 
 export async function resumenAdministracion() {
@@ -769,7 +785,7 @@ export async function crearDocente(params: {
     throw new DocenteDuplicadoError("Ya existe un docente con ese correo.");
   }
 
-  return UsuarioPisu.create({
+  const docente = await UsuarioPisu.create({
     nombre,
     correo,
     documento: params.documento?.trim() || null,
@@ -777,6 +793,15 @@ export async function crearDocente(params: {
     rol: "Docente",
     estado: true,
   });
+
+  // Deja la cuenta Conecta lista con rol Docente para cuando use Google.
+  await sincronizarRolAuth({
+    correo,
+    nombre,
+    rolPisu: "Docente",
+  });
+
+  return docente;
 }
 
 // ===================== Asignación de deportes a docentes =====================
@@ -938,6 +963,13 @@ export async function crearAdministradorPisu(params: {
     rol: "Administrador",
     estado: true,
   });
+
+  await sincronizarRolAuth({
+    correo,
+    nombre,
+    rolPisu: "Administrador",
+  });
+
   return { docente: admin, passwordTemporal };
 }
 

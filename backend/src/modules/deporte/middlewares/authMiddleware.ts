@@ -2,7 +2,12 @@ import type { NextFunction, Request, Response } from "express";
 import { UniqueConstraintError } from "sequelize";
 import { authMiddleware as verificarJwtConecta } from "../../../middlewares/authMiddleware.js";
 import { Usuario } from "../../auth/models/Usuario.js";
-import { ROLES, normalizarCorreoInstitucional } from "../../auth/roles.js";
+import {
+  ROLES,
+  normalizarCorreoInstitucional,
+  normalizarRolAuth,
+} from "../../auth/roles.js";
+import { rolPisuDesdeAuth } from "../../auth/services/sincronizacionRoles.js";
 import { UsuarioPisu } from "../models/UsuarioPisu.js";
 import { serializarPerfilPisu } from "./tipos.js";
 
@@ -11,7 +16,8 @@ import { serializarPerfilPisu } from "./tipos.js";
  *
  * Reglas de negocio (sección 10.1):
  *  - Todo usuario autenticado con correo institucional verificado entra al
- *    módulo como Estudiante si no tiene un rol administrativo o docente.
+ *    módulo con el rol que le asignó la administración: Administrador, Docente
+ *    o Estudiante (por defecto).
  *  - La ficha queda ligada de forma ÚNICA a la cuenta de Conecta (`auth_usuario_id`),
  *    con un índice único en base de datos; si otra petición simultánea la crea
  *    primero, se reutiliza la existente (no se duplican perfiles).
@@ -25,6 +31,29 @@ async function resolverPerfilPisu(req: Request, res: Response): Promise<boolean>
     return false;
   }
 
+  // El rol se refresca desde la cuenta: si un administrador lo cambia, aplica
+  // de inmediato aunque el JWT conserve el rol del momento del login.
+  let cuentaAuth: Usuario | null = null;
+  try {
+    cuentaAuth = await Usuario.findByPk(authUser.id);
+  } catch (error) {
+    console.warn(
+      "No se pudo leer la cuenta Conecta:",
+      (error as Error).message,
+    );
+  }
+
+  if (cuentaAuth) {
+    if (!cuentaAuth.estado) {
+      res.status(403).json({ message: "La cuenta se encuentra inactiva." });
+      return false;
+    }
+    const rolActual = normalizarRolAuth(cuentaAuth.rol);
+    if (rolActual) {
+      authUser.rol = rolActual;
+    }
+  }
+
   const correo =
     normalizarCorreoInstitucional(authUser.email) ??
     authUser.email.trim().toLowerCase();
@@ -34,22 +63,35 @@ async function resolverPerfilPisu(req: Request, res: Response): Promise<boolean>
     where: { auth_usuario_id: authUser.id },
   });
 
-  // 2) Ficha creada por administración/seed con el mismo correo y sin vincular:
-  //    se adopta. Si ya pertenece a OTRA cuenta no se toca (evita suplantación).
+  // 2) Ficha creada por administración/seed con el mismo correo: se adopta.
+  //    Si el enlace guardado ya no corresponde a ninguna cuenta, se repara.
+  //    Si pertenece a OTRA cuenta existente no se toca (evita suplantación).
   if (!perfil) {
-    const sinVincular = await UsuarioPisu.findOne({
-      where: { correo, auth_usuario_id: null },
+    const porCorreo = await UsuarioPisu.findOne({
+      where: { correo },
+      order: [["fecha_creacion", "ASC"]],
     });
-    if (sinVincular) {
-      perfil = await sinVincular.update({ auth_usuario_id: authUser.id });
+
+    if (porCorreo) {
+      let enlaceVigente = false;
+      if (porCorreo.auth_usuario_id) {
+        try {
+          enlaceVigente =
+            (await Usuario.findByPk(porCorreo.auth_usuario_id)) !== null;
+        } catch {
+          enlaceVigente = false;
+        }
+      }
+      if (!porCorreo.auth_usuario_id || !enlaceVigente) {
+        perfil = await porCorreo.update({ auth_usuario_id: authUser.id });
+      }
     }
   }
 
-  // 3) Primer ingreso: se crea la ficha con los datos verificados de Google.
+  // 3) Primer ingreso: se crea la ficha con los datos verificados de Google y
+  //    el rol que tenga la cuenta (Estudiante si no se le asignó otro).
   if (!perfil) {
-    const cuentaAuth = await Usuario.findByPk(authUser.id);
-    const esAdminConecta = authUser.rol === ROLES.ADMINISTRADOR;
-    const rolPisu = esAdminConecta ? "Administrador" : "Estudiante";
+    const rolPisu = rolPisuDesdeAuth(authUser.rol);
     const nombre = cuentaAuth?.nombre_completo?.trim() || correo;
 
     try {
@@ -74,6 +116,14 @@ async function resolverPerfilPisu(req: Request, res: Response): Promise<boolean>
         throw error;
       }
     }
+  }
+
+  // Un administrador siempre conserva privilegios de administración en PISU.
+  if (
+    perfil.rol !== "Administrador" &&
+    authUser.rol === ROLES.ADMINISTRADOR
+  ) {
+    perfil = await perfil.update({ rol: "Administrador", categoria: null });
   }
 
   if (perfil.estado === false) {

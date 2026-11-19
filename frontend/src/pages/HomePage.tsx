@@ -374,10 +374,11 @@ function PanelAdministradores({ sesion }: { sesion: Usuario }) {
 
   return (
     <section className="mt-12 rounded-3xl border border-white/10 bg-white p-6 text-slate-900">
-      <h2 className="text-lg font-semibold">Administradores</h2>
+      <h2 className="text-lg font-semibold">Usuarios y roles</h2>
       <p className="mt-1 text-sm text-slate-600">
-        La persona debe iniciar sesión una vez con Google. Después puedes
-        convertirla en administradora aquí.
+        La persona debe iniciar sesión una vez con Google. Los correos
+        institucionales entran como Estudiante; aquí puedes asignarles Docente o
+        Administrador.
       </p>
       {error ? (
         <p className="mt-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
@@ -401,24 +402,21 @@ function PanelAdministradores({ sesion }: { sesion: Usuario }) {
                 <td className="py-3">{item.email}</td>
                 <td className="py-3">{etiquetaRol(item.rol)}</td>
                 <td className="py-3">
-                  {item.rol === "ADMINISTRADOR" ? (
-                    <button
-                      type="button"
-                      disabled={item.id === sesion.id}
-                      onClick={() => void cambiarRol(item.id, "USUARIO")}
-                      className="rounded-lg border px-3 py-1.5 text-xs disabled:opacity-40"
-                    >
-                      Quitar admin
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => void cambiarRol(item.id, "ADMINISTRADOR")}
-                      className="rounded-lg bg-slate-900 px-3 py-1.5 text-xs text-white"
-                    >
-                      Hacer administrador
-                    </button>
-                  )}
+                  <select
+                    value={item.rol === "USUARIO" ? "ESTUDIANTE" : item.rol}
+                    disabled={item.id === sesion.id}
+                    onChange={(event) =>
+                      void cambiarRol(
+                        item.id,
+                        event.target.value as Usuario["rol"],
+                      )
+                    }
+                    className="rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs disabled:opacity-40"
+                  >
+                    <option value="ESTUDIANTE">Estudiante</option>
+                    <option value="DOCENTE">Docente</option>
+                    <option value="ADMINISTRADOR">Administrador</option>
+                  </select>
                 </td>
               </tr>
             ))}

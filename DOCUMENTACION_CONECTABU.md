@@ -120,6 +120,10 @@ Se mantuvo **Sequelize** como ORM y solo se cambió la conexión a Supabase.
 - Se reemplazó `DATABASE_URL` por la cadena de conexión de Supabase (Pooler, modo session).
 - Se agregó `SUPABASE_SSL=true`.
 
+**Identidad en `conecta_auth`**
+- Supabase reserva el schema `auth` (devuelve `permission denied`), así que las tablas propias de usuarios y roles viven en `conecta_auth`.
+- `server.ts` crea el schema y las tablas al arrancar (`sequelize.sync()`), por lo que no hay que ejecutar nada a mano.
+
 ### Pasos para configurar Supabase
 
 1. Crear proyecto en [supabase.com](https://supabase.com).
@@ -131,6 +135,7 @@ Se mantuvo **Sequelize** como ORM y solo se cambió la conexión a Supabase.
 4. En **SQL Editor**, ejecutar (en orden):
    ```sql
    CREATE EXTENSION IF NOT EXISTS pgcrypto;
+   CREATE SCHEMA IF NOT EXISTS conecta_auth;
    CREATE SCHEMA IF NOT EXISTS deporte;
    CREATE SCHEMA IF NOT EXISTS desarrollo_humano;
    CREATE SCHEMA IF NOT EXISTS cultura;
@@ -154,6 +159,9 @@ PORT=3000
 DATABASE_URL=postgresql://postgres.<proyecto>:<password>@aws-1-us-east-1.pooler.supabase.com:5432/postgres
 JWT_SECRET=cambia_este_secreto
 GOOGLE_CLIENT_ID=1067068111817-i4sth6o0gille2pp69kd71op0iu1e2ok.apps.googleusercontent.com
+GOOGLE_HOSTED_DOMAIN=uniautonoma.edu.co
+# Correos que siempre entran como Administrador (separados por comas).
+ADMIN_EMAILS=estiven.realpe.h@uniautonoma.edu.co
 SUPABASE_SSL=true
 
 N8N_WEBHOOK_ORIENTACION=http://localhost:5678/webhook/conecta-bu-orientacion
@@ -261,8 +269,9 @@ Al iniciar el backend, se crean automáticamente usuarios de prueba:
   - Deporte: Voleibol
 
 ### Administrador
-- **Usuario Demo** — `demo@uniautonoma.edu.co`
-  - Rol: Administrador
+- **Estiven Realpe Hormiga** — `estiven.realpe.h@uniautonoma.edu.co`
+  - Rol: Administrador (forzado por `ADMIN_EMAILS` en el login)
+  - Puede asignar rol Docente o Administrador desde la home o desde Deporte → Usuarios PISU.
 
 ### Estudiantes
 Varios estudiantes PISU con correos `estudiante.pisu.XX@uniautonoma.edu.co` y `estudianteXX@uniautonoma.edu.co`.
